@@ -42,13 +42,25 @@ export default function UserPiggeries() {
         return;
       }
 
+      // Get client
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', userId);
+
+      if (!clients || clients.length === 0) {
+        setPiggeries([]);
+        setLoading(false);
+        return;
+      }
+
+      const client = clients[0];
+
+      // Get piggeries
       const { data, error } = await supabase
         .from('piggeries')
-        .select(`
-          *,
-          clients!inner (profile_id)
-        `)
-        .eq('clients.profile_id', userId);
+        .select('*')
+        .eq('client_id', client.id);
 
       if (error) {
         console.error('Error fetching piggeries:', error);

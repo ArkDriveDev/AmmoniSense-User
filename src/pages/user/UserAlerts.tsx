@@ -17,45 +17,89 @@ import {
   IonToast
 } from '@ionic/react';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../services/supabase';
 import { refreshOutline, checkmarkCircle } from 'ionicons/icons';
 
 export default function UserAlerts() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
     fetchAlerts();
-
-    const subscription = supabase
-      .channel('user_alerts')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'alerts'
-        },
-        (payload) => {
-          setAlerts(prev => [payload.new, ...prev]);
-          setToastMessage(`New alert: Ammonia ${payload.new.ammonia} ppm`);
-          setShowToast(true);
-        }
-      )
-      .subscribe();
+    
+    // Setup realtime after initial fetch
+    const timer = setTimeout(() => {
+      setupRealtimeSubscription();
+    }, 500);
 
     return () => {
-      subscription.unsubscribe();
+      clearTimeout(timer);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        isSubscribedRef.current = false;
+      }
     };
   }, []);
 
+  const setupRealtimeSubscription = () => {
+    // Don't setup if already subscribed
+    if (isSubscribedRef.current) {
+      return;
+    }
+
+    // Remove existing channel if any
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
+    // Create new channel
+    const channel = supabase.channel('user_alerts');
+    
+    // Add callback before subscribing
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'alerts'
+      },
+      (payload) => {
+        setAlerts(prev => [payload.new, ...prev]);
+        setToastMessage(`New alert: Ammonia ${payload.new.ammonia} ppm`);
+        setShowToast(true);
+      }
+    );
+
+    // Then subscribe
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Realtime subscription active for alerts');
+        isSubscribedRef.current = true;
+      }
+    });
+
+    channelRef.current = channel;
+  };
+
   const fetchAlerts = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Auth error:', userError);
+        setError('Authentication error');
+        setLoading(false);
+        return;
+      }
+
       const userId = userData.user?.id;
 
       if (!userId) {
@@ -64,10 +108,39 @@ export default function UserAlerts() {
         return;
       }
 
-      const { data: piggeries } = await supabase
+      // Use a different approach - query clients and check if data exists
+      const { data: clients, error: clientError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', userId);
+
+      if (clientError) {
+        console.error('Error fetching client:', clientError);
+        setError('Failed to fetch client');
+        setLoading(false);
+        return;
+      }
+
+      // Check if any clients exist
+      if (!clients || clients.length === 0) {
+        setAlerts([]);
+        setLoading(false);
+        return;
+      }
+
+      const client = clients[0];
+
+      const { data: piggeries, error: piggeryError } = await supabase
         .from('piggeries')
         .select('id')
-        .eq('clients.profile_id', userId);
+        .eq('client_id', client.id);
+
+      if (piggeryError) {
+        console.error('Error fetching piggeries:', piggeryError);
+        setError('Failed to fetch piggeries');
+        setLoading(false);
+        return;
+      }
 
       const piggeryIds = piggeries?.map(p => p.id) || [];
 
@@ -77,20 +150,23 @@ export default function UserAlerts() {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error: alertError } = await supabase
         .from('alerts')
         .select('*')
         .in('piggery_id', piggeryIds)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching alerts:', error);
+      if (alertError) {
+        console.error('Error fetching alerts:', alertError);
+        setError('Failed to fetch alerts');
+        setLoading(false);
         return;
       }
 
       setAlerts(data || []);
     } catch (err) {
       console.error('Unexpected error:', err);
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -105,6 +181,8 @@ export default function UserAlerts() {
 
       if (error) {
         console.error('Error acknowledging alert:', error);
+        setToastMessage('Failed to acknowledge alert');
+        setShowToast(true);
         return;
       }
 
@@ -113,8 +191,13 @@ export default function UserAlerts() {
           a.id === id ? { ...a, acknowledged: true, is_read: true } : a
         )
       );
+      
+      setToastMessage('Alert acknowledged');
+      setShowToast(true);
     } catch (err) {
       console.error('Unexpected error:', err);
+      setToastMessage('An error occurred');
+      setShowToast(true);
     }
   };
 
@@ -122,6 +205,25 @@ export default function UserAlerts() {
     await fetchAlerts();
     event.detail.complete();
   };
+
+  if (error) {
+    return (
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Alerts</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          <div style={{ textAlign: 'center', marginTop: '40px' }}>
+            <h3>Error Loading Alerts</h3>
+            <p>{error}</p>
+            <IonButton onClick={fetchAlerts}>Try Again</IonButton>
+          </div>
+        </IonContent>
+      </IonPage>
+    );
+  }
 
   return (
     <IonPage>
@@ -142,7 +244,7 @@ export default function UserAlerts() {
         </IonRefresher>
 
         {loading ? (
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <div style={{ textAlign: 'center', marginTop: '40px' }}>
             <IonSpinner />
             <p>Loading alerts...</p>
           </div>
@@ -159,17 +261,17 @@ export default function UserAlerts() {
               <IonItem key={a.id}>
                 <IonLabel>
                   <h2 style={{ color: a.severity === 'SEVERE' ? 'red' : 'orange' }}>
-                    {a.severity} Alert
+                    {a.severity || 'Unknown'} Alert
                   </h2>
-                  <p>Ammonia: {a.ammonia} ppm</p>
+                  <p>Ammonia: {a.ammonia || 0} ppm</p>
                   <p>Device: {a.device_uid || 'Unknown'}</p>
                   <p style={{ fontSize: '12px', color: 'gray' }}>
-                    {new Date(a.created_at).toLocaleString()}
+                    {a.created_at ? new Date(a.created_at).toLocaleString() : 'Unknown time'}
                   </p>
                 </IonLabel>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                  <IonBadge color={a.severity === 'SEVERE' ? 'danger' : 'warning'}>
-                    {a.severity}
+                  <IonBadge color={a.severity === 'SEVERE' ? 'danger' : a.severity === 'MODERATE' ? 'warning' : 'success'}>
+                    {a.severity || 'Unknown'}
                   </IonBadge>
                   {a.acknowledged ? (
                     <IonBadge color="success">Acknowledged</IonBadge>
@@ -193,9 +295,9 @@ export default function UserAlerts() {
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
           message={toastMessage}
-          duration={5000}
-          color="danger"
-          position="top"
+          duration={3000}
+          color={toastMessage.includes('Failed') || toastMessage.includes('error') ? 'danger' : 'success'}
+          position="bottom"
         />
       </IonContent>
     </IonPage>

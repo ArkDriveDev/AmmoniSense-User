@@ -46,15 +46,37 @@ export default function UserSensorData() {
 
       if (!userId) return;
 
+      // Get client
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', userId);
+
+      if (!clients || clients.length === 0) {
+        setDevices([]);
+        return;
+      }
+
+      const client = clients[0];
+
+      // Get piggeries
+      const { data: piggeries } = await supabase
+        .from('piggeries')
+        .select('id')
+        .eq('client_id', client.id);
+
+      const piggeryIds = piggeries?.map(p => p.id) || [];
+
+      if (piggeryIds.length === 0) {
+        setDevices([]);
+        return;
+      }
+
+      // Get devices
       const { data } = await supabase
         .from('devices')
-        .select(`
-          *,
-          piggeries!inner (
-            clients!inner (profile_id)
-          )
-        `)
-        .eq('piggeries.clients.profile_id', userId);
+        .select('device_uid, piggery_id')
+        .in('piggery_id', piggeryIds);
 
       setDevices(data || []);
     } catch (err) {

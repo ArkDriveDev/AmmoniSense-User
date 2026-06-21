@@ -46,30 +46,50 @@ export default function UserDevices() {
         return;
       }
 
-      let query = supabase
-        .from('devices')
-        .select(`
-          *,
-          piggeries!inner (
-            id,
-            piggery_name,
-            clients!inner (profile_id)
-          )
-        `)
-        .eq('piggeries.clients.profile_id', userId);
+      // First get the client
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', userId);
 
-      if (piggeryId) {
-        query = query.eq('piggery_id', parseInt(piggeryId));
-        
-        const { data: piggery } = await supabase
-          .from('piggeries')
-          .select('piggery_name')
-          .eq('id', parseInt(piggeryId))
-          .single();
-        setPiggeryName(piggery?.piggery_name || '');
+      if (!clients || clients.length === 0) {
+        setDevices([]);
+        setLoading(false);
+        return;
       }
 
-      const { data, error } = await query;
+      const client = clients[0];
+
+      // Get piggeries for this client
+      let piggeryQuery = supabase
+        .from('piggeries')
+        .select('id, piggery_name')
+        .eq('client_id', client.id);
+
+      if (piggeryId) {
+        piggeryQuery = piggeryQuery.eq('id', parseInt(piggeryId));
+      }
+
+      const { data: piggeries } = await piggeryQuery;
+
+      if (!piggeries || piggeries.length === 0) {
+        setDevices([]);
+        setLoading(false);
+        return;
+      }
+
+      // Set piggery name if we have one
+      if (piggeryId && piggeries.length > 0) {
+        setPiggeryName(piggeries[0].piggery_name);
+      }
+
+      const piggeryIds = piggeries.map(p => p.id);
+
+      // Get devices for these piggeries
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*')
+        .in('piggery_id', piggeryIds);
 
       if (error) {
         console.error('Error fetching devices:', error);

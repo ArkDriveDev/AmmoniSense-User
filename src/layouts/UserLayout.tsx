@@ -13,7 +13,7 @@ import {
   IonBadge
 } from '@ionic/react';
 
-import { useNavigate } from 'react-router-dom'; // Change this
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import {
   homeOutline,
@@ -26,7 +26,7 @@ import {
 import { useEffect, useState } from 'react';
 
 export default function UserLayout({ children }: any) {
-  const navigate = useNavigate(); // Change this
+  const navigate = useNavigate();
   const [userName, setUserName] = useState('User');
   const [alertCount, setAlertCount] = useState(0);
 
@@ -35,7 +35,7 @@ export default function UserLayout({ children }: any) {
     fetchAlertCount();
 
     const subscription = supabase
-      .channel('user_alerts')
+      .channel('user_alerts_layout')
       .on(
         'postgres_changes',
         {
@@ -44,7 +44,7 @@ export default function UserLayout({ children }: any) {
           table: 'alerts'
         },
         () => {
-          setAlertCount(prev => prev + 1);
+          fetchAlertCount();
         }
       )
       .subscribe();
@@ -65,7 +65,7 @@ export default function UserLayout({ children }: any) {
         .from('profiles')
         .select('full_name')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (data?.full_name) {
         setUserName(data.full_name);
@@ -82,10 +82,23 @@ export default function UserLayout({ children }: any) {
 
       if (!userId) return;
 
+      // Use array query instead of single
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', userId);
+
+      if (!clients || clients.length === 0) {
+        setAlertCount(0);
+        return;
+      }
+
+      const client = clients[0];
+
       const { data: piggeries } = await supabase
         .from('piggeries')
         .select('id')
-        .eq('clients.profile_id', userId);
+        .eq('client_id', client.id);
 
       const piggeryIds = piggeries?.map(p => p.id) || [];
 
@@ -108,7 +121,7 @@ export default function UserLayout({ children }: any) {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    navigate('/login'); // Change this
+    navigate('/login');
   };
 
   return (

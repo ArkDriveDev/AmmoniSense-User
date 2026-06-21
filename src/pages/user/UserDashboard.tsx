@@ -70,48 +70,67 @@ export default function UserDashboard() {
         return;
       }
 
+      // Get client
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', userId);
+
+      if (!clients || clients.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const client = clients[0];
+
+      // Get piggeries
       const { data: piggeries } = await supabase
         .from('piggeries')
-        .select(`
-          id,
-          piggery_name,
-          clients!inner (profile_id)
-        `)
-        .eq('clients.profile_id', userId);
+        .select('id, piggery_name, location, piggery_serial')
+        .eq('client_id', client.id);
 
       const piggeryIds = piggeries?.map(p => p.id) || [];
 
+      // Get devices
       const { data: devices } = await supabase
         .from('devices')
         .select('*')
         .in('piggery_id', piggeryIds);
 
-      const { data: sensorData } = await supabase
-        .from('sensor_data')
-        .select(`
-          *,
-          devices!inner (piggery_id)
-        `)
-        .in('devices.piggery_id', piggeryIds)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      // Get sensor data
+      const deviceUids = devices?.map(d => d.device_uid) || [];
+      let sensorData: any[] = [];
+      if (deviceUids.length > 0) {
+        const { data } = await supabase
+          .from('sensor_data')
+          .select('*')
+          .in('device_uid', deviceUids)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        sensorData = data || [];
+      }
 
-      const { count: alertCount } = await supabase
-        .from('alerts')
-        .select('id', { count: 'exact', head: true })
-        .in('piggery_id', piggeryIds)
-        .eq('is_read', false);
+      // Get alert count
+      let alertCount = 0;
+      if (piggeryIds.length > 0) {
+        const { count } = await supabase
+          .from('alerts')
+          .select('id', { count: 'exact', head: true })
+          .in('piggery_id', piggeryIds)
+          .eq('is_read', false);
+        alertCount = count || 0;
+      }
 
       const activeDevices = devices?.filter(d => d.status === 'ACTIVE') || [];
-      const avgAmmonia = sensorData?.reduce((sum, d) => sum + d.ammonia, 0) / (sensorData?.length || 1);
+      const avgAmmonia = sensorData.reduce((sum, d) => sum + (d.ammonia || 0), 0) / (sensorData.length || 1);
 
       setStats({
         piggeryCount: piggeries?.length || 0,
         deviceCount: devices?.length || 0,
         totalDevices: devices?.length || 0,
         activeDevices: activeDevices.length,
-        alertCount: alertCount || 0,
-        latestAmmonia: sensorData?.[0]?.ammonia || 0,
+        alertCount: alertCount,
+        latestAmmonia: sensorData[0]?.ammonia || 0,
         averageAmmonia: avgAmmonia || 0
       });
     } catch (err) {

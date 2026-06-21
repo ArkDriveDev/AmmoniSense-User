@@ -15,8 +15,9 @@ import '@ionic/react/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 
-import AppRouter from './AppRouter';
+
 import { BrowserRouter as Router } from 'react-router-dom';
+import AppRouter from './AppRouter';
 
 setupIonicReact();
 
