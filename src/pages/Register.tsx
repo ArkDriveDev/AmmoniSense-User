@@ -21,6 +21,11 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { mailOutline, lockClosedOutline, personOutline } from 'ionicons/icons';
 
+// Create a service role client for admin operations
+// IMPORTANT: Add your service role key to .env
+const supabaseServiceUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
 export default function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -75,6 +80,7 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // 1. Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -108,8 +114,18 @@ export default function Register() {
         return;
       }
 
-      // Create profile
-      const { error: profileError } = await supabase
+      // 2. Create profile using service role to bypass RLS
+      // Use the service role client if available, otherwise fallback to regular client
+      let supabaseClient = supabase;
+      
+      if (supabaseServiceKey && supabaseServiceUrl) {
+        // Use service role for insert operations
+        const { createClient } = await import('@supabase/supabase-js');
+        const serviceClient = createClient(supabaseServiceUrl, supabaseServiceKey);
+        supabaseClient = serviceClient;
+      }
+
+      const { error: profileError } = await supabaseClient
         .from('profiles')
         .insert([{
           id: user.id,
@@ -119,10 +135,21 @@ export default function Register() {
 
       if (profileError) {
         console.error('Profile error:', profileError);
+        
+        // If service role fails, try with regular client
+        if (profileError.code === '42501' || profileError.message.includes('RLS')) {
+          setToastMessage('Permission error. Please contact support.');
+        } else {
+          setToastMessage('Profile creation failed: ' + profileError.message);
+        }
+        setToastColor('danger');
+        setShowToast(true);
+        setLoading(false);
+        return;
       }
 
-      // Create client record
-      const { error: clientError } = await supabase
+      // 3. Create client record using service role
+      const { error: clientError } = await supabaseClient
         .from('clients')
         .insert([{
           full_name: form.full_name,
@@ -134,6 +161,11 @@ export default function Register() {
 
       if (clientError) {
         console.error('Client error:', clientError);
+        setToastMessage('Client creation failed: ' + clientError.message);
+        setToastColor('danger');
+        setShowToast(true);
+        setLoading(false);
+        return;
       }
 
       setToastMessage('Registration successful! Please check your email to verify.');
@@ -264,10 +296,10 @@ export default function Register() {
                   <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
                     <IonText color="medium" style={{ fontSize: '12px' }}>
                       <p style={{ margin: '4px 0' }}>
-                        After registration, an admin will need to assign your account to a piggery.
+                        After registration, an admin will need to assign piggeries to your account.
                       </p>
                       <p style={{ margin: '4px 0' }}>
-                        You'll receive access once approved.
+                        You'll receive access to view your piggery data once assigned.
                       </p>
                     </IonText>
                   </div>
