@@ -1,36 +1,34 @@
+import React, { useState } from 'react';
 import {
-  IonPage,
-  IonContent,
-  IonItem,
-  IonIcon,
-  IonInput,
   IonButton,
+  IonContent,
+  IonInput,
+  IonInputPasswordToggle,
+  IonPage,
   IonTitle,
+  IonModal,
   IonText,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardSubtitle,
+  IonCardTitle,
   IonToast,
   IonSpinner,
   IonGrid,
   IonRow,
-  IonCol,
-  IonCard,
-  IonCardContent
+  IonCol
 } from '@ionic/react';
-
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { mailOutline, lockClosedOutline, personOutline } from 'ionicons/icons';
+import { useNavigate } from 'react-router-dom';
 
-// Create a service role client for admin operations
-// IMPORTANT: Add your service role key to .env
-const supabaseServiceUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
-export default function Register() {
+const Register: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
   const [toastColor, setToastColor] = useState('success');
 
   const [form, setForm] = useState({
@@ -74,13 +72,19 @@ export default function Register() {
     return true;
   };
 
-  const handleRegister = async () => {
+  const handleOpenVerificationModal = () => {
     if (!validateForm()) return;
+    setShowVerificationModal(true);
+  };
 
+  const doRegister = async () => {
+    setShowVerificationModal(false);
     setLoading(true);
 
     try {
-      // 1. Create auth user
+      // ============================================
+      // STEP 1: Create auth user
+      // ============================================
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -95,90 +99,67 @@ export default function Register() {
       if (authError) {
         if (authError.message.includes('already registered')) {
           setToastMessage('This email is already registered. Please login.');
-        } else {
-          setToastMessage('Registration failed: ' + authError.message);
+          setToastColor('warning');
+          setShowToast(true);
+          setLoading(false);
+          return;
         }
-        setToastColor('danger');
-        setShowToast(true);
-        setLoading(false);
-        return;
+        throw new Error('Account creation failed: ' + authError.message);
       }
 
       const user = authData.user ?? authData.session?.user;
 
       if (!user) {
-        setToastMessage('Failed to create user account');
-        setToastColor('danger');
-        setShowToast(true);
-        setLoading(false);
-        return;
+        throw new Error('Failed to create user account');
       }
 
-      // 2. Create profile using service role to bypass RLS
-      // Use the service role client if available, otherwise fallback to regular client
-      let supabaseClient = supabase;
-      
-      if (supabaseServiceKey && supabaseServiceUrl) {
-        // Use service role for insert operations
-        const { createClient } = await import('@supabase/supabase-js');
-        const serviceClient = createClient(supabaseServiceUrl, supabaseServiceKey);
-        supabaseClient = serviceClient;
-      }
-
-      const { error: profileError } = await supabaseClient
+      // ============================================
+      // STEP 2: Upsert profile (INSERT OR UPDATE)
+      // ============================================
+      const { error: profileError } = await supabase
         .from('profiles')
-        .insert([{
+        .upsert({
           id: user.id,
           full_name: form.full_name,
           role: 'client'
-        }]);
+        }, {
+          onConflict: 'id'
+        });
 
       if (profileError) {
         console.error('Profile error:', profileError);
-        
-        // If service role fails, try with regular client
-        if (profileError.code === '42501' || profileError.message.includes('RLS')) {
-          setToastMessage('Permission error. Please contact support.');
-        } else {
-          setToastMessage('Profile creation failed: ' + profileError.message);
-        }
-        setToastColor('danger');
-        setShowToast(true);
-        setLoading(false);
-        return;
+        throw new Error('Profile creation failed: ' + profileError.message);
       }
 
-      // 3. Create client record using service role
-      const { error: clientError } = await supabaseClient
+      // ============================================
+      // STEP 3: Upsert client (INSERT OR UPDATE)
+      // ============================================
+      const { error: clientError } = await supabase
         .from('clients')
-        .insert([{
+        .upsert({
           full_name: form.full_name,
           email: form.email,
           phone: form.phone || null,
           organization_name: form.organization_name || null,
           profile_id: user.id
-        }]);
+        }, {
+          onConflict: 'profile_id'
+        });
 
       if (clientError) {
         console.error('Client error:', clientError);
-        setToastMessage('Client creation failed: ' + clientError.message);
-        setToastColor('danger');
-        setShowToast(true);
-        setLoading(false);
-        return;
+        throw new Error('Client creation failed: ' + clientError.message);
       }
 
-      setToastMessage('Registration successful! Please check your email to verify.');
-      setToastColor('success');
-      setShowToast(true);
-
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      setShowSuccessModal(true);
 
     } catch (err) {
-      console.error('Unexpected error:', err);
-      setToastMessage('An unexpected error occurred. Please try again.');
+      console.error('Registration error:', err);
+      if (err instanceof Error) {
+        setToastMessage(err.message);
+      } else {
+        setToastMessage('An unknown error occurred. Please try again.');
+      }
       setToastColor('danger');
       setShowToast(true);
     } finally {
@@ -188,13 +169,8 @@ export default function Register() {
 
   return (
     <IonPage>
-      <IonContent className="ion-padding" style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        minHeight: '100vh'
-      }}>
-        <IonGrid style={{ maxWidth: '400px', width: '100%' }}>
+      <IonContent className="ion-padding">
+        <IonGrid style={{ maxWidth: '500px', margin: '0 auto', marginTop: '40px' }}>
           <IonRow>
             <IonCol>
               <IonCard>
@@ -208,74 +184,87 @@ export default function Register() {
                     </IonText>
                   </div>
 
-                  <IonItem>
-                    <IonIcon icon={personOutline} slot="start" />
-                    <IonInput
-                      placeholder="Full Name *"
-                      value={form.full_name}
-                      onIonChange={(e) => setForm({ ...form, full_name: e.detail.value! })}
-                    />
-                  </IonItem>
+                  <IonInput
+                    label="Full Name"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    placeholder="Enter your full name"
+                    value={form.full_name}
+                    onIonChange={(e) => setForm({ ...form, full_name: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
 
-                  <IonItem>
-                    <IonIcon icon={mailOutline} slot="start" />
-                    <IonInput
-                      type="email"
-                      placeholder="Email Address *"
-                      value={form.email}
-                      onIonChange={(e) => setForm({ ...form, email: e.detail.value! })}
-                    />
-                  </IonItem>
+                  <IonInput
+                    label="Email"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="email"
+                    placeholder="youremail@example.com"
+                    value={form.email}
+                    onIonChange={(e) => setForm({ ...form, email: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
 
-                  <IonItem>
-                    <IonIcon icon={lockClosedOutline} slot="start" />
-                    <IonInput
-                      type="password"
-                      placeholder="Password (min 6 chars) *"
-                      value={form.password}
-                      onIonChange={(e) => setForm({ ...form, password: e.detail.value! })}
-                    />
-                  </IonItem>
+                  <IonInput
+                    label="Phone (Optional)"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={form.phone}
+                    onIonChange={(e) => setForm({ ...form, phone: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
 
-                  <IonItem>
-                    <IonIcon icon={lockClosedOutline} slot="start" />
-                    <IonInput
-                      type="password"
-                      placeholder="Confirm Password *"
-                      value={form.confirm_password}
-                      onIonChange={(e) => setForm({ ...form, confirm_password: e.detail.value! })}
-                    />
-                  </IonItem>
+                  <IonInput
+                    label="Organization (Optional)"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    placeholder="Enter your organization name"
+                    value={form.organization_name}
+                    onIonChange={(e) => setForm({ ...form, organization_name: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
 
-                  <IonItem>
-                    <IonInput
-                      placeholder="Phone Number (optional)"
-                      value={form.phone}
-                      onIonChange={(e) => setForm({ ...form, phone: e.detail.value! })}
-                    />
-                  </IonItem>
+                  <IonInput
+                    label="Password"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="password"
+                    placeholder="Enter password (min 6 chars)"
+                    value={form.password}
+                    onIonChange={(e) => setForm({ ...form, password: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  >
+                    <IonInputPasswordToggle slot="end" />
+                  </IonInput>
 
-                  <IonItem>
-                    <IonInput
-                      placeholder="Organization Name (optional)"
-                      value={form.organization_name}
-                      onIonChange={(e) => setForm({ ...form, organization_name: e.detail.value! })}
-                    />
-                  </IonItem>
+                  <IonInput
+                    label="Confirm Password"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={form.confirm_password}
+                    onIonChange={(e) => setForm({ ...form, confirm_password: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  >
+                    <IonInputPasswordToggle slot="end" />
+                  </IonInput>
 
                   <IonButton
                     expand="block"
-                    onClick={handleRegister}
+                    onClick={handleOpenVerificationModal}
                     disabled={loading}
                     style={{ marginTop: '16px' }}
                   >
                     {loading ? (
                       <>
                         <IonSpinner name="crescent" />
-                        &nbsp;Creating Account...
+                        &nbsp;Creating...
                       </>
                     ) : (
-                      'Create Account'
+                      'Register'
                     )}
                   </IonButton>
 
@@ -287,19 +276,8 @@ export default function Register() {
                           style={{ color: 'var(--ion-color-primary)', cursor: 'pointer' }}
                           onClick={() => navigate('/login')}
                         >
-                          Login
+                          Sign in
                         </span>
-                      </p>
-                    </IonText>
-                  </div>
-
-                  <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                    <IonText color="medium" style={{ fontSize: '12px' }}>
-                      <p style={{ margin: '4px 0' }}>
-                        After registration, an admin will need to assign piggeries to your account.
-                      </p>
-                      <p style={{ margin: '4px 0' }}>
-                        You'll receive access to view your piggery data once assigned.
                       </p>
                     </IonText>
                   </div>
@@ -309,6 +287,74 @@ export default function Register() {
           </IonRow>
         </IonGrid>
 
+        {/* VERIFICATION MODAL */}
+        <IonModal isOpen={showVerificationModal} onDidDismiss={() => setShowVerificationModal(false)}>
+          <IonContent className="ion-padding" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IonCard style={{ maxWidth: '500px', margin: 'auto' }}>
+              <IonCardHeader>
+                <IonCardTitle>Confirm Registration</IonCardTitle>
+                <hr />
+                <IonCardSubtitle>Full Name</IonCardSubtitle>
+                <IonCardTitle>{form.full_name}</IonCardTitle>
+
+                <IonCardSubtitle>Email</IonCardSubtitle>
+                <IonCardTitle>{form.email}</IonCardTitle>
+
+                {form.phone && (
+                  <>
+                    <IonCardSubtitle>Phone</IonCardSubtitle>
+                    <IonCardTitle>{form.phone}</IonCardTitle>
+                  </>
+                )}
+
+                {form.organization_name && (
+                  <>
+                    <IonCardSubtitle>Organization</IonCardSubtitle>
+                    <IonCardTitle>{form.organization_name}</IonCardTitle>
+                  </>
+                )}
+              </IonCardHeader>
+              <IonCardContent>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <IonButton fill="clear" onClick={() => setShowVerificationModal(false)}>Cancel</IonButton>
+                  <IonButton color="primary" onClick={doRegister} disabled={loading}>
+                    {loading ? (
+                      <>
+                        <IonSpinner name="crescent" />
+                        &nbsp;Creating...
+                      </>
+                    ) : (
+                      'Confirm'
+                    )}
+                  </IonButton>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          </IonContent>
+        </IonModal>
+
+        {/* SUCCESS MODAL */}
+        <IonModal isOpen={showSuccessModal} onDidDismiss={() => setShowSuccessModal(false)}>
+          <IonContent className="ion-padding" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', textAlign: 'center' }}>
+            <IonTitle style={{ fontSize: '28px', marginBottom: '16px' }}>Registration Successful 🎉</IonTitle>
+            <IonText>
+              <p style={{ fontSize: '18px' }}>Your account has been created successfully.</p>
+              <p style={{ fontSize: '16px', color: 'gray' }}>Please check your email to verify your account.</p>
+            </IonText>
+            <IonButton 
+              color="primary" 
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate('/login');
+              }}
+              style={{ marginTop: '24px' }}
+            >
+              Go to Login
+            </IonButton>
+          </IonContent>
+        </IonModal>
+
+        {/* TOAST NOTIFICATION */}
         <IonToast
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
@@ -320,4 +366,6 @@ export default function Register() {
       </IonContent>
     </IonPage>
   );
-}
+};
+
+export default Register;
