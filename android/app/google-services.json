@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "966923236572",
+    "project_id": "ammonisense-9c8ef",
+    "storage_bucket": "ammonisense-9c8ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:966923236572:android:12a16b5b315217add0f019",
+        "android_client_info": {
+          "package_name": "com.ammonisense.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyQOT4GMdjCOfuG-yoinjgB4-yJlRGuG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
