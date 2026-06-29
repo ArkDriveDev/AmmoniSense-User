@@ -2,17 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ammonisense.user">
 
-    <!-- ============================================ -->
-    <!-- PERMISSIONS                                  -->
-    <!-- ============================================ -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- ============================================ -->
-    <!-- APPLICATION                                  -->
-    <!-- ============================================ -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -22,19 +15,16 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
 
-        <!-- ============================================ -->
-        <!-- NOTIFICATION ICON                           -->
-        <!-- ============================================ -->
+        <!-- REMOVE THESE TWO LINES -->
+        <!--
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/colorPrimary" />
+        -->
 
-        <!-- ============================================ -->
-        <!-- MAIN ACTIVITY                               -->
-        <!-- ============================================ -->
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
@@ -50,9 +40,6 @@
 
         </activity>
 
-        <!-- ============================================ -->
-        <!-- FILE PROVIDER                               -->
-        <!-- ============================================ -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

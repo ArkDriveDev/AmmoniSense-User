@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Ammonisense-User</string>
-    <string name="title_activity_main">Ammonisense-User</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
+    <string name="app_name">Ammonisense</string>
+    <string name="title_activity_main">Ammonisense</string>
+    <string name="package_name">com.ammonisense.user</string>
+    <string name="custom_url_scheme">com.ammonisense.user</string>
 </resources>

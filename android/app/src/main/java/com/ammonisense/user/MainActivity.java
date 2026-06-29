@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.ammonisense.user;
 
 import com.getcapacitor.BridgeActivity;
 
