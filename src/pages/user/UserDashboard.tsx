@@ -19,135 +19,29 @@ import {
   IonLabel
 } from '@ionic/react';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '../../services/supabase';
-import { refreshOutline, alertCircle } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
+import { refreshOutline, alertCircle, notificationsOutline } from 'ionicons/icons';
+import { useUserDashboardData } from '../../hooks/useUserDashboardData';
+import { AmmoniaTrendChart, DeviceStatusChart } from '../../components/charts';
+import StatsCard from '../../components/charts/StatsCard';
 
 export default function UserDashboard() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    piggeryCount: 0,
-    deviceCount: 0,
-    totalDevices: 0,
-    activeDevices: 0,
-    alertCount: 0,
-    latestAmmonia: 0,
-    averageAmmonia: 0
-  });
-
-  useEffect(() => {
-    fetchDashboardData();
-    
-    const subscription = supabase
-      .channel('user_dashboard')
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'sensor_data' 
-        },
-        () => {
-          fetchDashboardData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
-
-      // Get client
-      const { data: clients } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('profile_id', userId);
-
-      if (!clients || clients.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      const client = clients[0];
-
-      // Get piggeries
-      const { data: piggeries } = await supabase
-        .from('piggeries')
-        .select('id, piggery_name, location, piggery_serial')
-        .eq('client_id', client.id);
-
-      const piggeryIds = piggeries?.map(p => p.id) || [];
-
-      // Get devices
-      const { data: devices } = await supabase
-        .from('devices')
-        .select('*')
-        .in('piggery_id', piggeryIds);
-
-      // Get sensor data
-      const deviceUids = devices?.map(d => d.device_uid) || [];
-      let sensorData: any[] = [];
-      if (deviceUids.length > 0) {
-        const { data } = await supabase
-          .from('sensor_data')
-          .select('*')
-          .in('device_uid', deviceUids)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        sensorData = data || [];
-      }
-
-      // Get alert count
-      let alertCount = 0;
-      if (piggeryIds.length > 0) {
-        const { count } = await supabase
-          .from('alerts')
-          .select('id', { count: 'exact', head: true })
-          .in('piggery_id', piggeryIds)
-          .eq('is_read', false);
-        alertCount = count || 0;
-      }
-
-      const activeDevices = devices?.filter(d => d.status === 'ACTIVE') || [];
-      const avgAmmonia = sensorData.reduce((sum, d) => sum + (d.ammonia || 0), 0) / (sensorData.length || 1);
-
-      setStats({
-        piggeryCount: piggeries?.length || 0,
-        deviceCount: devices?.length || 0,
-        totalDevices: devices?.length || 0,
-        activeDevices: activeDevices.length,
-        alertCount: alertCount,
-        latestAmmonia: sensorData[0]?.ammonia || 0,
-        averageAmmonia: avgAmmonia || 0
-      });
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { stats, chartData, loading, refresh } = useUserDashboardData();
 
   const handleRefresh = async (event: CustomEvent) => {
-    await fetchDashboardData();
+    await refresh();
     event.detail.complete();
   };
 
-  if (loading) {
+  if (loading || !chartData) {
     return (
       <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>DASHBOARD</IonTitle>
+          </IonToolbar>
+        </IonHeader>
         <IonContent className="ion-padding" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <IonSpinner />
         </IonContent>
@@ -159,9 +53,9 @@ export default function UserDashboard() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Dashboard</IonTitle>
+          <IonTitle>DASHBOARD</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={fetchDashboardData}>
+            <IonButton onClick={refresh}>
               <IonIcon icon={refreshOutline} />
             </IonButton>
           </IonButtons>
@@ -174,75 +68,132 @@ export default function UserDashboard() {
         </IonRefresher>
 
         <IonGrid>
+          {/* Stats Cards */}
           <IonRow>
-            <IonCol size="6">
-              <IonCard>
-                <IonCardContent style={{ textAlign: 'center' }}>
-                  <h2>{stats.piggeryCount}</h2>
-                  <p>Piggeries</p>
-                </IonCardContent>
-              </IonCard>
+            <IonCol size="6" size-md="3">
+              <StatsCard
+                title="Piggeries"
+                value={stats.piggeryCount}
+                icon="business-outline"
+                color="primary"
+              />
             </IonCol>
-            <IonCol size="6">
-              <IonCard>
-                <IonCardContent style={{ textAlign: 'center' }}>
-                  <h2>{stats.deviceCount}</h2>
-                  <p>Devices</p>
-                </IonCardContent>
-              </IonCard>
+            <IonCol size="6" size-md="3">
+              <StatsCard
+                title="Devices"
+                value={stats.deviceCount}
+                icon="hardware-chip-outline"
+                color="secondary"
+              />
             </IonCol>
-          </IonRow>
-
-          <IonRow>
-            <IonCol size="6">
-              <IonCard>
-                <IonCardContent style={{ textAlign: 'center' }}>
-                  <h2>{stats.activeDevices}</h2>
-                  <p>Active Devices</p>
-                </IonCardContent>
-              </IonCard>
+            <IonCol size="6" size-md="3">
+              <StatsCard
+                title="Active Alerts"
+                value={stats.alertCount}
+                icon="alert-circle-outline"
+                color={stats.alertCount > 0 ? 'danger' : 'success'}
+                subtitle={stats.alertCount > 0 ? 'Action required!' : 'All clear'}
+              />
             </IonCol>
-            <IonCol size="6">
-              <IonCard>
+            <IonCol size="6" size-md="3">
+              <IonCard button onClick={() => navigate('/my-notifications')}>
                 <IonCardContent style={{ textAlign: 'center' }}>
-                  <h2 style={{ color: stats.alertCount > 0 ? 'red' : 'green' }}>
-                    {stats.alertCount}
+                  <IonIcon 
+                    icon={notificationsOutline} 
+                    style={{ 
+                      fontSize: '32px', 
+                      color: stats.notificationCount > 0 ? 'var(--ion-color-primary)' : 'var(--ion-color-medium)'
+                    }} 
+                  />
+                  <h2 style={{ 
+                    margin: '8px 0 4px 0', 
+                    fontSize: '28px', 
+                    fontWeight: 'bold',
+                    color: stats.notificationCount > 0 ? 'var(--ion-color-primary)' : 'var(--ion-color-medium)'
+                  }}>
+                    {stats.notificationCount}
                   </h2>
-                  <p>Alerts</p>
+                  <p style={{ margin: '0', fontSize: '14px', color: 'var(--ion-color-medium)' }}>
+                    Notifications
+                  </p>
+                  {stats.notificationCount > 0 && (
+                    <IonChip color="danger" style={{ marginTop: '4px' }}>
+                      <IonLabel>New</IonLabel>
+                    </IonChip>
+                  )}
                 </IonCardContent>
               </IonCard>
             </IonCol>
           </IonRow>
 
+          {/* Ammonia Trend */}
           <IonRow>
             <IonCol size="12">
               <IonCard>
-                <IonCardContent>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    <IonChip color={stats.latestAmmonia > 70 ? 'danger' : stats.latestAmmonia > 40 ? 'warning' : 'success'}>
-                      <IonLabel>Latest NH3: {stats.latestAmmonia.toFixed(1)} ppm</IonLabel>
-                    </IonChip>
-                    <IonChip color="primary">
-                      <IonLabel>Average NH3: {stats.averageAmmonia.toFixed(1)} ppm</IonLabel>
-                    </IonChip>
+                <IonCardContent style={{ height: '250px' }}>
+                  <AmmoniaTrendChart data={chartData.ammoniaTrend} />
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+
+          {/* Device Status */}
+          <IonRow>
+            <IonCol size="12" size-md="6">
+              <IonCard>
+                <IonCardContent style={{ height: '220px' }}>
+                  <DeviceStatusChart data={chartData.deviceStatus} />
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+            <IonCol size="12" size-md="6">
+              <IonCard>
+                <IonCardContent style={{ padding: '16px' }}>
+                  <h3 style={{ marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>Quick Summary</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--ion-color-light)' }}>
+                      <span>Latest Ammonia</span>
+                      <span style={{ fontWeight: 'bold', color: stats.latestAmmonia > 70 ? 'red' : stats.latestAmmonia > 40 ? 'orange' : 'green' }}>
+                        {stats.latestAmmonia.toFixed(1)} ppm
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--ion-color-light)' }}>
+                      <span>Average Ammonia</span>
+                      <span style={{ fontWeight: 'bold' }}>{stats.averageAmmonia.toFixed(1)} ppm</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--ion-color-light)' }}>
+                      <span>Active Devices</span>
+                      <span style={{ fontWeight: 'bold', color: 'green' }}>{stats.activeDevices} / {stats.deviceCount}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                      <span>Unread Notifications</span>
+                      <span style={{ fontWeight: 'bold', color: stats.notificationCount > 0 ? 'var(--ion-color-primary)' : 'gray' }}>
+                        {stats.notificationCount}
+                      </span>
+                    </div>
                   </div>
                 </IonCardContent>
               </IonCard>
             </IonCol>
           </IonRow>
-        </IonGrid>
 
-        {stats.alertCount > 0 && (
-          <IonCard color="danger" button onClick={() => navigate('/my-alerts')}>
-            <IonCardContent style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <IonIcon icon={alertCircle} size="large" />
-              <div>
-                <h3>You have {stats.alertCount} unread alert{stats.alertCount > 1 ? 's' : ''}</h3>
-                <p style={{ fontSize: '14px' }}>Tap to view</p>
-              </div>
-            </IonCardContent>
-          </IonCard>
-        )}
+          {/* Alert Notification */}
+          {stats.alertCount > 0 && (
+            <IonRow>
+              <IonCol size="12">
+                <IonCard color="danger" button onClick={() => navigate('/my-alerts')}>
+                  <IonCardContent style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <IonIcon icon={alertCircle} size="large" />
+                    <div>
+                      <h3 style={{ margin: 0 }}>You have {stats.alertCount} unread alert{stats.alertCount > 1 ? 's' : ''}</h3>
+                      <p style={{ fontSize: '14px', margin: '4px 0 0 0' }}>Tap to view</p>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              </IonCol>
+            </IonRow>
+          )}
+        </IonGrid>
       </IonContent>
     </IonPage>
   );
