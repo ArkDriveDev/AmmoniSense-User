@@ -91,7 +91,7 @@ const Register: React.FC = () => {
         options: {
           data: {
             full_name: form.full_name,
-            role: 'client'
+            role: 'environmental_inspector'
           }
         }
       });
@@ -121,7 +121,7 @@ const Register: React.FC = () => {
         .upsert({
           id: user.id,
           full_name: form.full_name,
-          role: 'client'
+          role: 'environmental_inspector'
         }, {
           onConflict: 'id'
         });
@@ -180,7 +180,7 @@ const Register: React.FC = () => {
                       Create Account
                     </IonTitle>
                     <IonText color="medium">
-                      <p>Register to monitor your piggery</p>
+                      <p>Register as Environmental Inspector</p>
                     </IonText>
                   </div>
 
