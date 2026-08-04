@@ -87,10 +87,9 @@ export function useUserDashboardData() {
         .or('status.eq.SEVERE,status.eq.MODERATE');
 
       const { count: notificationCount } = await supabase
-        .from('notifications')
+        .from('activity_logs')
         .select('id', { count: 'exact', head: true })
-        .eq('profile_id', userId)
-        .eq('is_read', false);
+        .eq('profile_id', userId);
 
       const activeDevices = devices?.filter(d => d.status === 'ACTIVE') || [];
       const avgAmmonia = sensorData.reduce((sum, d) => sum + (d.ammonia || 0), 0) / (sensorData.length || 1);
