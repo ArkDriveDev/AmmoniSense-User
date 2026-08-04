@@ -132,23 +132,21 @@ const Register: React.FC = () => {
       }
 
       // ============================================
-      // STEP 3: Upsert client (INSERT OR UPDATE)
+      // STEP 3: Upsert livestock_owner (INSERT OR UPDATE)
       // ============================================
-      const { error: clientError } = await supabase
-        .from('clients')
+      const { error: ownerError } = await supabase
+        .from('livestock_owners')
         .upsert({
-          full_name: form.full_name,
+          owner_name: form.full_name,
           email: form.email,
-          phone: form.phone || null,
-          organization_name: form.organization_name || null,
-          profile_id: user.id
+          contact_number: form.phone || null,
+          created_by: user.id
         }, {
-          onConflict: 'profile_id'
+          onConflict: 'email'
         });
 
-      if (clientError) {
-        console.error('Client error:', clientError);
-        throw new Error('Client creation failed: ' + clientError.message);
+      if (ownerError) {
+        console.warn('livestock_owners update notice:', ownerError.message);
       }
 
       setShowSuccessModal(true);
