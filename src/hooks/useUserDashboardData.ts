@@ -81,16 +81,6 @@ export function useUserDashboardData() {
         sensorData = data || [];
       }
 
-      const { count: alertCount } = await supabase
-        .from('sensor_data')
-        .select('id', { count: 'exact', head: true })
-        .or('status.eq.SEVERE,status.eq.MODERATE');
-
-      const { count: notificationCount } = await supabase
-        .from('activity_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('profile_id', userId);
-
       const activeDevices = devices?.filter(d => d.status === 'ACTIVE') || [];
       const avgAmmonia = sensorData.reduce((sum, d) => sum + (d.ammonia || 0), 0) / (sensorData.length || 1);
 
@@ -98,8 +88,8 @@ export function useUserDashboardData() {
         piggeryCount: piggeries?.length || 0,
         deviceCount: devices?.length || 0,
         activeDevices: activeDevices.length,
-        alertCount: alertCount,
-        notificationCount: notificationCount || 0,
+        alertCount: 0,
+        notificationCount: 0,
         latestAmmonia: sensorData[0]?.ammonia || 0,
         averageAmmonia: avgAmmonia || 0
       });

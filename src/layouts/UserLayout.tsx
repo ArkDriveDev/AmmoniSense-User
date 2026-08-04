@@ -24,7 +24,6 @@ import {
   businessOutline,
   hardwareChipOutline,
   barChartOutline,
-  alertCircleOutline,
   logOutOutline,
   personCircleOutline,
   closeOutline,
@@ -37,11 +36,9 @@ export default function UserLayout({ children }: any) {
   const location = useLocation();
   const [userName, setUserName] = useState('User');
   const [userEmail, setUserEmail] = useState('');
-  const [alertCount, setAlertCount] = useState(0);
 
   useEffect(() => {
     fetchUserProfile();
-    fetchAlertCount();
   }, []);
 
   const fetchUserProfile = async () => {
@@ -66,40 +63,6 @@ export default function UserLayout({ children }: any) {
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
-    }
-  };
-
-  const fetchAlertCount = async () => {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-
-      if (!userId) return;
-
-      const { data: owners } = await supabase
-        .from('livestock_owners')
-        .select('id')
-        .eq('created_by', userId);
-
-      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
-
-      let livestockIds: any[] = [];
-      if (ownerId) {
-        const { data: livestock } = await supabase
-          .from('livestock')
-          .select('id')
-          .eq('owner_id', ownerId);
-        livestockIds = livestock?.map(l => l.id) || [];
-      }
-
-      const { count } = await supabase
-        .from('sensor_data')
-        .select('id', { count: 'exact', head: true })
-        .or('status.eq.SEVERE,status.eq.MODERATE');
-
-      setAlertCount(count || 0);
-    } catch (err) {
-      console.error('Error fetching alert count:', err);
     }
   };
 
@@ -200,33 +163,15 @@ export default function UserLayout({ children }: any) {
 
             <IonItem 
               button 
-              onClick={() => navigate('/my-sensor-data')}  // ← CHANGED
-              color={isActive('/my-sensor-data') ? 'primary' : undefined}
-              style={isActive('/my-sensor-data') ? { 
+              onClick={() => navigate('/my-sensor-data')}
+              color={isActive('/my-sensor-data') || isActive('/sensor-data') ? 'primary' : undefined}
+              style={isActive('/my-sensor-data') || isActive('/sensor-data') ? { 
                 borderLeft: '4px solid var(--ion-color-primary)',
                 fontWeight: 'bold'
               } : {}}
             >
               <IonIcon icon={barChartOutline} slot="start" />
               <IonLabel>Sensor Data</IonLabel>
-            </IonItem>
-
-            <IonItem 
-              button 
-              onClick={() => navigate('/my-alerts')}  // ← CHANGED
-              color={isActive('/my-alerts') ? 'primary' : undefined}
-              style={isActive('/my-alerts') ? { 
-                borderLeft: '4px solid var(--ion-color-primary)',
-                fontWeight: 'bold'
-              } : {}}
-            >
-              <IonIcon icon={alertCircleOutline} slot="start" />
-              <IonLabel>Alerts</IonLabel>
-              {alertCount > 0 && (
-                <IonBadge color="danger" slot="end">
-                  {alertCount}
-                </IonBadge>
-              )}
             </IonItem>
 
             <IonItem 
