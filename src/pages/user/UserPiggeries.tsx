@@ -42,40 +42,39 @@ export default function UserPiggeries() {
         return;
       }
 
-      // Get client
-      const { data: clients } = await supabase
-        .from('clients')
+      const { data: owners } = await supabase
+        .from('livestock_owners')
         .select('id')
-        .eq('profile_id', userId);
+        .eq('created_by', userId);
 
-      if (!clients || clients.length === 0) {
-        setPiggeries([]);
-        setLoading(false);
-        return;
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+
+      let livestockList: any[] = [];
+      if (ownerId) {
+        const { data, error } = await supabase
+          .from('livestock')
+          .select('*')
+          .eq('owner_id', ownerId);
+
+        if (!error && data) {
+          livestockList = data.map(l => ({
+            id: l.id,
+            piggery_name: l.livestock_name,
+            location: l.address,
+            piggery_serial: l.livestock_serial
+          }));
+        }
       }
 
-      const client = clients[0];
-
-      // Get piggeries
-      const { data, error } = await supabase
-        .from('piggeries')
-        .select('*')
-        .eq('client_id', client.id);
-
-      if (error) {
-        console.error('Error fetching piggeries:', error);
-        return;
-      }
-
-      setPiggeries(data || []);
+      setPiggeries(livestockList);
 
       const counts: Record<number, number> = {};
-      for (const piggery of data || []) {
+      for (const item of livestockList) {
         const { count } = await supabase
           .from('devices')
           .select('id', { count: 'exact', head: true })
-          .eq('piggery_id', piggery.id);
-        counts[piggery.id] = count || 0;
+          .eq('livestock_id', item.id);
+        counts[item.id] = count || 0;
       }
       setDeviceCounts(counts);
     } catch (err) {

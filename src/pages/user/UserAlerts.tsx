@@ -108,57 +108,38 @@ export default function UserAlerts() {
         return;
       }
 
-      // Use a different approach - query clients and check if data exists
-      const { data: clients, error: clientError } = await supabase
-        .from('clients')
+      // Query livestock_owners for user
+      const { data: owners } = await supabase
+        .from('livestock_owners')
         .select('id')
-        .eq('profile_id', userId);
+        .eq('created_by', userId);
 
-      if (clientError) {
-        console.error('Error fetching client:', clientError);
-        setError('Failed to fetch client');
-        setLoading(false);
-        return;
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+
+      let livestockIds: any[] = [];
+      if (ownerId) {
+        const { data: livestock } = await supabase
+          .from('livestock')
+          .select('id')
+          .eq('owner_id', ownerId);
+        livestockIds = livestock?.map(l => l.id) || [];
       }
 
-      // Check if any clients exist
-      if (!clients || clients.length === 0) {
-        setAlerts([]);
-        setLoading(false);
-        return;
-      }
-
-      const client = clients[0];
-
-      const { data: piggeries, error: piggeryError } = await supabase
-        .from('piggeries')
-        .select('id')
-        .eq('client_id', client.id);
-
-      if (piggeryError) {
-        console.error('Error fetching piggeries:', piggeryError);
-        setError('Failed to fetch piggeries');
-        setLoading(false);
-        return;
-      }
-
-      const piggeryIds = piggeries?.map(p => p.id) || [];
-
-      if (piggeryIds.length === 0) {
+      if (livestockIds.length === 0) {
         setAlerts([]);
         setLoading(false);
         return;
       }
 
       const { data, error: alertError } = await supabase
-        .from('alerts')
+        .from('sensor_data')
         .select('*')
-        .in('piggery_id', piggeryIds)
+        .or('status.eq.SEVERE,status.eq.MODERATE')
         .order('created_at', { ascending: false });
 
       if (alertError) {
-        console.error('Error fetching alerts:', alertError);
-        setError('Failed to fetch alerts');
+        console.error('Error fetching sensor alerts:', alertError);
+        setAlerts([]);
         setLoading(false);
         return;
       }

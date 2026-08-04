@@ -46,50 +46,38 @@ export default function UserDevices() {
         return;
       }
 
-      // First get the client
-      const { data: clients } = await supabase
-        .from('clients')
+      const { data: owners } = await supabase
+        .from('livestock_owners')
         .select('id')
-        .eq('profile_id', userId);
+        .eq('created_by', userId);
 
-      if (!clients || clients.length === 0) {
-        setDevices([]);
-        setLoading(false);
-        return;
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+
+      let livestockQuery = supabase
+        .from('livestock')
+        .select('id, livestock_name');
+
+      if (ownerId) {
+        livestockQuery = livestockQuery.eq('owner_id', ownerId);
       }
-
-      const client = clients[0];
-
-      // Get piggeries for this client
-      let piggeryQuery = supabase
-        .from('piggeries')
-        .select('id, piggery_name')
-        .eq('client_id', client.id);
-
       if (piggeryId) {
-        piggeryQuery = piggeryQuery.eq('id', parseInt(piggeryId));
+        livestockQuery = livestockQuery.eq('id', parseInt(piggeryId));
       }
 
-      const { data: piggeries } = await piggeryQuery;
+      const { data: livestockList } = await livestockQuery;
 
-      if (!piggeries || piggeries.length === 0) {
-        setDevices([]);
-        setLoading(false);
-        return;
+      if (piggeryId && livestockList && livestockList.length > 0) {
+        setPiggeryName(livestockList[0].livestock_name);
       }
 
-      // Set piggery name if we have one
-      if (piggeryId && piggeries.length > 0) {
-        setPiggeryName(piggeries[0].piggery_name);
+      const livestockIds = livestockList?.map(l => l.id) || [];
+
+      let deviceQuery = supabase.from('devices').select('*');
+      if (livestockIds.length > 0) {
+        deviceQuery = deviceQuery.in('livestock_id', livestockIds);
       }
 
-      const piggeryIds = piggeries.map(p => p.id);
-
-      // Get devices for these piggeries
-      const { data, error } = await supabase
-        .from('devices')
-        .select('*')
-        .in('piggery_id', piggeryIds);
+      const { data, error } = await deviceQuery;
 
       if (error) {
         console.error('Error fetching devices:', error);

@@ -29,42 +29,20 @@ export function useUserDashboardData() {
         return;
       }
 
-      let clientId: any = null;
-      const { data: clientsData, error: clientErr } = await supabase
-        .from('clients')
+      const { data: owners } = await supabase
+        .from('livestock_owners')
         .select('id')
-        .eq('profile_id', userId);
+        .eq('created_by', userId);
 
-      if (!clientErr && clientsData && clientsData.length > 0) {
-        clientId = clientsData[0].id;
-      } else {
-        const { data: ownerData } = await supabase
-          .from('livestock_owners')
-          .select('id')
-          .eq('created_by', userId);
-        if (ownerData && ownerData.length > 0) {
-          clientId = ownerData[0].id;
-        }
-      }
-
-      if (!clientId) {
-        setLoading(false);
-        return;
-      }
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
 
       let piggeries: any[] = [];
-      const { data: piggeryData } = await supabase
-        .from('piggeries')
-        .select('id, piggery_name, location, piggery_serial')
-        .eq('client_id', clientId);
-
-      if (piggeryData && piggeryData.length > 0) {
-        piggeries = piggeryData;
-      } else {
+      if (ownerId) {
         const { data: livestockData } = await supabase
           .from('livestock')
           .select('id, livestock_name, address, livestock_serial')
-          .eq('owner_id', clientId);
+          .eq('owner_id', ownerId);
+
         if (livestockData) {
           piggeries = livestockData.map(l => ({
             id: l.id,
@@ -75,12 +53,14 @@ export function useUserDashboardData() {
         }
       }
 
-      const piggeryIds = piggeries?.map(p => p.id) || [];
+      const livestockIds = piggeries.map(p => p.id);
 
-      const { data: devices } = await supabase
-        .from('devices')
-        .select('*')
-        .in('piggery_id', piggeryIds);
+      let deviceQuery = supabase.from('devices').select('*');
+      if (livestockIds.length > 0) {
+        deviceQuery = deviceQuery.in('livestock_id', livestockIds);
+      }
+
+      const { data: devices } = await deviceQuery;
 
       const deviceUids = devices?.map(d => d.device_uid) || [];
       let sensorData: any[] = [];
@@ -92,17 +72,19 @@ export function useUserDashboardData() {
           .order('created_at', { ascending: false })
           .limit(10);
         sensorData = data || [];
+      } else {
+        const { data } = await supabase
+          .from('sensor_data')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        sensorData = data || [];
       }
 
-      let alertCount = 0;
-      if (piggeryIds.length > 0) {
-        const { count } = await supabase
-          .from('alerts')
-          .select('id', { count: 'exact', head: true })
-          .in('piggery_id', piggeryIds)
-          .eq('is_read', false);
-        alertCount = count || 0;
-      }
+      const { count: alertCount } = await supabase
+        .from('sensor_data')
+        .select('id', { count: 'exact', head: true })
+        .or('status.eq.SEVERE,status.eq.MODERATE');
 
       const { count: notificationCount } = await supabase
         .from('notifications')

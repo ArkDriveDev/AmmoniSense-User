@@ -76,57 +76,26 @@ export default function UserLayout({ children }: any) {
 
       if (!userId) return;
 
-      let clientId: any = null;
-      const { data: clientsData, error: clientErr } = await supabase
-        .from('clients')
+      const { data: owners } = await supabase
+        .from('livestock_owners')
         .select('id')
-        .eq('profile_id', userId);
+        .eq('created_by', userId);
 
-      if (!clientErr && clientsData && clientsData.length > 0) {
-        clientId = clientsData[0].id;
-      } else {
-        const { data: ownerData } = await supabase
-          .from('livestock_owners')
-          .select('id')
-          .eq('created_by', userId);
-        if (ownerData && ownerData.length > 0) {
-          clientId = ownerData[0].id;
-        }
-      }
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
 
-      if (!clientId) {
-        setAlertCount(0);
-        return;
-      }
-
-      let piggeryIds: any[] = [];
-      const { data: piggeries } = await supabase
-        .from('piggeries')
-        .select('id')
-        .eq('client_id', clientId);
-
-      if (piggeries && piggeries.length > 0) {
-        piggeryIds = piggeries.map(p => p.id);
-      } else {
+      let livestockIds: any[] = [];
+      if (ownerId) {
         const { data: livestock } = await supabase
           .from('livestock')
           .select('id')
-          .eq('owner_id', clientId);
-        if (livestock) {
-          piggeryIds = livestock.map(l => l.id);
-        }
-      }
-
-      if (piggeryIds.length === 0) {
-        setAlertCount(0);
-        return;
+          .eq('owner_id', ownerId);
+        livestockIds = livestock?.map(l => l.id) || [];
       }
 
       const { count } = await supabase
-        .from('alerts')
+        .from('sensor_data')
         .select('id', { count: 'exact', head: true })
-        .in('piggery_id', piggeryIds)
-        .eq('is_read', false);
+        .or('status.eq.SEVERE,status.eq.MODERATE');
 
       setAlertCount(count || 0);
     } catch (err) {
