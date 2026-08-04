@@ -29,21 +29,51 @@ export function useUserDashboardData() {
         return;
       }
 
-      const { data: client } = await supabase
+      let clientId: any = null;
+      const { data: clientsData, error: clientErr } = await supabase
         .from('clients')
         .select('id')
-        .eq('profile_id', userId)
-        .single();
+        .eq('profile_id', userId);
 
-      if (!client) {
+      if (!clientErr && clientsData && clientsData.length > 0) {
+        clientId = clientsData[0].id;
+      } else {
+        const { data: ownerData } = await supabase
+          .from('livestock_owners')
+          .select('id')
+          .eq('created_by', userId);
+        if (ownerData && ownerData.length > 0) {
+          clientId = ownerData[0].id;
+        }
+      }
+
+      if (!clientId) {
         setLoading(false);
         return;
       }
 
-      const { data: piggeries } = await supabase
+      let piggeries: any[] = [];
+      const { data: piggeryData } = await supabase
         .from('piggeries')
         .select('id, piggery_name, location, piggery_serial')
-        .eq('client_id', client.id);
+        .eq('client_id', clientId);
+
+      if (piggeryData && piggeryData.length > 0) {
+        piggeries = piggeryData;
+      } else {
+        const { data: livestockData } = await supabase
+          .from('livestock')
+          .select('id, livestock_name, address, livestock_serial')
+          .eq('owner_id', clientId);
+        if (livestockData) {
+          piggeries = livestockData.map(l => ({
+            id: l.id,
+            piggery_name: l.livestock_name,
+            location: l.address,
+            piggery_serial: l.livestock_serial
+          }));
+        }
+      }
 
       const piggeryIds = piggeries?.map(p => p.id) || [];
 

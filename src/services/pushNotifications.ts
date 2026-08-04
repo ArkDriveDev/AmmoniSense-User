@@ -1,9 +1,10 @@
+import { Capacitor } from '@capacitor/core';
 import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
 import { supabase } from './supabase';
 
 export const initializePushNotifications = async () => {
-  if (!PushNotifications) {
-    console.log('Push notifications not available');
+  if (!Capacitor.isNativePlatform()) {
+    console.log('Push notifications are only available on native platforms (iOS/Android)');
     return;
   }
 

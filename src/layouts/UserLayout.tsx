@@ -76,23 +76,46 @@ export default function UserLayout({ children }: any) {
 
       if (!userId) return;
 
-      const { data: client } = await supabase
+      let clientId: any = null;
+      const { data: clientsData, error: clientErr } = await supabase
         .from('clients')
         .select('id')
-        .eq('profile_id', userId)
-        .single();
+        .eq('profile_id', userId);
 
-      if (!client) {
+      if (!clientErr && clientsData && clientsData.length > 0) {
+        clientId = clientsData[0].id;
+      } else {
+        const { data: ownerData } = await supabase
+          .from('livestock_owners')
+          .select('id')
+          .eq('created_by', userId);
+        if (ownerData && ownerData.length > 0) {
+          clientId = ownerData[0].id;
+        }
+      }
+
+      if (!clientId) {
         setAlertCount(0);
         return;
       }
 
+      let piggeryIds: any[] = [];
       const { data: piggeries } = await supabase
         .from('piggeries')
         .select('id')
-        .eq('client_id', client.id);
+        .eq('client_id', clientId);
 
-      const piggeryIds = piggeries?.map(p => p.id) || [];
+      if (piggeries && piggeries.length > 0) {
+        piggeryIds = piggeries.map(p => p.id);
+      } else {
+        const { data: livestock } = await supabase
+          .from('livestock')
+          .select('id')
+          .eq('owner_id', clientId);
+        if (livestock) {
+          piggeryIds = livestock.map(l => l.id);
+        }
+      }
 
       if (piggeryIds.length === 0) {
         setAlertCount(0);
