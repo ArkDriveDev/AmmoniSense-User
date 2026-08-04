@@ -27,15 +27,15 @@ export default function UserDevices() {
   const location = useLocation();
   const [devices, setDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [piggeryName, setPiggeryName] = useState('');
+  const [siteName, setSiteName] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const piggeryId = params.get('piggery');
-    fetchDevices(piggeryId);
+    const siteId = params.get('site') || params.get('piggery');
+    fetchDevices(siteId);
   }, [location]);
 
-  const fetchDevices = async (piggeryId: string | null) => {
+  const fetchDevices = async (siteId: string | null) => {
     setLoading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -60,14 +60,14 @@ export default function UserDevices() {
       if (ownerId) {
         livestockQuery = livestockQuery.eq('owner_id', ownerId);
       }
-      if (piggeryId) {
-        livestockQuery = livestockQuery.eq('id', parseInt(piggeryId));
+      if (siteId) {
+        livestockQuery = livestockQuery.eq('id', parseInt(siteId));
       }
 
       const { data: livestockList } = await livestockQuery;
 
-      if (piggeryId && livestockList && livestockList.length > 0) {
-        setPiggeryName(livestockList[0].livestock_name);
+      if (siteId && livestockList && livestockList.length > 0) {
+        setSiteName(livestockList[0].livestock_name);
       }
 
       const livestockIds = livestockList?.map(l => l.id) || [];
@@ -94,7 +94,7 @@ export default function UserDevices() {
 
   const handleRefresh = async (event: CustomEvent) => {
     const params = new URLSearchParams(location.search);
-    await fetchDevices(params.get('piggery'));
+    await fetchDevices(params.get('site') || params.get('piggery'));
     event.detail.complete();
   };
 
@@ -111,11 +111,11 @@ export default function UserDevices() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{piggeryName ? `${piggeryName} - Devices` : 'Devices'}</IonTitle>
+          <IonTitle>{siteName ? `${siteName} - Devices` : 'Devices'}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => {
               const params = new URLSearchParams(location.search);
-              fetchDevices(params.get('piggery'));
+              fetchDevices(params.get('site') || params.get('piggery'));
             }}>
               <IonIcon icon={refreshOutline} />
             </IonButton>

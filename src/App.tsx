@@ -1,8 +1,5 @@
 import { IonApp, setupIonicReact } from '@ionic/react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { useEffect } from 'react';
-import { initializePushNotifications } from './services/pushNotifications';
-import { supabase } from './services/supabase';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -21,23 +18,6 @@ import AppRouter from './AppRouter';
 setupIonicReact();
 
 function App() {
-  useEffect(() => {
-    initializePushNotifications();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          const { removeDeviceToken } = await import('./services/pushNotifications');
-          removeDeviceToken();
-        }
-      }
-    );
-
-    return () => {
-      authListener?.subscription?.unsubscribe();
-    };
-  }, []);
-
   return (
     <IonApp>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

@@ -21,17 +21,17 @@ import { supabase } from '../../services/supabase';
 import { refreshOutline, locationOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 
-export default function UserPiggeries() {
+export default function UserSites() {
   const navigate = useNavigate();
-  const [piggeries, setPiggeries] = useState<any[]>([]);
+  const [sites, setSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deviceCounts, setDeviceCounts] = useState<Record<number, number>>({});
 
   useEffect(() => {
-    fetchPiggeries();
+    fetchSites();
   }, []);
 
-  const fetchPiggeries = async () => {
+  const fetchSites = async () => {
     setLoading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -59,14 +59,14 @@ export default function UserPiggeries() {
         if (!error && data) {
           livestockList = data.map(l => ({
             id: l.id,
-            piggery_name: l.livestock_name,
+            site_name: l.livestock_name,
             location: l.address,
-            piggery_serial: l.livestock_serial
+            site_serial: l.livestock_serial
           }));
         }
       }
 
-      setPiggeries(livestockList);
+      setSites(livestockList);
 
       const counts: Record<number, number> = {};
       for (const item of livestockList) {
@@ -85,7 +85,7 @@ export default function UserPiggeries() {
   };
 
   const handleRefresh = async (event: CustomEvent) => {
-    await fetchPiggeries();
+    await fetchSites();
     event.detail.complete();
   };
 
@@ -95,7 +95,7 @@ export default function UserPiggeries() {
         <IonToolbar>
           <IonTitle>Monitoring Sites</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={fetchPiggeries}>
+            <IonButton onClick={fetchSites}>
               <IonIcon icon={refreshOutline} />
             </IonButton>
           </IonButtons>
@@ -112,7 +112,7 @@ export default function UserPiggeries() {
             <IonSpinner />
             <p>Loading monitoring sites...</p>
           </div>
-        ) : piggeries.length === 0 ? (
+        ) : sites.length === 0 ? (
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
             <p>No monitoring sites assigned yet.</p>
             <p style={{ fontSize: '14px', color: 'gray' }}>
@@ -121,18 +121,18 @@ export default function UserPiggeries() {
           </div>
         ) : (
           <IonList>
-            {piggeries.map((p) => (
-              <IonItem key={p.id} detail button onClick={() => navigate(`/devices?piggery=${p.id}`)}>
+            {sites.map((s) => (
+              <IonItem key={s.id} detail button onClick={() => navigate(`/devices?site=${s.id}`)}>
                 <IonLabel>
-                  <h2>{p.piggery_name}</h2>
+                  <h2>{s.site_name}</h2>
                   <p>
                     <IonIcon icon={locationOutline} style={{ marginRight: '4px' }} />
-                    {p.location || 'No location set'}
+                    {s.location || 'No location set'}
                   </p>
-                  <p>Serial: {p.piggery_serial}</p>
+                  <p>Serial: {s.site_serial}</p>
                 </IonLabel>
                 <IonBadge color="primary">
-                  {deviceCounts[p.id] || 0} Devices
+                  {deviceCounts[s.id] || 0} Devices
                 </IonBadge>
               </IonItem>
             ))}

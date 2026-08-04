@@ -4,10 +4,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 import UserDashboard from './pages/user/UserDashboard';
-import UserPiggeries from './pages/user/UserPiggeries';
+import UserSites from './pages/user/UserSites';
 import UserDevices from './pages/user/UserDevices';
 import UserSensorData from './pages/user/UserSensorData';
-import UserAlerts from './pages/user/UserAlerts';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './layouts/UserLayout';
@@ -36,7 +35,7 @@ export default function AppRouter() {
         element={
           <ProtectedRoute>
             <UserLayout>
-              <UserPiggeries />
+              <UserSites />
             </UserLayout>
           </ProtectedRoute>
         }
@@ -64,17 +63,8 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       />
-
-      <Route
-        path="/my-alerts"
-        element={
-          <ProtectedRoute>
-            <UserLayout>
-              <UserAlerts />
-            </UserLayout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/sensor-data" element={<Navigate to="/my-sensor-data" replace />} />
+      <Route path="/my-alerts" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
