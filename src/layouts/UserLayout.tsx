@@ -127,7 +127,7 @@ export default function UserLayout({ children }: any) {
         <IonHeader>
           <IonToolbar>
             <IonTitle style={{ fontSize: '18px', fontWeight: 'bold' }}>
-              Pig Farm Monitor
+              Ammonisense Monitor
             </IonTitle>
             <IonButtons slot="end">
               <IonMenuButton autoHide={false}>
@@ -258,7 +258,7 @@ export default function UserLayout({ children }: any) {
                 <IonIcon icon={menuOutline} />
               </IonMenuButton>
             </IonButtons>
-            <IonTitle>Pig Farm Monitor</IonTitle>
+            <IonTitle>Ammonisense Monitor</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent>

@@ -79,7 +79,7 @@ export default function Login() {
                       Ammonisense
                     </IonTitle>
                     <IonText color="medium">
-                      <p>Sign in to monitor your piggery</p>
+                      <p>Environmental Monitoring System</p>
                     </IonText>
                   </div>
 
