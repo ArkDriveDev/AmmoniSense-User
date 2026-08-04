@@ -93,7 +93,7 @@ export default function UserPiggeries() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>My Piggeries</IonTitle>
+          <IonTitle>Monitoring Sites</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={fetchPiggeries}>
               <IonIcon icon={refreshOutline} />
@@ -110,19 +110,19 @@ export default function UserPiggeries() {
         {loading ? (
           <div style={{ textAlign: 'center', marginTop: '20px' }}>
             <IonSpinner />
-            <p>Loading piggeries...</p>
+            <p>Loading monitoring sites...</p>
           </div>
         ) : piggeries.length === 0 ? (
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <p>You don't have any piggeries yet.</p>
+            <p>No monitoring sites assigned yet.</p>
             <p style={{ fontSize: '14px', color: 'gray' }}>
-              Contact your admin to assign piggeries to your account.
+              Contact MENRO Admin to assign monitoring sites to your account.
             </p>
           </div>
         ) : (
           <IonList>
             {piggeries.map((p) => (
-              <IonItem key={p.id} detail button onClick={() => navigate(`/my-devices?piggery=${p.id}`)}>
+              <IonItem key={p.id} detail button onClick={() => navigate(`/devices?piggery=${p.id}`)}>
                 <IonLabel>
                   <h2>{p.piggery_name}</h2>
                   <p>

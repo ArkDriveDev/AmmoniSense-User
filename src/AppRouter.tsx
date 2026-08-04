@@ -30,8 +30,9 @@ export default function AppRouter() {
         }
       />
 
+      <Route path="/my-piggeries" element={<Navigate to="/monitoring-sites" replace />} />
       <Route
-        path="/my-piggeries"
+        path="/monitoring-sites"
         element={
           <ProtectedRoute>
             <UserLayout>
@@ -41,8 +42,9 @@ export default function AppRouter() {
         }
       />
 
+      <Route path="/my-devices" element={<Navigate to="/devices" replace />} />
       <Route
-        path="/my-devices"
+        path="/devices"
         element={
           <ProtectedRoute>
             <UserLayout>

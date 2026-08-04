@@ -72,7 +72,7 @@ export default function UserDashboard() {
           <IonRow>
             <IonCol size="6" size-md="3">
               <StatsCard
-                title="Piggeries"
+                title="Monitoring Sites"
                 value={stats.piggeryCount}
                 icon="business-outline"
                 color="primary"

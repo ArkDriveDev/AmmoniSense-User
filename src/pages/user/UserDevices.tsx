@@ -111,7 +111,7 @@ export default function UserDevices() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{piggeryName ? `${piggeryName} - Devices` : 'My Devices'}</IonTitle>
+          <IonTitle>{piggeryName ? `${piggeryName} - Devices` : 'Devices'}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => {
               const params = new URLSearchParams(location.search);

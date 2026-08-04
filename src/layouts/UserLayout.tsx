@@ -174,28 +174,28 @@ export default function UserLayout({ children }: any) {
 
             <IonItem 
               button 
-              onClick={() => navigate('/my-piggeries')}  // ← CHANGED
-              color={isActive('/my-piggeries') ? 'primary' : undefined}
-              style={isActive('/my-piggeries') ? { 
+              onClick={() => navigate('/monitoring-sites')}
+              color={isActive('/monitoring-sites') || isActive('/my-piggeries') ? 'primary' : undefined}
+              style={isActive('/monitoring-sites') || isActive('/my-piggeries') ? { 
                 borderLeft: '4px solid var(--ion-color-primary)',
                 fontWeight: 'bold'
               } : {}}
             >
               <IonIcon icon={businessOutline} slot="start" />
-              <IonLabel>My Piggeries</IonLabel>
+              <IonLabel>Monitoring Sites</IonLabel>
             </IonItem>
 
             <IonItem 
               button 
-              onClick={() => navigate('/my-devices')}  // ← CHANGED
-              color={isActive('/my-devices') ? 'primary' : undefined}
-              style={isActive('/my-devices') ? { 
+              onClick={() => navigate('/devices')}
+              color={isActive('/devices') || isActive('/my-devices') ? 'primary' : undefined}
+              style={isActive('/devices') || isActive('/my-devices') ? { 
                 borderLeft: '4px solid var(--ion-color-primary)',
                 fontWeight: 'bold'
               } : {}}
             >
               <IonIcon icon={hardwareChipOutline} slot="start" />
-              <IonLabel>My Devices</IonLabel>
+              <IonLabel>Devices</IonLabel>
             </IonItem>
 
             <IonItem 
