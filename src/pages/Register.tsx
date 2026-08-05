@@ -132,10 +132,10 @@ const Register: React.FC = () => {
       }
 
       // ============================================
-      // STEP 3: Upsert livestock_owner (INSERT OR UPDATE)
+      // STEP 3: Upsert site_owner (INSERT OR UPDATE)
       // ============================================
       const { error: ownerError } = await supabase
-        .from('livestock_owners')
+        .from('site_owners')
         .upsert({
           owner_name: form.full_name,
           email: form.email,
@@ -146,7 +146,7 @@ const Register: React.FC = () => {
         });
 
       if (ownerError) {
-        console.warn('livestock_owners update notice:', ownerError.message);
+        console.warn('site_owners update notice:', ownerError.message);
       }
 
       setShowSuccessModal(true);

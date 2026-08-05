@@ -47,34 +47,34 @@ export default function UserDevices() {
       }
 
       const { data: owners } = await supabase
-        .from('livestock_owners')
+        .from('site_owners')
         .select('id')
         .eq('created_by', userId);
 
       const ownerId = owners && owners.length > 0 ? owners[0].id : null;
 
-      let livestockQuery = supabase
-        .from('livestock')
-        .select('id, livestock_name');
+      let siteQuery = supabase
+        .from('monitoring_sites')
+        .select('id, site_name');
 
       if (ownerId) {
-        livestockQuery = livestockQuery.eq('owner_id', ownerId);
+        siteQuery = siteQuery.eq('owner_id', ownerId);
       }
       if (siteId) {
-        livestockQuery = livestockQuery.eq('id', parseInt(siteId));
+        siteQuery = siteQuery.eq('id', parseInt(siteId));
       }
 
-      const { data: livestockList } = await livestockQuery;
+      const { data: siteList } = await siteQuery;
 
-      if (siteId && livestockList && livestockList.length > 0) {
-        setSiteName(livestockList[0].livestock_name);
+      if (siteId && siteList && siteList.length > 0) {
+        setSiteName(siteList[0].site_name);
       }
 
-      const livestockIds = livestockList?.map(l => l.id) || [];
+      const siteIds = siteList?.map(s => s.id) || [];
 
       let deviceQuery = supabase.from('devices').select('*');
-      if (livestockIds.length > 0) {
-        deviceQuery = deviceQuery.in('livestock_id', livestockIds);
+      if (siteIds.length > 0) {
+        deviceQuery = deviceQuery.in('site_id', siteIds);
       }
 
       const { data, error } = await deviceQuery;

@@ -3,7 +3,7 @@ import { supabase } from '../services/supabase';
 
 export function useUserDashboardData() {
   const [stats, setStats] = useState({
-    piggeryCount: 0,
+    siteCount: 0,
     deviceCount: 0,
     activeDevices: 0,
     alertCount: 0,
@@ -30,34 +30,34 @@ export function useUserDashboardData() {
       }
 
       const { data: owners } = await supabase
-        .from('livestock_owners')
+        .from('site_owners')
         .select('id')
         .eq('created_by', userId);
 
       const ownerId = owners && owners.length > 0 ? owners[0].id : null;
 
-      let piggeries: any[] = [];
+      let sites: any[] = [];
       if (ownerId) {
-        const { data: livestockData } = await supabase
-          .from('livestock')
-          .select('id, livestock_name, address, livestock_serial')
+        const { data: sitesData } = await supabase
+          .from('monitoring_sites')
+          .select('id, site_name, address, site_code')
           .eq('owner_id', ownerId);
 
-        if (livestockData) {
-          piggeries = livestockData.map(l => ({
-            id: l.id,
-            piggery_name: l.livestock_name,
-            location: l.address,
-            piggery_serial: l.livestock_serial
+        if (sitesData) {
+          sites = sitesData.map(s => ({
+            id: s.id,
+            site_name: s.site_name,
+            location: s.address,
+            site_code: s.site_code
           }));
         }
       }
 
-      const livestockIds = piggeries.map(p => p.id);
+      const siteIds = sites.map(s => s.id);
 
       let deviceQuery = supabase.from('devices').select('*');
-      if (livestockIds.length > 0) {
-        deviceQuery = deviceQuery.in('livestock_id', livestockIds);
+      if (siteIds.length > 0) {
+        deviceQuery = deviceQuery.in('site_id', siteIds);
       }
 
       const { data: devices } = await deviceQuery;
@@ -85,7 +85,7 @@ export function useUserDashboardData() {
       const avgAmmonia = sensorData.reduce((sum, d) => sum + (d.ammonia || 0), 0) / (sensorData.length || 1);
 
       setStats({
-        piggeryCount: piggeries?.length || 0,
+        siteCount: sites?.length || 0,
         deviceCount: devices?.length || 0,
         activeDevices: activeDevices.length,
         alertCount: 0,

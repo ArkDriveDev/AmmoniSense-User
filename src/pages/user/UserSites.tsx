@@ -18,8 +18,9 @@ import {
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { refreshOutline, locationOutline } from 'ionicons/icons';
+import { refreshOutline, locationOutline, addOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
+import CreateSiteModal from '../../components/sites/CreateSiteModal';
 
 export default function UserSites() {
   const navigate = useNavigate();
@@ -43,37 +44,37 @@ export default function UserSites() {
       }
 
       const { data: owners } = await supabase
-        .from('livestock_owners')
+        .from('site_owners')
         .select('id')
         .eq('created_by', userId);
 
       const ownerId = owners && owners.length > 0 ? owners[0].id : null;
 
-      let livestockList: any[] = [];
+      let sitesList: any[] = [];
       if (ownerId) {
         const { data, error } = await supabase
-          .from('livestock')
+          .from('monitoring_sites')
           .select('*')
           .eq('owner_id', ownerId);
 
         if (!error && data) {
-          livestockList = data.map(l => ({
+          sitesList = data.map(l => ({
             id: l.id,
-            site_name: l.livestock_name,
+            site_name: l.site_name,
             location: l.address,
-            site_serial: l.livestock_serial
+            site_code: l.site_code
           }));
         }
       }
 
-      setSites(livestockList);
+      setSites(sitesList);
 
       const counts: Record<number, number> = {};
-      for (const item of livestockList) {
+      for (const item of sitesList) {
         const { count } = await supabase
           .from('devices')
           .select('id', { count: 'exact', head: true })
-          .eq('livestock_id', item.id);
+          .eq('site_id', item.id);
         counts[item.id] = count || 0;
       }
       setDeviceCounts(counts);
@@ -89,12 +90,18 @@ export default function UserSites() {
     event.detail.complete();
   };
 
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonTitle>Monitoring Sites</IonTitle>
           <IonButtons slot="end">
+            <IonButton color="primary" onClick={() => setShowCreateModal(true)}>
+              <IonIcon icon={addOutline} slot="start" />
+              New Site
+            </IonButton>
             <IonButton onClick={fetchSites}>
               <IonIcon icon={refreshOutline} />
             </IonButton>
@@ -129,7 +136,7 @@ export default function UserSites() {
                     <IonIcon icon={locationOutline} style={{ marginRight: '4px' }} />
                     {s.location || 'No location set'}
                   </p>
-                  <p>Serial: {s.site_serial}</p>
+                  <p>Code: {s.site_code}</p>
                 </IonLabel>
                 <IonBadge color="primary">
                   {deviceCounts[s.id] || 0} Devices
@@ -138,6 +145,12 @@ export default function UserSites() {
             ))}
           </IonList>
         )}
+
+        <CreateSiteModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSiteCreated={() => fetchSites()}
+        />
       </IonContent>
     </IonPage>
   );

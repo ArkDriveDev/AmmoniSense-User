@@ -69,7 +69,7 @@ export default function UserDashboard() {
             <IonCol size="6" size-md="4">
               <StatsCard
                 title="Monitoring Sites"
-                value={stats.piggeryCount}
+                value={stats.siteCount}
                 icon="business-outline"
                 color="primary"
               />
