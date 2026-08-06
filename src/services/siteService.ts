@@ -1,0 +1,161 @@
+import { supabase } from './supabase';
+import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
+
+/**
+ * Register Monitoring Site with photo & GPS in an orchestrated single transaction sequence with rollback cleanup on error.
+ */
+export const registerSiteWithPhoto = async (
+  payload: CreateSitePayload
+): Promise<SiteRegistrationResult> => {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) throw new Error('User authentication required');
+
+  let createdOwner: any = null;
+  let createdSite: any = null;
+  let createdLocation: any = null;
+  let photoRecord: any = null;
+
+  try {
+    // 1. Get or upsert site_owner by email
+    const ownerEmail = payload.owner_email || user.email || `inspector_${user.id.slice(0, 6)}@menro.gov.ph`;
+    const ownerName = payload.owner_name || user.user_metadata?.full_name || user.email || 'Inspector Owner';
+
+    const { data: existingOwners } = await supabase
+      .from('site_owners')
+      .select('*')
+      .eq('email', ownerEmail);
+
+    if (existingOwners && existingOwners.length > 0) {
+      createdOwner = existingOwners[0];
+    } else {
+      const { data: newOwner, error: ownerErr } = await supabase
+        .from('site_owners')
+        .insert([
+          {
+            owner_name: ownerName,
+            email: ownerEmail,
+            created_by: user.id,
+          },
+        ])
+        .select('*')
+        .single();
+
+      if (ownerErr || !newOwner) {
+        throw new Error('Failed to create site owner record: ' + (ownerErr?.message || 'Error'));
+      }
+      createdOwner = newOwner;
+    }
+
+    // 2. Insert into monitoring_sites
+    const sitePayload = {
+      site_code: payload.site_code,
+      site_name: payload.site_name,
+      site_type: payload.site_type,
+      owner_id: createdOwner.id,
+      current_latitude: payload.latitude,
+      current_longitude: payload.longitude,
+      current_grid_cell_id: payload.grid_cell_id || 'A1',
+      address: payload.address || payload.site_name,
+      area_size_hectares: payload.area_size_hectares || 1.0,
+      notes: payload.notes || null,
+      created_by: user.id,
+      updated_by: user.id,
+      is_active: true,
+    };
+
+    const { data: newSite, error: siteErr } = await supabase
+      .from('monitoring_sites')
+      .insert([sitePayload])
+      .select('*')
+      .single();
+
+    if (siteErr || !newSite) {
+      throw new Error('Failed to register monitoring site: ' + (siteErr?.message || 'Error'));
+    }
+    createdSite = newSite;
+
+    // 3. Insert initial location record in site_locations
+    const locationPayload = {
+      site_id: createdSite.id,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      grid_cell_id: payload.grid_cell_id || 'A1',
+      address: payload.address || payload.site_name,
+      recorded_by: user.id,
+      notes: `Initial registration location recorded via ${payload.gps_source || 'GPS'}.`,
+    };
+
+    const { data: newLoc, error: locErr } = await supabase
+      .from('site_locations')
+      .insert([locationPayload])
+      .select('*')
+      .single();
+
+    if (locErr) {
+      console.warn('Notice writing to site_locations:', locErr.message);
+    }
+    createdLocation = newLoc || locationPayload;
+
+    // 4. Link & update inspection_photo if provided
+    if (payload.photo_record_id || payload.photo_url) {
+      if (payload.photo_record_id) {
+        const { data: updatedPhoto } = await supabase
+          .from('inspection_photos')
+          .update({
+            site_id: createdSite.id,
+            is_site_photo: true,
+            is_used: true,
+          })
+          .eq('id', payload.photo_record_id)
+          .select('*')
+          .single();
+        photoRecord = updatedPhoto;
+      } else if (payload.photo_url) {
+        const { data: newPhoto } = await supabase
+          .from('inspection_photos')
+          .insert([
+            {
+              photo_url: payload.photo_url,
+              latitude: payload.latitude,
+              longitude: payload.longitude,
+              site_id: createdSite.id,
+              is_site_photo: true,
+              is_used: true,
+              uploaded_by: user.id,
+            },
+          ])
+          .select('*')
+          .single();
+        photoRecord = newPhoto;
+      }
+
+      // Update monitoring_sites with site_photo_id
+      if (photoRecord?.id) {
+        await supabase
+          .from('monitoring_sites')
+          .update({ site_photo_id: photoRecord.id })
+          .eq('id', createdSite.id);
+
+        createdSite.site_photo_id = photoRecord.id;
+      }
+    }
+
+    return {
+      owner: createdOwner,
+      site: createdSite,
+      location: createdLocation,
+      photo: photoRecord,
+    };
+  } catch (error: any) {
+    console.error('Transaction failure during site registration, initiating cleanup rollback:', error);
+
+    // Rollback cleanup on failure
+    if (createdSite?.id) {
+      await supabase.from('site_locations').delete().eq('site_id', createdSite.id);
+      await supabase.from('monitoring_sites').delete().eq('id', createdSite.id);
+    }
+
+    throw error;
+  }
+};

@@ -2,6 +2,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import piexif from 'piexifjs';
 import { supabase } from '../services/supabase';
+import { GpsSource } from '../types/site';
 
 export interface InspectionPhotoRecord {
   id: number;
@@ -11,6 +12,7 @@ export interface InspectionPhotoRecord {
   grid_cell_id: string | null;
   site_id: number | null;
   is_used: boolean;
+  is_site_photo?: boolean;
   sensor_data_id: number | null;
   uploaded_by: string | null;
   uploaded_at: string;
@@ -348,3 +350,159 @@ export const step4_markPhotoAsUsed = async (
     console.warn('Error linking photo to sensor_data:', err);
   }
 };
+
+/**
+ * Extract GPS Coordinates (Latitude, Longitude) from JPEG DataURL EXIF header
+ */
+export const extractGpsFromExif = (dataUrl: string): { latitude: number; longitude: number } | null => {
+  try {
+    const exifObj = piexif.load(dataUrl);
+    const gps = exifObj?.GPS;
+    if (!gps) return null;
+
+    const latRaw = gps[piexif.GPSIFD.GPSLatitude];
+    const latRef = gps[piexif.GPSIFD.GPSLatitudeRef];
+    const lngRaw = gps[piexif.GPSIFD.GPSLongitude];
+    const lngRef = gps[piexif.GPSIFD.GPSLongitudeRef];
+
+    if (!latRaw || !lngRaw || !latRef || !lngRef) return null;
+
+    const convertRationalToDeg = (rational: [[number, number], [number, number], [number, number]]): number => {
+      const deg = rational[0][0] / (rational[0][1] || 1);
+      const min = rational[1][0] / (rational[1][1] || 1);
+      const sec = rational[2][0] / (rational[2][1] || 1);
+      return deg + min / 60 + sec / 3600;
+    };
+
+    let latitude = convertRationalToDeg(latRaw);
+    if (latRef === 'S') latitude = -latitude;
+
+    let longitude = convertRationalToDeg(lngRaw);
+    if (lngRef === 'W') longitude = -longitude;
+
+    if (isNaN(latitude) || isNaN(longitude) || (latitude === 0 && longitude === 0)) {
+      return null;
+    }
+
+    return { latitude, longitude };
+  } catch (err) {
+    console.warn('Could not parse EXIF GPS from photo data URL:', err);
+    return null;
+  }
+};
+
+export interface CaptureSitePhotoResult {
+  photoRecord: InspectionPhotoRecord;
+  dataUrl: string;
+  latitude: number;
+  longitude: number;
+  gpsSource: GpsSource;
+}
+
+/**
+ * Capture Site Photo via Capacitor Camera, extract EXIF GPS or fallback to Device GPS, stamp, upload & record
+ */
+export const captureSitePhoto = async (
+  siteName: string = 'New Monitoring Site'
+): Promise<CaptureSitePhotoResult> => {
+  // 1. Capture photo via Capacitor Camera
+  const photo = await Camera.getPhoto({
+    quality: 90,
+    allowEditing: false,
+    resultType: CameraResultType.DataUrl,
+    source: CameraSource.Camera,
+  });
+
+  if (!photo.dataUrl) {
+    throw new Error('Failed to capture photo from camera');
+  }
+
+  // 2. Try EXIF GPS extraction from captured photo
+  let gpsSource: GpsSource = 'photo_exif';
+  let extracted = extractGpsFromExif(photo.dataUrl);
+  let latitude = extracted?.latitude;
+  let longitude = extracted?.longitude;
+
+  // 3. Fallback to Device GPS if EXIF GPS is missing
+  if (latitude === undefined || longitude === undefined) {
+    gpsSource = 'device_gps';
+    try {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+      });
+      latitude = position.coords.latitude;
+      longitude = position.coords.longitude;
+    } catch (geoErr) {
+      console.warn('Device GPS fallback failed, using default manual coordinates:', geoErr);
+      gpsSource = 'manual';
+      latitude = 14.5995;
+      longitude = 120.9842;
+    }
+  }
+
+  const stampOptions: StampOptions = {
+    latitude,
+    longitude,
+    siteName,
+  };
+
+  // 4. Stamp & Embed EXIF
+  const stampedDataUrl = await addStampToImage(photo.dataUrl, stampOptions);
+  const finalDataUrl = embedExifData(stampedDataUrl, stampOptions);
+
+  // 5. Upload photo to Supabase Storage
+  const blob = dataURLtoBlob(finalDataUrl);
+  const publicUrl = await uploadPhotoToSupabase(blob, 'site_registration');
+  const photoUrlToSave = publicUrl || finalDataUrl;
+
+  // 6. Insert into inspection_photos table with is_site_photo = true
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id || null;
+
+  const { data: inserted, error: dbError } = await supabase
+    .from('inspection_photos')
+    .insert([
+      {
+        photo_url: photoUrlToSave,
+        latitude,
+        longitude,
+        grid_cell_id: null,
+        site_id: null,
+        is_used: true,
+        is_site_photo: true,
+        uploaded_by: userId,
+      },
+    ])
+    .select('*')
+    .single();
+
+  const photoRecord: InspectionPhotoRecord = dbError || !inserted
+    ? {
+        id: Date.now(),
+        photo_url: photoUrlToSave,
+        latitude,
+        longitude,
+        grid_cell_id: null,
+        site_id: null,
+        is_used: true,
+        is_site_photo: true,
+        sensor_data_id: null,
+        uploaded_by: userId,
+        uploaded_at: new Date().toISOString(),
+        dataUrl: finalDataUrl,
+      }
+    : {
+        ...inserted,
+        dataUrl: finalDataUrl,
+      };
+
+  return {
+    photoRecord,
+    dataUrl: finalDataUrl,
+    latitude,
+    longitude,
+    gpsSource,
+  };
+};
+

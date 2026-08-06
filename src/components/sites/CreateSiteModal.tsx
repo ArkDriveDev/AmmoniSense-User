@@ -18,11 +18,24 @@ import {
   IonIcon,
   IonRow,
   IonCol,
-  IonGrid
+  IonGrid,
+  IonCard,
+  IonCardContent,
+  IonBadge
 } from '@ionic/react';
-import { locateOutline, addCircleOutline } from 'ionicons/icons';
+import {
+  locateOutline,
+  addCircleOutline,
+  cameraOutline,
+  imageOutline,
+  checkmarkCircleOutline,
+  warningOutline,
+  navigateOutline
+} from 'ionicons/icons';
 import { Geolocation } from '@capacitor/geolocation';
-import { supabase } from '../../services/supabase';
+import { captureSitePhoto, InspectionPhotoRecord } from '../../utils/photoUtils';
+import { registerSiteWithPhoto } from '../../services/siteService';
+import { GpsSource } from '../../types/site';
 
 export interface CreateSiteModalProps {
   isOpen: boolean;
@@ -33,6 +46,11 @@ export interface CreateSiteModalProps {
 export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClose, onSiteCreated }) => {
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [capturingPhoto, setCapturingPhoto] = useState(false);
+
+  const [photoRecord, setPhotoRecord] = useState<InspectionPhotoRecord | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [gpsSource, setGpsSource] = useState<GpsSource>('device_gps');
 
   const [form, setForm] = useState({
     site_code: `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -51,8 +69,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
   useEffect(() => {
     if (isOpen) {
-      // Auto-fetch GPS when modal opens
-      fetchCurrentGps();
+      // Auto-fetch device GPS when modal opens if no photo captured yet
+      if (!photoPreview) {
+        fetchCurrentGps();
+      }
     }
   }, [isOpen]);
 
@@ -65,10 +85,47 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         current_latitude: pos.coords.latitude,
         current_longitude: pos.coords.longitude,
       }));
+      setGpsSource('device_gps');
     } catch (err) {
       console.warn('GPS location fetch error:', err);
+      setGpsSource('manual');
     } finally {
       setLocating(false);
+    }
+  };
+
+  const handleTakeSitePhoto = async () => {
+    setCapturingPhoto(true);
+    try {
+      const result = await captureSitePhoto(form.site_name || 'New Site');
+      setPhotoRecord(result.photoRecord);
+      setPhotoPreview(result.dataUrl || result.photoRecord.photo_url);
+
+      if (result.latitude && result.longitude) {
+        setForm(prev => ({
+          ...prev,
+          current_latitude: result.latitude,
+          current_longitude: result.longitude,
+        }));
+      }
+
+      setGpsSource(result.gpsSource);
+
+      const sourceLabel =
+        result.gpsSource === 'photo_exif'
+          ? 'Photo EXIF GPS'
+          : result.gpsSource === 'device_gps'
+          ? 'Device Live GPS'
+          : 'Manual Default Coordinates';
+
+      setToastMsg(`Photo captured! Coordinates auto-filled from ${sourceLabel}.`);
+      setShowToast(true);
+    } catch (err: any) {
+      console.error('Error capturing site photo:', err);
+      setToastMsg(err.message || 'Camera permission denied or capture cancelled');
+      setShowToast(true);
+    } finally {
+      setCapturingPhoto(false);
     }
   };
 
@@ -81,76 +138,61 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
     setLoading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-
-      if (!user) throw new Error('User authentication required');
-
-      // 1. Get or create site_owner for current inspector
-      const { data: owners } = await supabase
-        .from('site_owners')
-        .select('id')
-        .eq('created_by', user.id);
-
-      let ownerId = owners && owners.length > 0 ? owners[0].id : null;
-
-      if (!ownerId) {
-        const { data: newOwner, error: ownerErr } = await supabase
-          .from('site_owners')
-          .insert([
-            {
-              owner_name: user.user_metadata?.full_name || user.email || 'Inspector Owner',
-              email: user.email || `inspector_${user.id.slice(0, 6)}@menro.gov.ph`,
-              created_by: user.id,
-            },
-          ])
-          .select('id')
-          .single();
-
-        if (ownerErr || !newOwner) {
-          throw new Error('Failed to associate site owner: ' + (ownerErr?.message || 'Error'));
-        }
-        ownerId = newOwner.id;
-      }
-
-      // 2. Insert into monitoring_sites
-      const sitePayload = {
+      const result = await registerSiteWithPhoto({
         site_code: form.site_code,
         site_name: form.site_name,
         site_type: form.site_type,
-        owner_id: ownerId,
-        current_latitude: form.current_latitude,
-        current_longitude: form.current_longitude,
-        current_grid_cell_id: form.current_grid_cell_id,
         address: form.address || form.site_name,
         area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
-        notes: form.notes || null,
-        created_by: user.id,
-        updated_by: user.id,
-        is_active: true,
-      };
+        latitude: form.current_latitude,
+        longitude: form.current_longitude,
+        grid_cell_id: form.current_grid_cell_id || 'A1',
+        notes: form.notes,
+        photo_record_id: photoRecord?.id,
+        photo_url: photoRecord?.photo_url,
+        gps_source: gpsSource,
+      });
 
-      const { data: createdSite, error: siteErr } = await supabase
-        .from('monitoring_sites')
-        .insert([sitePayload])
-        .select('*')
-        .single();
-
-      if (siteErr) {
-        throw new Error('Failed to create site: ' + siteErr.message);
-      }
-
-      setToastMsg(`Monitoring Site "${createdSite.site_name}" created successfully!`);
+      setToastMsg(`Monitoring Site "${result.site.site_name}" created successfully!`);
       setShowToast(true);
 
-      if (onSiteCreated) onSiteCreated(createdSite);
+      if (onSiteCreated) onSiteCreated(result.site);
+
+      // Reset form state
+      setPhotoRecord(null);
+      setPhotoPreview(null);
       onClose();
     } catch (err: any) {
-      console.error('Error creating site:', err);
-      setToastMsg(err.message || 'Error creating monitoring site');
+      console.error('Error registering site:', err);
+      setToastMsg(err.message || 'Failed to register monitoring site');
       setShowToast(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renderGpsBadge = () => {
+    if (gpsSource === 'photo_exif') {
+      return (
+        <IonBadge color="success" style={{ padding: '6px 10px', borderRadius: '12px', fontSize: '11px' }}>
+          <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+          Photo EXIF GPS
+        </IonBadge>
+      );
+    } else if (gpsSource === 'device_gps') {
+      return (
+        <IonBadge color="primary" style={{ padding: '6px 10px', borderRadius: '12px', fontSize: '11px' }}>
+          <IonIcon icon={navigateOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+          Device Live GPS
+        </IonBadge>
+      );
+    } else {
+      return (
+        <IonBadge color="warning" style={{ padding: '6px 10px', borderRadius: '12px', fontSize: '11px' }}>
+          <IonIcon icon={warningOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+          Manual Coordinates (Verify)
+        </IonBadge>
+      );
     }
   };
 
@@ -167,6 +209,55 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
       <IonContent className="ion-padding">
         <IonGrid style={{ maxWidth: '600px', margin: '0 auto' }}>
+          {/* PHOTO CAPTURE INTEGRATION SECTION */}
+          <IonCard style={{ margin: '0 0 16px 0', border: '1px dashed #cbd5e1', boxShadow: 'none', background: '#f8fafc' }}>
+            <IonCardContent className="ion-text-center">
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '8px' }}>
+                Site Entrance / Facility Photo (GPS Auto-Fill)
+              </span>
+
+              {photoPreview ? (
+                <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxHeight: '200px', overflow: 'hidden', borderRadius: '8px' }}>
+                  <img
+                    src={photoPreview}
+                    alt="Captured Site"
+                    style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                  <IonButton
+                    size="small"
+                    color="light"
+                    onClick={handleTakeSitePhoto}
+                    disabled={capturingPhoto}
+                    style={{ position: 'absolute', bottom: '8px', right: '8px', opacity: 0.9 }}
+                  >
+                    <IonIcon icon={cameraOutline} slot="start" />
+                    Retake Photo
+                  </IonButton>
+                </div>
+              ) : (
+                <div style={{ padding: '16px 0' }}>
+                  <IonIcon icon={imageOutline} style={{ fontSize: '42px', color: '#94a3b8' }} />
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '6px 0 12px 0' }}>
+                    Take a photo to embed EXIF GPS coordinates directly into site registration
+                  </p>
+                  <IonButton fill="outline" color="primary" onClick={handleTakeSitePhoto} disabled={capturingPhoto}>
+                    {capturingPhoto ? (
+                      <>
+                        <IonSpinner name="crescent" />
+                        &nbsp;Opening Camera...
+                      </>
+                    ) : (
+                      <>
+                        <IonIcon icon={cameraOutline} slot="start" />
+                        Capture Site Photo & Extract GPS
+                      </>
+                    )}
+                  </IonButton>
+                </div>
+              )}
+            </IonCardContent>
+          </IonCard>
+
           <IonItem lines="full">
             <IonLabel position="stacked">Site Code</IonLabel>
             <IonInput
@@ -230,14 +321,17 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             </IonCol>
           </IonRow>
 
-          {/* GPS Coordinates Header */}
+          {/* GPS Coordinates Header & Source Status */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>
-              GPS Location Coordinates
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>
+                GPS Location
+              </span>
+              {renderGpsBadge()}
+            </div>
             <IonButton fill="clear" size="small" onClick={fetchCurrentGps} disabled={locating}>
               <IonIcon icon={locateOutline} slot="start" />
-              {locating ? 'Acquiring GPS...' : 'Refetch GPS'}
+              {locating ? 'Acquiring...' : 'Refetch GPS'}
             </IonButton>
           </div>
 
@@ -248,7 +342,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
                 <IonInput
                   type="number"
                   value={form.current_latitude}
-                  onIonChange={e => setForm({ ...form, current_latitude: parseFloat(e.detail.value!) || 0 })}
+                  onIonChange={e => {
+                    setForm({ ...form, current_latitude: parseFloat(e.detail.value!) || 0 });
+                    setGpsSource('manual');
+                  }}
                 />
               </IonItem>
             </IonCol>
@@ -258,7 +355,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
                 <IonInput
                   type="number"
                   value={form.current_longitude}
-                  onIonChange={e => setForm({ ...form, current_longitude: parseFloat(e.detail.value!) || 0 })}
+                  onIonChange={e => {
+                    setForm({ ...form, current_longitude: parseFloat(e.detail.value!) || 0 });
+                    setGpsSource('manual');
+                  }}
                 />
               </IonItem>
             </IonCol>
@@ -285,7 +385,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             {loading ? (
               <>
                 <IonSpinner name="crescent" />
-                &nbsp;Creating Site...
+                &nbsp;Registering Site...
               </>
             ) : (
               <>
