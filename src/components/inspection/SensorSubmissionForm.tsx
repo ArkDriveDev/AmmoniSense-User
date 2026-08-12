@@ -506,13 +506,9 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 <h4 style={{ margin: '0 0 6px 0', color: '#92400e', fontWeight: 'bold' }}>
                   No Monitoring Site Selected
                 </h4>
-                <p style={{ margin: '0 0 14px 0', color: '#b45309', fontSize: '13px', maxWidth: '380px' }}>
-                  You must select or create a monitoring site before taking an inspection photo.
+                <p style={{ margin: 0, color: '#b45309', fontSize: '13px', maxWidth: '400px', lineHeight: '1.4' }}>
+                  Please select a site using the <b>MONITORING SITE</b> dropdown above, or click <b>+ New Site</b> in the top bar to create one first.
                 </p>
-                <IonButton color="warning" size="small" onClick={() => setShowCreateSiteModal(true)}>
-                  <IonIcon icon={addOutline} slot="start" />
-                  + Create New Monitoring Site
-                </IonButton>
               </div>
             ) : (
               <div style={{
