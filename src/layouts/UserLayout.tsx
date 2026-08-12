@@ -17,8 +17,10 @@ import {
   IonText
 } from '@ionic/react';
 
-import { useNavigate, useLocation } from 'react-router-dom';  // ← CHANGED
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import offlineStorage from '../services/OfflineStorageService';
+import SyncStatusBanner from '../components/common/SyncStatusBanner';
 import {
   homeOutline,
   businessOutline,
@@ -32,7 +34,7 @@ import {
 import { useEffect, useState } from 'react';
 
 export default function UserLayout({ children }: any) {
-  const navigate = useNavigate();  // ← CHANGED (was useHistory)
+  const navigate = useNavigate();
   const location = useLocation();
   const [userName, setUserName] = useState('User');
   const [userEmail, setUserEmail] = useState('');
@@ -43,6 +45,12 @@ export default function UserLayout({ children }: any) {
 
   const fetchUserProfile = async () => {
     try {
+      const cached = offlineStorage.getSession();
+      if (cached?.profile?.email) {
+        setUserEmail(cached.profile.email);
+        if (cached.profile.full_name) setUserName(cached.profile.full_name);
+      }
+
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
 
@@ -67,8 +75,11 @@ export default function UserLayout({ children }: any) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');  // ← CHANGED (was history.push)
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    offlineStorage.clearSession();
+    navigate('/login');
   };
 
   const isActive = (path: string) => {
@@ -124,7 +135,7 @@ export default function UserLayout({ children }: any) {
           <IonList style={{ padding: '0' }}>
             <IonItem 
               button 
-              onClick={() => navigate('/dashboard')}  // ← CHANGED
+              onClick={() => navigate('/dashboard')}
               color={isActive('/dashboard') ? 'primary' : undefined}
               style={isActive('/dashboard') ? { 
                 borderLeft: '4px solid var(--ion-color-primary)',
@@ -196,6 +207,9 @@ export default function UserLayout({ children }: any) {
               </IonMenuButton>
             </IonButtons>
             <IonTitle>Ammonisense Monitor</IonTitle>
+            <IonButtons slot="end" style={{ paddingRight: '12px' }}>
+              <SyncStatusBanner />
+            </IonButtons>
           </IonToolbar>
         </IonHeader>
         <IonContent>
