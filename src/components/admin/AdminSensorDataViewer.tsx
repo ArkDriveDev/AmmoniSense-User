@@ -18,7 +18,7 @@ import {
   IonModal,
   IonSpinner
 } from '@ionic/react';
-import { eyeOutline, locationOutline, calendarOutline, hardwareChipOutline, imageOutline } from 'ionicons/icons';
+import { eyeOutline, locationOutline, calendarOutline, hardwareChipOutline, imageOutline, mapOutline } from 'ionicons/icons';
 import { supabase } from '../../services/supabase';
 import SiteGridMap, { SensorReadingMarker } from '../map/SiteGridMap';
 
@@ -159,22 +159,36 @@ export const AdminSensorDataViewer: React.FC = () => {
       </IonCard>
 
       {/* Leaflet Map Overview */}
-      <IonCard style={{ margin: '0 0 24px 0', borderRadius: '12px', overflow: 'hidden' }}>
-        <IonCardHeader style={{ paddingBottom: '8px' }}>
-          <IonCardTitle style={{ fontSize: '16px', fontWeight: 'bold' }}>
-            Interactive Spatial Map & Grid Readings
-          </IonCardTitle>
-        </IonCardHeader>
-        <IonCardContent style={{ padding: '0 16px 16px 16px' }}>
-          <SiteGridMap
-            centerLat={activeSiteObj?.current_latitude ?? activeSiteObj?.latitude ?? 14.5995}
-            centerLng={activeSiteObj?.current_longitude ?? activeSiteObj?.longitude ?? 120.9842}
-            siteName={activeSiteObj?.site_name || 'All Sites'}
-            readings={mapMarkers}
-            height="440px"
-          />
-        </IonCardContent>
-      </IonCard>
+      {!loading && sites.length === 0 && records.length === 0 ? (
+        <IonCard style={{ margin: '0 0 24px 0', borderRadius: '12px', textAlign: 'center', padding: '36px 20px' }}>
+          <IonCardContent>
+            <IonIcon icon={mapOutline} style={{ fontSize: '52px', color: '#94a3b8', marginBottom: '12px' }} />
+            <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontWeight: 'bold', fontSize: '18px' }}>
+              No Spatial Map & Grid Data Available
+            </h3>
+            <p style={{ margin: '0 auto', color: '#64748b', fontSize: '14px', maxWidth: '460px', lineHeight: '1.5' }}>
+              No monitoring sites or sensor readings have been added yet. Add a monitoring site or submit inspection readings to display the interactive spatial grid map.
+            </p>
+          </IonCardContent>
+        </IonCard>
+      ) : (
+        <IonCard style={{ margin: '0 0 24px 0', borderRadius: '12px', overflow: 'hidden' }}>
+          <IonCardHeader style={{ paddingBottom: '8px' }}>
+            <IonCardTitle style={{ fontSize: '16px', fontWeight: 'bold' }}>
+              Interactive Spatial Map & Grid Readings
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent style={{ padding: '0 16px 16px 16px' }}>
+            <SiteGridMap
+              centerLat={activeSiteObj?.current_latitude ?? activeSiteObj?.latitude ?? 14.5995}
+              centerLng={activeSiteObj?.current_longitude ?? activeSiteObj?.longitude ?? 120.9842}
+              siteName={activeSiteObj?.site_name || 'All Sites'}
+              readings={mapMarkers}
+              height="440px"
+            />
+          </IonCardContent>
+        </IonCard>
+      )}
 
       {/* Sensor Data Grid List */}
       <h3 style={{ margin: '0 0 12px 4px', fontSize: '18px', fontWeight: 'bold', color: '#1e293b' }}>
