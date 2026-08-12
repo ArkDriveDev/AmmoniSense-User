@@ -21,9 +21,11 @@ import {
 import { eyeOutline, locationOutline, calendarOutline, hardwareChipOutline, imageOutline, mapOutline } from 'ionicons/icons';
 import { supabase } from '../../services/supabase';
 import SiteGridMap, { SensorReadingMarker } from '../map/SiteGridMap';
+import offlineStorage from '../../services/OfflineStorageService';
+import PendingSyncBadge from '../common/PendingSyncBadge';
 
 export interface SensorRecord {
-  id: number;
+  id: number | string;
   device_uid: string;
   ammonia: number;
   temperature?: number;
@@ -36,6 +38,7 @@ export interface SensorRecord {
   created_at: string;
   photo_url?: string;
   submitted_by?: string;
+  is_pending_sync?: boolean;
 }
 
 export const AdminSensorDataViewer: React.FC = () => {
@@ -69,6 +72,7 @@ export const AdminSensorDataViewer: React.FC = () => {
 
   const fetchSensorData = async () => {
     setLoading(true);
+    let serverRecords: SensorRecord[] = [];
     try {
       let query = supabase
         .from('sensor_data')
@@ -81,11 +85,38 @@ export const AdminSensorDataViewer: React.FC = () => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-
-      setRecords(data || []);
+      if (!error && data) {
+        serverRecords = data;
+      }
     } catch (err) {
-      console.error('Error fetching sensor data:', err);
+      console.warn('Error or offline during fetchSensorData:', err);
+    }
+
+    // Retrieve pending queue items for optimistic UI updates
+    try {
+      const queue = await offlineStorage.getQueue();
+      const pendingReadings = queue
+        .filter(q => q.type === 'SENSOR_READING' && (selectedCellFilter === 'all' || q.payload.grid_cell_id === selectedCellFilter))
+        .map(q => ({
+          id: q.id,
+          device_uid: q.payload.device_uid || 'ESP32-AMMONIA-NODE-01',
+          ammonia: q.payload.ammonia || 0,
+          temperature: q.payload.temperature,
+          humidity: q.payload.humidity,
+          battery: q.payload.battery,
+          status: q.payload.status || 'LOW',
+          grid_cell_id: q.payload.grid_cell_id,
+          latitude: q.payload.latitude,
+          longitude: q.payload.longitude,
+          created_at: q.timestamp,
+          photo_url: q.payload.photo_url,
+          is_pending_sync: true,
+        }));
+
+      setRecords([...pendingReadings, ...serverRecords]);
+    } catch (e) {
+      console.error('Error fetching offline queue:', e);
+      setRecords(serverRecords);
     } finally {
       setLoading(false);
     }
@@ -215,10 +246,12 @@ export const AdminSensorDataViewer: React.FC = () => {
                 <IonCol key={record.id} size="12" size-md="6" size-lg="4">
                   <IonCard style={{ height: '100%', margin: 0, borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <IonCardContent style={{ padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
                         <IonBadge color={isDanger ? 'danger' : isWarning ? 'warning' : 'success'}>
                           NH₃: {record.ammonia?.toFixed(1) || '0'} ppm
                         </IonBadge>
+
+                        {record.is_pending_sync && <PendingSyncBadge />}
 
                         {record.grid_cell_id && (
                           <IonChip color="primary" style={{ height: '24px', fontSize: '12px', margin: 0 }}>
