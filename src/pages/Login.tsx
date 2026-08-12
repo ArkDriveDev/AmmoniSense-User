@@ -18,6 +18,7 @@ import {
 } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import offlineStorage from '../services/OfflineStorageService';
 import { mailOutline, lockClosedOutline, leafOutline } from 'ionicons/icons';
 
 export default function Login() {
@@ -48,6 +49,14 @@ export default function Login() {
         setShowToast(true);
         setLoading(false);
         return;
+      }
+
+      // Save persistent offline session
+      if (data?.session) {
+        offlineStorage.saveSession(data.session, {
+          email: data.session.user?.email || email,
+          id: data.session.user?.id,
+        });
       }
 
       navigate('/dashboard');
