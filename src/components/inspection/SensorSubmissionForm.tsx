@@ -211,6 +211,12 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   // STEP 1: TAKE PHOTO
   // =========================================================
   const handleStep1_TakePhoto = async () => {
+    if (!selectedSiteId) {
+      setToastMsg('Please select or create a monitoring site first before taking an inspection photo.');
+      setToastColor('warning');
+      setShowToast(true);
+      return;
+    }
     setStep1Loading(true);
     try {
       const record = await step1_takeAndUploadPhoto(
@@ -481,6 +487,31 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 </div>
                 <IonButton fill="clear" color="medium" size="small" onClick={handleStep1_TakePhoto} style={{ marginTop: '4px' }}>
                   Retake Photo
+                </IonButton>
+              </div>
+            ) : !selectedSiteId ? (
+              <div style={{
+                padding: '24px',
+                border: '2px dashed #fcd34d',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fffbeb',
+                margin: '16px 0',
+                textAlign: 'center'
+              }}>
+                <IonIcon icon={cameraOutline} style={{ fontSize: '48px', color: '#d97706', marginBottom: '8px' }} />
+                <h4 style={{ margin: '0 0 6px 0', color: '#92400e', fontWeight: 'bold' }}>
+                  No Monitoring Site Selected
+                </h4>
+                <p style={{ margin: '0 0 14px 0', color: '#b45309', fontSize: '13px', maxWidth: '380px' }}>
+                  You must select or create a monitoring site before taking an inspection photo.
+                </p>
+                <IonButton color="warning" size="small" onClick={() => setShowCreateSiteModal(true)}>
+                  <IonIcon icon={addOutline} slot="start" />
+                  + Create New Monitoring Site
                 </IonButton>
               </div>
             ) : (
