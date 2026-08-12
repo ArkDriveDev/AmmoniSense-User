@@ -69,7 +69,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
   useEffect(() => {
     if (isOpen) {
-      // Auto-fetch device GPS when modal opens if no photo captured yet
       if (!photoPreview) {
         fetchCurrentGps();
       }
@@ -158,7 +157,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
       if (onSiteCreated) onSiteCreated(result.site);
 
-      // Reset form state
       setPhotoRecord(null);
       setPhotoPreview(null);
       onClose();
@@ -174,23 +172,23 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
   const renderGpsBadge = () => {
     if (gpsSource === 'photo_exif') {
       return (
-        <IonBadge color="success" style={{ padding: '6px 10px', borderRadius: '12px', fontSize: '11px' }}>
+        <IonBadge style={{ background: '#ECFDF5', color: '#065F46', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
           <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
           Photo EXIF GPS
         </IonBadge>
       );
     } else if (gpsSource === 'device_gps') {
       return (
-        <IonBadge color="primary" style={{ padding: '6px 10px', borderRadius: '12px', fontSize: '11px' }}>
+        <IonBadge style={{ background: '#EBF3FA', color: '#1D5D9B', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
           <IonIcon icon={navigateOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
           Device Live GPS
         </IonBadge>
       );
     } else {
       return (
-        <IonBadge color="warning" style={{ padding: '6px 10px', borderRadius: '12px', fontSize: '11px' }}>
+        <IonBadge style={{ background: '#FFFBEB', color: '#92400E', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
           <IonIcon icon={warningOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-          Manual Coordinates (Verify)
+          Manual Coordinates
         </IonBadge>
       );
     }
@@ -198,49 +196,59 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
-      <IonHeader>
-        <IonToolbar color="primary">
-          <IonTitle>Create Monitoring Site</IonTitle>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>Register Monitoring Site</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={onClose}>Cancel</IonButton>
+            <IonButton onClick={onClose} style={{ color: '#ffffff' }}>Cancel</IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
+      <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
         <IonGrid style={{ maxWidth: '600px', margin: '0 auto' }}>
-          {/* PHOTO CAPTURE INTEGRATION SECTION */}
-          <IonCard style={{ margin: '0 0 16px 0', border: '1px dashed #cbd5e1', boxShadow: 'none', background: '#f8fafc' }}>
+          <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '16px' }}>
             <IonCardContent className="ion-text-center">
-              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '8px' }}>
-                Site Entrance / Facility Photo (GPS Auto-Fill)
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A', display: 'block', marginBottom: '10px' }}>
+                Facility / Site Entrance Photo (Auto-Extract GPS)
               </span>
 
               {photoPreview ? (
-                <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxHeight: '200px', overflow: 'hidden', borderRadius: '8px' }}>
+                <div style={{ position: 'relative', display: 'inline-block', width: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
                   <img
                     src={photoPreview}
                     alt="Captured Site"
-                    style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
+                    style={{ width: '100%', height: '190px', objectFit: 'cover' }}
                   />
                   <IonButton
                     size="small"
                     color="light"
                     onClick={handleTakeSitePhoto}
                     disabled={capturingPhoto}
-                    style={{ position: 'absolute', bottom: '8px', right: '8px', opacity: 0.9 }}
+                    style={{ position: 'absolute', bottom: '10px', right: '10px', fontWeight: 700 }}
                   >
                     <IonIcon icon={cameraOutline} slot="start" />
                     Retake Photo
                   </IonButton>
                 </div>
               ) : (
-                <div style={{ padding: '16px 0' }}>
-                  <IonIcon icon={imageOutline} style={{ fontSize: '42px', color: '#94a3b8' }} />
-                  <p style={{ fontSize: '12px', color: '#64748b', margin: '6px 0 12px 0' }}>
-                    Take a photo to embed EXIF GPS coordinates directly into site registration
+                <div style={{ padding: '20px 0' }}>
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '16px',
+                    background: 'rgba(29, 93, 155, 0.1)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '10px'
+                  }}>
+                    <IonIcon icon={imageOutline} style={{ fontSize: '32px', color: '#1D5D9B' }} />
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 16px 0' }}>
+                    Capture entrance photo to embed EXIF GPS coordinates directly
                   </p>
-                  <IonButton fill="outline" color="primary" onClick={handleTakeSitePhoto} disabled={capturingPhoto}>
+                  <IonButton className="btn-ammoni btn-secondary" onClick={handleTakeSitePhoto} disabled={capturingPhoto}>
                     {capturingPhoto ? (
                       <>
                         <IonSpinner name="crescent" />
@@ -249,7 +257,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
                     ) : (
                       <>
                         <IonIcon icon={cameraOutline} slot="start" />
-                        Capture Site Photo & Extract GPS
+                        Capture Photo & Extract GPS
                       </>
                     )}
                   </IonButton>
@@ -258,8 +266,9 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             </IonCardContent>
           </IonCard>
 
-          <IonItem lines="full">
-            <IonLabel position="stacked">Site Code</IonLabel>
+          {/* Form Controls inside Glass Items */}
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Code</IonLabel>
             <IonInput
               value={form.site_code}
               onIonChange={e => setForm({ ...form, site_code: e.detail.value! })}
@@ -267,8 +276,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             />
           </IonItem>
 
-          <IonItem lines="full">
-            <IonLabel position="stacked">Site Name *</IonLabel>
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Name *</IonLabel>
             <IonInput
               value={form.site_name}
               onIonChange={e => setForm({ ...form, site_name: e.detail.value! })}
@@ -276,8 +285,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             />
           </IonItem>
 
-          <IonItem lines="full">
-            <IonLabel position="stacked">Site Category / Type</IonLabel>
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Category / Type</IonLabel>
             <IonSelect
               value={form.site_type}
               onIonChange={e => setForm({ ...form, site_type: e.detail.value! })}
@@ -290,8 +299,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             </IonSelect>
           </IonItem>
 
-          <IonItem lines="full">
-            <IonLabel position="stacked">Address / Location Description</IonLabel>
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Address / Location Description</IonLabel>
             <IonInput
               value={form.address}
               onIonChange={e => setForm({ ...form, address: e.detail.value! })}
@@ -301,8 +310,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
           <IonRow>
             <IonCol size="6">
-              <IonItem lines="full">
-                <IonLabel position="stacked">Area Size (Hectares)</IonLabel>
+              <IonItem className="premium-input-item" lines="none">
+                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Area (Hectares)</IonLabel>
                 <IonInput
                   type="number"
                   value={form.area_size_hectares}
@@ -311,8 +320,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
               </IonItem>
             </IonCol>
             <IonCol size="6">
-              <IonItem lines="full">
-                <IonLabel position="stacked">Initial Grid Cell</IonLabel>
+              <IonItem className="premium-input-item" lines="none">
+                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Grid Cell ID</IonLabel>
                 <IonInput
                   value={form.current_grid_cell_id}
                   onIonChange={e => setForm({ ...form, current_grid_cell_id: e.detail.value! })}
@@ -321,15 +330,14 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             </IonCol>
           </IonRow>
 
-          {/* GPS Coordinates Header & Source Status */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', marginBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>
-                GPS Location
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>
+                GPS Telemetry
               </span>
               {renderGpsBadge()}
             </div>
-            <IonButton fill="clear" size="small" onClick={fetchCurrentGps} disabled={locating}>
+            <IonButton fill="clear" size="small" onClick={fetchCurrentGps} disabled={locating} style={{ fontWeight: 700 }}>
               <IonIcon icon={locateOutline} slot="start" />
               {locating ? 'Acquiring...' : 'Refetch GPS'}
             </IonButton>
@@ -337,8 +345,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
           <IonRow>
             <IonCol size="6">
-              <IonItem lines="full">
-                <IonLabel position="stacked">Latitude</IonLabel>
+              <IonItem className="premium-input-item" lines="none">
+                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Latitude</IonLabel>
                 <IonInput
                   type="number"
                   value={form.current_latitude}
@@ -350,8 +358,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
               </IonItem>
             </IonCol>
             <IonCol size="6">
-              <IonItem lines="full">
-                <IonLabel position="stacked">Longitude</IonLabel>
+              <IonItem className="premium-input-item" lines="none">
+                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Longitude</IonLabel>
                 <IonInput
                   type="number"
                   value={form.current_longitude}
@@ -364,23 +372,22 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             </IonCol>
           </IonRow>
 
-          <IonItem lines="full" style={{ marginTop: '12px' }}>
-            <IonLabel position="stacked">Inspector Notes (Optional)</IonLabel>
+          <IonItem className="premium-input-item" lines="none" style={{ marginTop: '8px' }}>
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Inspector Notes</IonLabel>
             <IonTextarea
               rows={3}
               value={form.notes}
               onIonChange={e => setForm({ ...form, notes: e.detail.value! })}
-              placeholder="e.g. Proximity to river stream: 50m. Inspection access via main gate."
+              placeholder="Facility access details or environmental observations..."
             />
           </IonItem>
 
           <IonButton
+            className="btn-ammoni btn-primary"
             expand="block"
-            color="primary"
-            size="large"
             onClick={handleCreateSite}
             disabled={loading}
-            style={{ marginTop: '24px', fontWeight: 'bold' }}
+            style={{ marginTop: '20px' }}
           >
             {loading ? (
               <>
