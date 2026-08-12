@@ -35,6 +35,8 @@ import {
 import { Geolocation } from '@capacitor/geolocation';
 import { captureSitePhoto, InspectionPhotoRecord } from '../../utils/photoUtils';
 import { registerSiteWithPhoto } from '../../services/siteService';
+import offlineStorage, { SITE_DRAFT_KEY } from '../../services/OfflineStorageService';
+import syncService from '../../services/SyncService';
 import { GpsSource } from '../../types/site';
 
 export interface CreateSiteModalProps {
@@ -69,21 +71,32 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
   useEffect(() => {
     if (isOpen) {
-      if (!photoPreview) {
+      // Restore draft if present
+      const draft = offlineStorage.getDraft<typeof form>(SITE_DRAFT_KEY);
+      if (draft && draft.site_name) {
+        setForm(draft);
+      } else if (!photoPreview) {
         fetchCurrentGps();
       }
     }
   }, [isOpen]);
 
+  const updateForm = (fields: Partial<typeof form>) => {
+    setForm(prev => {
+      const updated = { ...prev, ...fields };
+      offlineStorage.saveDraft(SITE_DRAFT_KEY, updated);
+      return updated;
+    });
+  };
+
   const fetchCurrentGps = async () => {
     setLocating(true);
     try {
       const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-      setForm(prev => ({
-        ...prev,
+      updateForm({
         current_latitude: pos.coords.latitude,
         current_longitude: pos.coords.longitude,
-      }));
+      });
       setGpsSource('device_gps');
     } catch (err) {
       console.warn('GPS location fetch error:', err);
@@ -101,11 +114,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       setPhotoPreview(result.dataUrl || result.photoRecord.photo_url);
 
       if (result.latitude && result.longitude) {
-        setForm(prev => ({
-          ...prev,
+        updateForm({
           current_latitude: result.latitude,
           current_longitude: result.longitude,
-        }));
+        });
       }
 
       setGpsSource(result.gpsSource);
@@ -136,24 +148,31 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     }
 
     setLoading(true);
+    const sitePayload = {
+      site_code: form.site_code,
+      site_name: form.site_name,
+      site_type: form.site_type,
+      address: form.address || form.site_name,
+      area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+      latitude: form.current_latitude,
+      longitude: form.current_longitude,
+      grid_cell_id: form.current_grid_cell_id || 'A1',
+      notes: form.notes,
+      photo_record_id: photoRecord?.id,
+      photo_url: photoRecord?.photo_url,
+      gps_source: gpsSource,
+    };
+
     try {
-      const result = await registerSiteWithPhoto({
-        site_code: form.site_code,
-        site_name: form.site_name,
-        site_type: form.site_type,
-        address: form.address || form.site_name,
-        area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
-        latitude: form.current_latitude,
-        longitude: form.current_longitude,
-        grid_cell_id: form.current_grid_cell_id || 'A1',
-        notes: form.notes,
-        photo_record_id: photoRecord?.id,
-        photo_url: photoRecord?.photo_url,
-        gps_source: gpsSource,
-      });
+      if (!syncService.isOnline()) {
+        throw new Error('OFFLINE_MODE');
+      }
+
+      const result = await registerSiteWithPhoto(sitePayload);
 
       setToastMsg(`Monitoring Site "${result.site.site_name}" created successfully!`);
       setShowToast(true);
+      offlineStorage.clearDraft(SITE_DRAFT_KEY);
 
       if (onSiteCreated) onSiteCreated(result.site);
 
@@ -161,9 +180,26 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       setPhotoPreview(null);
       onClose();
     } catch (err: any) {
-      console.error('Error registering site:', err);
-      setToastMsg(err.message || 'Failed to register monitoring site');
+      console.warn('Network error or offline mode during site creation, queueing item:', err);
+      
+      // Save item to offline queue
+      await offlineStorage.enqueueItem('SITE_REGISTRATION', sitePayload);
+      offlineStorage.clearDraft(SITE_DRAFT_KEY);
+
+      setToastMsg(`📶 Offline Mode: Site "${form.site_name}" queued locally for auto-sync!`);
       setShowToast(true);
+
+      const optimisticSite = {
+        id: `offline_${Date.now()}`,
+        ...sitePayload,
+        is_pending_sync: true,
+      };
+
+      if (onSiteCreated) onSiteCreated(optimisticSite);
+
+      setPhotoRecord(null);
+      setPhotoPreview(null);
+      onClose();
     } finally {
       setLoading(false);
     }
