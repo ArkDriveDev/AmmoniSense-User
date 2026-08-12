@@ -32,6 +32,8 @@ import {
 import { supabase } from '../../services/supabase';
 import SiteGridMap, { SensorReadingMarker } from '../map/SiteGridMap';
 import CreateSiteModal from '../sites/CreateSiteModal';
+import offlineStorage, { SENSOR_DRAFT_KEY } from '../../services/OfflineStorageService';
+import syncService from '../../services/SyncService';
 import {
   InspectionPhotoRecord,
   step1_takeAndUploadPhoto,
@@ -322,7 +324,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       if (ammoniaNum > 70) status = 'HIGH';
       else if (ammoniaNum > 40) status = 'MODERATE';
 
-      // 1. Insert into sensor_data table
       const sensorPayload: any = {
         device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
         ammonia: ammoniaNum,
@@ -338,6 +339,11 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         inspection_photo_id: photoRecord?.id || null,
       };
 
+      if (!syncService.isOnline()) {
+        throw new Error('OFFLINE_MODE');
+      }
+
+      // Online submission path
       const { data: insertedSensorData, error: sensorError } = await supabase
         .from('sensor_data')
         .insert([sensorPayload])
@@ -350,7 +356,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       const sensorDataId = insertedSensorData?.id;
 
-      // 2. Update inspection_photos: sensor_data_id = new_id, is_used = true
       if (photoRecord?.id && sensorDataId) {
         await step4_markPhotoAsUsed(photoRecord.id, sensorDataId);
       }
@@ -358,18 +363,45 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setToastMsg(`🎉 Step 4 Success! Sensor reading & photo fully submitted & linked!`);
       setToastColor('success');
       setShowToast(true);
+      offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
 
-      // Reset wizard to Step 1
       setPhotoRecord(null);
       setCurrentStep(1);
 
       if (selectedSiteId) fetchPreviousReadings(selectedSiteId);
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      console.error('Step 4 Submit Error:', err);
-      setToastMsg('Submission Failed: ' + (err.message || 'Error'));
-      setToastColor('danger');
+      console.warn('Network error or offline mode during inspection submit, queueing item:', err);
+
+      let photoStoreId: string | undefined = undefined;
+      if (photoRecord?.dataUrl) {
+        photoStoreId = await offlineStorage.savePhoto(photoRecord.dataUrl);
+      }
+
+      await offlineStorage.enqueueItem('SENSOR_READING', {
+        device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
+        ammonia: parseFloat(ammonia) || 0,
+        temperature: parseFloat(temperature) || 0,
+        humidity: parseFloat(humidity) || 0,
+        battery: parseFloat(battery) || 100,
+        status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
+        grid_cell_id: selectedCellId,
+        latitude: cellLat,
+        longitude: cellLng,
+        photo_url: photoRecord?.photo_url || null,
+      }, photoStoreId);
+
+      offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
+
+      setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync when online!`);
+      setToastColor('warning');
       setShowToast(true);
+
+      setPhotoRecord(null);
+      setCurrentStep(1);
+
+      if (selectedSiteId) fetchPreviousReadings(selectedSiteId);
+      if (onSuccess) onSuccess();
     } finally {
       setSubmitLoading(false);
     }
