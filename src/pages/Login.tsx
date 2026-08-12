@@ -18,7 +18,7 @@ import {
 } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { mailOutline, lockClosedOutline } from 'ionicons/icons';
+import { mailOutline, lockClosedOutline, leafOutline } from 'ionicons/icons';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -63,80 +63,108 @@ export default function Login() {
 
   return (
     <IonPage>
-      <IonContent className="ion-padding" style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        minHeight: '100vh'
-      }}>
-        <IonGrid style={{ maxWidth: '400px', width: '100%' }}>
-          <IonRow>
-            <IonCol>
-              <IonCard>
-                <IonCardContent>
-                  <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                    <IonTitle style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                      Ammonisense
-                    </IonTitle>
-                    <IonText color="medium">
-                      <p>Environmental Monitoring System</p>
-                    </IonText>
-                  </div>
+      <IonContent 
+        className="ion-padding" 
+        style={{ 
+          '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 50%, #008B74 100%)',
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          minHeight: '100vh'
+        }}
+      >
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <IonGrid style={{ maxWidth: '420px', width: '100%' }}>
+            <IonRow>
+              <IonCol>
+                <IonCard className="premium-card" style={{ padding: '8px' }}>
+                  <IonCardContent>
+                    <div style={{ textAlign: 'center', marginBottom: '28px', marginTop: '12px' }}>
+                      <div style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '20px',
+                        background: 'linear-gradient(135deg, #1D5D9B 0%, #008B74 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 16px auto',
+                        boxShadow: '0 8px 24px rgba(29, 93, 155, 0.3)'
+                      }}>
+                        <IonIcon icon={leafOutline} style={{ fontSize: '32px', color: '#FFFFFF' }} />
+                      </div>
+                      <IonTitle style={{ fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.02em' }}>
+                        AmmoniSense
+                      </IonTitle>
+                      <IonText color="medium">
+                        <p style={{ margin: '6px 0 0 0', fontSize: '14px', fontWeight: '500' }}>
+                          Environmental Ammonia Monitoring
+                        </p>
+                      </IonText>
+                    </div>
 
-                  <IonItem>
-                    <IonIcon icon={mailOutline} slot="start" />
-                    <IonInput
-                      type="email"
-                      placeholder="Email"
-                      value={email}
-                      onIonChange={(e) => setEmail(e.detail.value!)}
-                    />
-                  </IonItem>
+                    <IonItem className="premium-input-item" lines="none">
+                      <IonIcon icon={mailOutline} slot="start" style={{ color: '#1D5D9B' }} />
+                      <IonInput
+                        type="email"
+                        placeholder="Inspector Email"
+                        value={email}
+                        onIonChange={(e) => setEmail(e.detail.value!)}
+                      />
+                    </IonItem>
 
-                  <IonItem>
-                    <IonIcon icon={lockClosedOutline} slot="start" />
-                    <IonInput
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onIonChange={(e) => setPassword(e.detail.value!)}
-                    />
-                  </IonItem>
+                    <IonItem className="premium-input-item" lines="none" style={{ marginTop: '12px' }}>
+                      <IonIcon icon={lockClosedOutline} slot="start" style={{ color: '#1D5D9B' }} />
+                      <IonInput
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onIonChange={(e) => setPassword(e.detail.value!)}
+                      />
+                    </IonItem>
 
-                  <IonButton
-                    expand="block"
-                    onClick={login}
-                    disabled={loading}
-                    style={{ marginTop: '16px' }}
-                  >
-                    {loading ? (
-                      <>
-                        <IonSpinner name="crescent" />
-                        &nbsp;Logging in...
-                      </>
-                    ) : (
-                      'Login'
-                    )}
-                  </IonButton>
+                    <IonButton
+                      className="btn-ammoni btn-primary"
+                      expand="block"
+                      onClick={login}
+                      disabled={loading}
+                      style={{ marginTop: '24px' }}
+                    >
+                      {loading ? (
+                        <>
+                          <IonSpinner name="crescent" />
+                          &nbsp;Logging in...
+                        </>
+                      ) : (
+                        'Sign In to Dashboard'
+                      )}
+                    </IonButton>
 
-                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                    <IonText color="medium">
-                      <p>
-                        Don't have an account?{' '}
-                        <span 
-                          style={{ color: 'var(--ion-color-primary)', cursor: 'pointer' }}
-                          onClick={() => navigate('/register')}
-                        >
-                          Register
-                        </span>
-                      </p>
-                    </IonText>
-                  </div>
-                </IonCardContent>
-              </IonCard>
-            </IonCol>
-          </IonRow>
-        </IonGrid>
+                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                      <IonText color="medium">
+                        <p style={{ fontSize: '14px' }}>
+                          Don't have an inspector account?{' '}
+                          <span 
+                            style={{ color: '#1D5D9B', fontWeight: '700', cursor: 'pointer' }}
+                            onClick={() => navigate('/register')}
+                          >
+                            Register
+                          </span>
+                        </p>
+                      </IonText>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
+        </div>
 
         <IonToast
           isOpen={showToast}
