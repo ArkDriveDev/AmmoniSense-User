@@ -10,7 +10,6 @@ import {
   IonIcon,
   IonSpinner,
   IonSearchbar,
-  IonChip,
   IonBadge,
   IonCard,
   IonToast,
@@ -33,7 +32,7 @@ import offlineStorage from '../../services/OfflineStorageService';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
-  getSiteTypeColor,
+  SITE_BRAND_COLOR,
   getAmmoniaColor,
   getAmmoniaSeverityLabel
 } from '../../components/map/FullMapView';
@@ -54,9 +53,8 @@ export default function UserMap() {
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
   const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
 
-  // Search and Filters: All | Piggery | Ambient | Industrial | Critical
+  // Search input
   const [searchText, setSearchText] = useState<string>('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'piggery' | 'ambient' | 'industrial' | 'critical'>('all');
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
@@ -196,13 +194,8 @@ export default function UserMap() {
     }
   };
 
-  // Filter sites by search text & filter chip
+  // Filter sites by search query
   const filteredSites = sites.filter((site) => {
-    if (activeFilter === 'critical') return false;
-    if (activeFilter === 'piggery' && !site.site_type?.toLowerCase().includes('piggery') && !site.site_type?.toLowerCase().includes('pig') && !site.site_type?.toLowerCase().includes('swine')) return false;
-    if (activeFilter === 'ambient' && !site.site_type?.toLowerCase().includes('ambient') && !site.site_type?.toLowerCase().includes('monitoring')) return false;
-    if (activeFilter === 'industrial' && !site.site_type?.toLowerCase().includes('industrial') && !site.site_type?.toLowerCase().includes('factory')) return false;
-
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     return (
@@ -213,11 +206,8 @@ export default function UserMap() {
     );
   });
 
-  // Filter readings by search text & filter chip
+  // Filter readings by search query
   const filteredReadings = readings.filter((reading) => {
-    if (activeFilter === 'piggery' || activeFilter === 'ambient' || activeFilter === 'industrial') return false;
-    if (activeFilter === 'critical' && reading.ammonia <= 20) return false;
-
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     return (
@@ -262,7 +252,7 @@ export default function UserMap() {
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Manolo Fortich Map</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>Monitoring Sites Map</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => setShowLegend(true)} style={{ color: '#ffffff' }}>
               <IonIcon icon={informationCircleOutline} slot="icon-only" />
@@ -284,7 +274,7 @@ export default function UserMap() {
       </IonHeader>
 
       <IonContent style={{ position: 'relative' }}>
-        {/* Floating Top Search & Filter Bar */}
+        {/* Floating Top Search Bar */}
         <div
           style={{
             position: 'absolute',
@@ -292,12 +282,8 @@ export default function UserMap() {
             left: '12px',
             right: '12px',
             zIndex: 1000,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
           }}
         >
-          {/* Search Box */}
           <div
             style={{
               background: 'rgba(255, 255, 255, 0.95)',
@@ -311,62 +297,10 @@ export default function UserMap() {
             <IonSearchbar
               value={searchText}
               onIonInput={(e) => setSearchText(e.detail.value!)}
-              placeholder="Search site, address, code..."
+              placeholder="Search site name, code, or address..."
               showClearButton="always"
               style={{ '--background': 'transparent', '--box-shadow': 'none', padding: 0 }}
             />
-          </div>
-
-          {/* Filter Chips: All | Piggery | Ambient | Industrial | Critical */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '6px',
-              overflowX: 'auto',
-              paddingBottom: '4px',
-              scrollbarWidth: 'none',
-            }}
-          >
-            <IonChip
-              color={activeFilter === 'all' ? 'primary' : 'medium'}
-              outline={activeFilter !== 'all'}
-              onClick={() => setActiveFilter('all')}
-              style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'all' ? '#1D5D9B' : '#ffffff', color: activeFilter === 'all' ? '#ffffff' : '#475569' }}
-            >
-              All Markers
-            </IonChip>
-            <IonChip
-              color={activeFilter === 'piggery' ? 'success' : 'medium'}
-              outline={activeFilter !== 'piggery'}
-              onClick={() => setActiveFilter('piggery')}
-              style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'piggery' ? '#10b981' : '#ffffff', color: activeFilter === 'piggery' ? '#ffffff' : '#475569' }}
-            >
-              Piggery 🟢
-            </IonChip>
-            <IonChip
-              color={activeFilter === 'ambient' ? 'tertiary' : 'medium'}
-              outline={activeFilter !== 'ambient'}
-              onClick={() => setActiveFilter('ambient')}
-              style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'ambient' ? '#3b82f6' : '#ffffff', color: activeFilter === 'ambient' ? '#ffffff' : '#475569' }}
-            >
-              Ambient 🔵
-            </IonChip>
-            <IonChip
-              color={activeFilter === 'industrial' ? 'warning' : 'medium'}
-              outline={activeFilter !== 'industrial'}
-              onClick={() => setActiveFilter('industrial')}
-              style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'industrial' ? '#f97316' : '#ffffff', color: activeFilter === 'industrial' ? '#ffffff' : '#475569' }}
-            >
-              Industrial 🟠
-            </IonChip>
-            <IonChip
-              color={activeFilter === 'critical' ? 'danger' : 'medium'}
-              outline={activeFilter !== 'critical'}
-              onClick={() => setActiveFilter('critical')}
-              style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'critical' ? '#ef4444' : '#ffffff', color: activeFilter === 'critical' ? '#ffffff' : '#475569' }}
-            >
-              Critical 🔴
-            </IonChip>
           </div>
         </div>
 
@@ -374,7 +308,7 @@ export default function UserMap() {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#F1F5F9' }}>
             <IonSpinner name="crescent" color="primary" />
-            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Map...</p>
+            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Monitoring Sites...</p>
           </div>
         ) : (
           <FullMapView
@@ -458,7 +392,7 @@ export default function UserMap() {
             {selectedSite && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <IonBadge style={{ background: getSiteTypeColor(selectedSite.site_type), color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
+                  <IonBadge style={{ background: SITE_BRAND_COLOR, color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
                     {selectedSite.site_type || 'Agricultural'}
                   </IonBadge>
                   <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
@@ -625,13 +559,23 @@ export default function UserMap() {
         <IonModal isOpen={showLegend} onDidDismiss={() => setShowLegend(false)}>
           <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Colors & Legend</h2>
+              <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
               <IonButton fill="clear" onClick={() => setShowLegend(false)}>
                 <IonIcon icon={closeOutline} />
               </IonButton>
             </div>
 
             <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
+                Monitoring Site Pins
+              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
+                <b>Monitoring Site</b> (AmmoniSense Brand Marker)
+              </div>
+            </IonCard>
+
+            <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
                 Sensor Readings Ammonia Levels (PPM)
               </h4>
@@ -651,38 +595,6 @@ export default function UserMap() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
                   <b>&gt; 20 PPM:</b> Critical Alert (Red)
-                </div>
-              </div>
-            </IonCard>
-
-            <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
-              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
-                Monitoring Site Marker Pin Colors
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10b981' }}></span>
-                  <b>Piggery Farm</b> (Green Pin)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#3b82f6' }}></span>
-                  <b>Ambient Monitoring Zone</b> (Blue Pin)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f97316' }}></span>
-                  <b>Industrial Facility</b> (Orange Pin)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#8b5cf6' }}></span>
-                  <b>Agricultural Zone</b> (Purple Pin)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
-                  <b>Critical Zone</b> (Red Pin)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#64748b' }}></span>
-                  <b>Other / Unspecified Site</b> (Gray Pin)
                 </div>
               </div>
             </IonCard>

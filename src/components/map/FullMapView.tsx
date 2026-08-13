@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -74,15 +74,8 @@ const WORLD_MASK_RING: [number, number][] = [
   [-90, -180],
 ];
 
-export const getSiteTypeColor = (type?: string): string => {
-  const t = (type || '').toLowerCase();
-  if (t.includes('piggery') || t.includes('pig') || t.includes('swine')) return '#10b981'; // Green 🟢
-  if (t.includes('ambient') || t.includes('monitoring') || t.includes('zone')) return '#3b82f6'; // Blue 🔵
-  if (t.includes('industrial') || t.includes('factory') || t.includes('plant')) return '#f97316'; // Orange 🟠
-  if (t.includes('agricultural') || t.includes('agri') || t.includes('farm') || t.includes('poultry')) return '#8b5cf6'; // Purple 🟣
-  if (t.includes('critical') || t.includes('danger') || t.includes('high risk')) return '#ef4444'; // Red 🔴
-  return '#64748b'; // Gray ⚪ (Other/Unspecified)
-};
+// Brand Color for all Site Pins
+export const SITE_BRAND_COLOR = '#1D5D9B';
 
 export const getAmmoniaColor = (ammonia: number): string => {
   if (ammonia > 20) return '#ef4444'; // Critical Red (>20 PPM)
@@ -249,7 +242,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     }
   }, [showBoundaryLayer]);
 
-  // Render Site Markers (Layer 1)
+  // Render Site Markers with Uniform Brand Color (#1D5D9B)
   useEffect(() => {
     if (!mapRef.current || !sitesLayerGroupRef.current) return;
     const sitesGroup = sitesLayerGroupRef.current;
@@ -260,8 +253,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     sites.forEach((site) => {
       if (!site.latitude || !site.longitude) return;
 
-      const color = getSiteTypeColor(site.site_type);
-
       const customIcon = L.divIcon({
         className: 'site-pin-marker',
         html: `
@@ -269,7 +260,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
             position: relative;
             width: 32px;
             height: 32px;
-            background: ${color};
+            background: ${SITE_BRAND_COLOR};
             border: 2.5px solid #ffffff;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
