@@ -56,7 +56,6 @@ interface FullMapViewProps {
   showPhotoTagsLayer?: boolean;
   showBoundaryLayer?: boolean;
   showOdorZonesLayer?: boolean;
-  showCommunitiesLayer?: boolean;
   onSelectSite?: (site: SiteMarkerData) => void;
   onSelectReading?: (reading: ReadingMarkerData) => void;
   onSelectPhotoTag?: (tag: PhotoTagMarkerData) => void;
@@ -122,7 +121,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   showPhotoTagsLayer = true,
   showBoundaryLayer = true,
   showOdorZonesLayer = true,
-  showCommunitiesLayer = true,
   onSelectSite,
   onSelectReading,
   onSelectPhotoTag,
@@ -475,7 +473,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         readings={readings}
         sites={sites}
         showOdorZones={showOdorZonesLayer}
-        showCommunities={showCommunitiesLayer}
       />
     </div>
   );

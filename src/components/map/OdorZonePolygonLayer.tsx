@@ -2,77 +2,11 @@ import React, { useEffect } from 'react';
 import L from 'leaflet';
 import { ReadingMarkerData, SiteMarkerData } from './FullMapView';
 
-export interface CommunityPolygonData {
-  id: string;
-  name: string;
-  type: 'Residential' | 'School' | 'Hospital' | 'Commercial';
-  population: number;
-  center: [number, number];
-  boundary: [number, number][];
-}
-
-// Preset Vulnerable Communities in Manolo Fortich, Bukidnon
-export const MANOLO_FORTICH_COMMUNITIES: CommunityPolygonData[] = [
-  {
-    id: 'comm-tankulan',
-    name: 'Poblacion Tankulan Residential Zone',
-    type: 'Residential',
-    population: 14200,
-    center: [8.3683, 124.8637],
-    boundary: [
-      [8.3750, 124.8580],
-      [8.3760, 124.8700],
-      [8.3620, 124.8720],
-      [8.3600, 124.8590],
-    ],
-  },
-  {
-    id: 'comm-lunocan',
-    name: 'Lunocan Community & Elementary School Zone',
-    type: 'School',
-    population: 6800,
-    center: [8.3450, 124.8300],
-    boundary: [
-      [8.3510, 124.8220],
-      [8.3520, 124.8380],
-      [8.3390, 124.8360],
-      [8.3380, 124.8240],
-    ],
-  },
-  {
-    id: 'comm-dicklum',
-    name: 'Dicklum Agricultural & Residential Area',
-    type: 'Residential',
-    population: 4500,
-    center: [8.3900, 124.8900],
-    boundary: [
-      [8.3970, 124.8820],
-      [8.3980, 124.8980],
-      [8.3830, 124.8950],
-      [8.3820, 124.8810],
-    ],
-  },
-  {
-    id: 'comm-agusan',
-    name: 'Agusan Canyon Health & Living District',
-    type: 'Hospital',
-    population: 8900,
-    center: [8.4120, 124.8250],
-    boundary: [
-      [8.4190, 124.8180],
-      [8.4200, 124.8320],
-      [8.4060, 124.8300],
-      [8.4050, 124.8170],
-    ],
-  },
-];
-
 interface OdorZonePolygonLayerProps {
   map: L.Map | null;
   readings?: ReadingMarkerData[];
   sites?: SiteMarkerData[];
   showOdorZones?: boolean;
-  showCommunities?: boolean;
 }
 
 export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
@@ -80,15 +14,13 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
   readings = [],
   sites = [],
   showOdorZones = true,
-  showCommunities = true,
 }) => {
   useEffect(() => {
     if (!map) return;
 
     const odorLayerGroup = L.layerGroup().addTo(map);
-    const communityLayerGroup = L.layerGroup().addTo(map);
 
-    // 1. Render Odor Dispersion Circles / Polygons
+    // Render Ammonia Spatial Odor Dispersion Plumes directly from real sensor readings
     if (showOdorZones) {
       readings.forEach((reading) => {
         if (!reading.latitude || !reading.longitude || !reading.ammonia) return;
@@ -156,63 +88,10 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
       });
     }
 
-    // 2. Render Vulnerable Community Boundaries
-    if (showCommunities) {
-      MANOLO_FORTICH_COMMUNITIES.forEach((comm) => {
-        const poly = L.polygon(comm.boundary, {
-          color: '#3b82f6',
-          weight: 2,
-          dashArray: '6, 6',
-          fillColor: '#60a5fa',
-          fillOpacity: 0.15,
-        });
-
-        const iconEmoji = comm.type === 'School' ? '🏫' : comm.type === 'Hospital' ? '🏥' : '🏡';
-
-        const labelMarker = L.marker(comm.center, {
-          icon: L.divIcon({
-            className: 'community-label-marker',
-            html: `
-              <div style="
-                background: rgba(15, 23, 42, 0.88);
-                color: #f8fafc;
-                padding: 3px 8px;
-                border-radius: 12px;
-                font-size: 10px;
-                font-weight: 700;
-                border: 1px solid rgba(255,255,255,0.2);
-                white-space: nowrap;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-              ">
-                ${iconEmoji} ${comm.name} (${comm.population.toLocaleString()} pop)
-              </div>
-            `,
-            iconSize: [160, 20],
-            iconAnchor: [80, 10],
-          }),
-        });
-
-        poly.bindPopup(`
-          <div style="font-family: sans-serif; padding: 4px;">
-            <strong style="color: #1e40af; font-size: 14px;">${iconEmoji} ${comm.name}</strong>
-            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-              <b>Type:</b> ${comm.type} Zone<br/>
-              <b>Estimated Population:</b> ${comm.population.toLocaleString()} Residents<br/>
-              <b>Municipality:</b> Manolo Fortich, Bukidnon
-            </div>
-          </div>
-        `);
-
-        communityLayerGroup.addLayer(poly);
-        communityLayerGroup.addLayer(labelMarker);
-      });
-    }
-
     return () => {
       map.removeLayer(odorLayerGroup);
-      map.removeLayer(communityLayerGroup);
     };
-  }, [map, readings, sites, showOdorZones, showCommunities]);
+  }, [map, readings, sites, showOdorZones]);
 
   return null;
 };
