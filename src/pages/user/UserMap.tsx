@@ -110,22 +110,7 @@ export default function UserMap() {
     try {
       const { data: sitesData, error: sitesErr } = await supabase
         .from('monitoring_sites')
-        .select(`
-          id,
-          site_code,
-          site_name,
-          site_type,
-          address,
-          current_latitude,
-          current_longitude,
-          current_grid_cell_id,
-          site_owners (
-            owner_name
-          ),
-          inspection_photos (
-            photo_url
-          )
-        `);
+        .select('*');
 
       if (!sitesErr && sitesData) {
         onlineFormatted = sitesData.map((s: any) => {
@@ -139,14 +124,14 @@ export default function UserMap() {
             latitude: coords.latitude,
             longitude: coords.longitude,
             grid_cell_id: s.current_grid_cell_id || 'A1',
-            owner_name: s.site_owners?.owner_name || 'Inspector Owner',
-            photo_url: Array.isArray(s.inspection_photos)
-              ? s.inspection_photos[0]?.photo_url
-              : s.inspection_photos?.photo_url,
+            owner_name: 'Inspector Owner',
+            photo_url: s.site_photo_thumbnail || s.site_photo_url,
             isOffline: false,
             is_pending_sync: false,
           };
         });
+      } else if (sitesErr) {
+        console.warn('Supabase fetch sites error:', sitesErr.message);
       }
     } catch (err) {
       console.warn('Network error or offline mode while fetching monitoring sites from Supabase:', err);
@@ -328,19 +313,7 @@ export default function UserMap() {
     try {
       const { data, error } = await supabase
         .from('inspection_photos')
-        .select(`
-          id,
-          photo_url,
-          latitude,
-          longitude,
-          grid_cell_id,
-          site_id,
-          is_used,
-          uploaded_at,
-          monitoring_sites (
-            site_name
-          )
-        `)
+        .select('*')
         .order('uploaded_at', { ascending: false })
         .limit(200);
 
@@ -353,9 +326,7 @@ export default function UserMap() {
             photo_url: p.photo_url,
             grid_cell_id: p.grid_cell_id,
             site_id: p.site_id,
-            site_name: Array.isArray(p.monitoring_sites)
-              ? p.monitoring_sites[0]?.site_name
-              : p.monitoring_sites?.site_name || 'Inspection Site',
+            site_name: 'Inspection Site',
             is_used: p.is_used,
             uploaded_at: p.uploaded_at,
             is_pending_sync: false,

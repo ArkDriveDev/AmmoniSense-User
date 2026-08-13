@@ -38,9 +38,13 @@ export const captureImageWithCameraOrFallback = async (): Promise<string> => {
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Camera,
     });
-    if (photo.dataUrl) return photo.dataUrl;
+    if (photo?.dataUrl) return photo.dataUrl;
   } catch (err: any) {
-    console.warn('Capacitor Camera plugin error/unimplemented, invoking HTML5 camera capture fallback:', err);
+    const errMessage = (err?.message || String(err)).toLowerCase();
+    if (errMessage.includes('cancel') || errMessage.includes('user cancelled')) {
+      throw new Error('User cancelled photo capture');
+    }
+    console.warn('Capacitor Camera plugin unimplemented or PWA camera error, invoking HTML5 camera capture fallback:', err);
   }
 
   // Fallback: HTML5 Input File with capture="environment"
