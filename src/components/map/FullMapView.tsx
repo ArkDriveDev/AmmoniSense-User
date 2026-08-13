@@ -54,15 +54,24 @@ export const MANOLO_FORTICH_BOUNDS: L.LatLngBoundsExpression = [
 
 // Manolo Fortich Municipal Boundary Polygon
 const MANOLO_FORTICH_BOUNDARY: [number, number][] = [
-  [8.4350, 124.7700],
-  [8.4550, 124.8400],
-  [8.4480, 124.9100],
-  [8.4100, 124.9500],
-  [8.3500, 124.9750],
-  [8.2900, 124.9300],
-  [8.2750, 124.8600],
-  [8.3050, 124.7800],
-  [8.3650, 124.7600],
+  [8.4650, 124.7800],
+  [8.4800, 124.8500],
+  [8.4600, 124.9200],
+  [8.4100, 124.9600],
+  [8.3500, 124.9700],
+  [8.2800, 124.9300],
+  [8.2600, 124.8500],
+  [8.2900, 124.7500],
+  [8.3600, 124.7300],
+  [8.4200, 124.7500],
+];
+
+// Outer World ring for inverted masking outside Manolo Fortich
+const WORLD_MASK_RING: [number, number][] = [
+  [90, -180],
+  [90, 180],
+  [-90, 180],
+  [-90, -180],
 ];
 
 export const getSiteTypeColor = (type?: string): string => {
@@ -128,7 +137,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
       zoomControl: false,
     });
 
-    // High resolution tile layer
+    // Tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | MENRO Manolo Fortich',
       maxZoom: 20,
@@ -186,41 +195,53 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     }
   }, [userLocation]);
 
-  // Render Municipal Boundary
+  // Render Municipal Boundary & Outer Mask Layer
   useEffect(() => {
     if (!mapRef.current || !boundaryLayerGroupRef.current) return;
     const boundaryGroup = boundaryLayerGroupRef.current;
     boundaryGroup.clearLayers();
 
     if (showBoundaryLayer) {
+      // 1. Inverted Mask Polygon to obscure everything OUTSIDE Manolo Fortich
+      const maskPolygon = L.polygon([WORLD_MASK_RING, MANOLO_FORTICH_BOUNDARY], {
+        color: '#0f3c5c',
+        weight: 2,
+        fillColor: '#0f172a',
+        fillOpacity: 0.65, // Mask out outside regions so ONLY Manolo Fortich is highlighted
+        interactive: false,
+      });
+
+      // 2. Bright Boundary Line for Manolo Fortich
       const polygon = L.polygon(MANOLO_FORTICH_BOUNDARY, {
-        color: '#0f52ba',
-        weight: 2.5,
-        dashArray: '6, 6',
-        fillColor: '#3880ff',
-        fillOpacity: 0.06,
+        color: '#10b981',
+        weight: 3,
+        dashArray: '8, 6',
+        fillColor: '#2dd36f',
+        fillOpacity: 0.05,
       });
 
       const labelIcon = L.divIcon({
         className: 'boundary-label-marker',
         html: `<div style="
-          background: rgba(15, 60, 92, 0.88);
+          background: rgba(15, 60, 92, 0.92);
           color: white;
-          padding: 4px 10px;
-          border-radius: 12px;
+          padding: 4px 12px;
+          border-radius: 14px;
           font-weight: bold;
           font-size: 11px;
           letter-spacing: 0.5px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.2);
           backdrop-filter: blur(4px);
           white-space: nowrap;
         ">🏛️ Manolo Fortich Municipality</div>`,
-        iconSize: [180, 24],
-        iconAnchor: [90, 12],
+        iconSize: [190, 26],
+        iconAnchor: [95, 13],
       });
 
       const labelMarker = L.marker([8.42, 124.86], { icon: labelIcon, interactive: false });
 
+      boundaryGroup.addLayer(maskPolygon);
       boundaryGroup.addLayer(polygon);
       boundaryGroup.addLayer(labelMarker);
     }
