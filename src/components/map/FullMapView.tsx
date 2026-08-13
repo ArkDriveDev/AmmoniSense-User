@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import OdorZonePolygonLayer from './OdorZonePolygonLayer';
+import { OdorZone, CommunityPolygon } from '../../types/site';
 
 export interface SiteMarkerData {
   id: string | number;
@@ -12,7 +13,6 @@ export interface SiteMarkerData {
   latitude: number;
   longitude: number;
   owner_name?: string;
-  grid_cell_id?: string;
   photo_url?: string;
   status?: string;
   isOffline?: boolean;
@@ -27,7 +27,6 @@ export interface ReadingMarkerData {
   battery?: number;
   latitude: number;
   longitude: number;
-  grid_cell_id?: string;
   device_uid?: string;
   created_at: string;
   photo_url?: string;
@@ -39,7 +38,6 @@ export interface PhotoTagMarkerData {
   latitude: number;
   longitude: number;
   photo_url: string;
-  grid_cell_id?: string | null;
   site_id?: number | null;
   site_name?: string;
   is_used?: boolean;
@@ -51,6 +49,8 @@ interface FullMapViewProps {
   sites?: SiteMarkerData[];
   readings?: ReadingMarkerData[];
   photoTags?: PhotoTagMarkerData[];
+  odorZones?: OdorZone[];
+  communityPolygons?: CommunityPolygon[];
   showSitesLayer?: boolean;
   showReadingsLayer?: boolean;
   showPhotoTagsLayer?: boolean;
@@ -116,6 +116,8 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   sites = [],
   readings = [],
   photoTags = [],
+  odorZones = [],
+  communityPolygons = [],
   showSitesLayer = true,
   showReadingsLayer = true,
   showPhotoTagsLayer = true,
@@ -470,8 +472,8 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', zIndex: 1 }} />
       <OdorZonePolygonLayer
         map={mapInstance}
-        readings={readings}
-        sites={sites}
+        odorZones={odorZones}
+        communityPolygons={communityPolygons}
         showOdorZones={showOdorZonesLayer}
       />
     </div>

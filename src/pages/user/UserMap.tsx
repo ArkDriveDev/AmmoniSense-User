@@ -29,6 +29,8 @@ import {
 
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
+import { fetchOdorZones, fetchCommunityPolygons } from '../../services/siteService';
+import { OdorZone, CommunityPolygon } from '../../types/site';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
@@ -42,9 +44,11 @@ import { Geolocation } from '@capacitor/geolocation';
 import { useNavigate } from 'react-router-dom';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 
-// Manolo Fortich Coordinates & Bounds Check
+// Default Center Coordinates: Manolo Fortich Municipality
 const MANOLO_FORTICH_CENTER = { lat: 8.3683, lng: 124.8637, zoom: 13 };
-const IS_IN_MANOLO_FORTICH = (lat: number, lng: number) => {
+
+const IS_IN_MANOLO_FORTICH = (lat?: number, lng?: number): boolean => {
+  if (!lat || !lng) return false;
   return lat >= 8.2200 && lat <= 8.5000 && lng >= 124.7000 && lng <= 125.0200;
 };
 
@@ -55,6 +59,8 @@ export default function UserMap() {
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
   const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
   const [photoTags, setPhotoTags] = useState<PhotoTagMarkerData[]>([]);
+  const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
+  const [communityPolygons, setCommunityPolygons] = useState<CommunityPolygon[]>([]);
 
   // Search input
   const [searchText, setSearchText] = useState<string>('');
@@ -92,8 +98,26 @@ export default function UserMap() {
 
   const loadMapData = async () => {
     setLoading(true);
-    await Promise.all([fetchSites(), fetchReadings(), fetchPhotoTags()]);
+    await Promise.all([
+      fetchSites(),
+      fetchReadings(),
+      fetchPhotoTags(),
+      loadPolygons()
+    ]);
     setLoading(false);
+  };
+
+  const loadPolygons = async () => {
+    try {
+      const [zones, comms] = await Promise.all([
+        fetchOdorZones(),
+        fetchCommunityPolygons()
+      ]);
+      setOdorZones(zones);
+      setCommunityPolygons(comms);
+    } catch (e) {
+      console.warn('Error loading polygons in UserMap:', e);
+    }
   };
 
   const resolveSiteCoords = (latRaw?: any, lngRaw?: any) => {
@@ -368,7 +392,6 @@ export default function UserMap() {
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     return (
-      tag.grid_cell_id?.toLowerCase().includes(query) ||
       tag.site_name?.toLowerCase().includes(query) ||
       tag.id.toString().includes(query)
     );
@@ -392,7 +415,6 @@ export default function UserMap() {
     const query = searchText.toLowerCase();
     return (
       reading.device_uid?.toLowerCase().includes(query) ||
-      reading.grid_cell_id?.toLowerCase().includes(query) ||
       reading.ammonia.toString().includes(query)
     );
   });
@@ -501,6 +523,8 @@ export default function UserMap() {
             showPhotoTagsLayer={showPhotoTagsLayer}
             showBoundaryLayer={showBoundaryLayer}
             showOdorZonesLayer={showOdorZonesLayer}
+            odorZones={odorZones}
+            communityPolygons={communityPolygons}
             centerLat={mapCenter.lat}
             centerLng={mapCenter.lng}
             zoom={mapCenter.zoom}
@@ -708,7 +732,7 @@ export default function UserMap() {
                     <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Inspection Photo Tag (Step 1)</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                       <span style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>
-                        📷 Grid Cell: {selectedPhotoTag.grid_cell_id || 'Captured Tag'}
+                        📷 Inspection Tag #{selectedPhotoTag.id}
                       </span>
                       <IonBadge style={{ background: selectedPhotoTag.is_used ? '#6366f1' : '#8b5cf6', color: '#ffffff' }}>
                         {selectedPhotoTag.is_used ? 'Step 1 Tag Submitted' : 'Step 1 Active Tag'}
@@ -725,10 +749,6 @@ export default function UserMap() {
                 )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Grid Cell ID</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.grid_cell_id || 'Pending Selection'}</strong>
-                  </div>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site</span>
                     <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>

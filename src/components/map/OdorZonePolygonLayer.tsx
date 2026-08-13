@@ -1,97 +1,94 @@
 import React, { useEffect } from 'react';
 import L from 'leaflet';
-import { ReadingMarkerData, SiteMarkerData } from './FullMapView';
+import { OdorZone, CommunityPolygon } from '../../types/site';
 
 interface OdorZonePolygonLayerProps {
   map: L.Map | null;
-  readings?: ReadingMarkerData[];
-  sites?: SiteMarkerData[];
+  odorZones?: OdorZone[];
+  communityPolygons?: CommunityPolygon[];
   showOdorZones?: boolean;
+  showCommunities?: boolean;
 }
 
 export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
   map,
-  readings = [],
-  sites = [],
+  odorZones = [],
+  communityPolygons = [],
   showOdorZones = true,
+  showCommunities = true,
 }) => {
   useEffect(() => {
     if (!map) return;
 
-    const odorLayerGroup = L.layerGroup().addTo(map);
+    const odorGroup = L.layerGroup().addTo(map);
+    const commGroup = L.layerGroup().addTo(map);
 
-    // Render Ammonia Spatial Odor Dispersion Plumes directly from real sensor readings
+    // 1. Render Odor Zone Polygons (🟧 Orange / Red)
     if (showOdorZones) {
-      readings.forEach((reading) => {
-        if (!reading.latitude || !reading.longitude || !reading.ammonia) return;
+      odorZones.forEach((zone) => {
+        if (!zone.coordinates || zone.coordinates.length < 3) return;
 
-        const nh3 = reading.ammonia;
-        const center: [number, number] = [reading.latitude, reading.longitude];
+        const isCritical = zone.severity_level === 'CRITICAL';
+        const isHigh = zone.severity_level === 'HIGH';
+        const color = isCritical ? '#ef4444' : isHigh ? '#f97316' : '#eab308';
 
-        if (nh3 > 20) {
-          // Critical Hazard Zone (>20 ppm NH3) -> 400m Red Dispersion Plume
-          const redPlume = L.circle(center, {
-            radius: 400,
-            fillColor: '#ef4444',
-            fillOpacity: 0.35,
-            color: '#dc2626',
-            weight: 2,
-            dashArray: '4, 4',
-          }).bindPopup(`
-            <div style="font-family: sans-serif; padding: 4px;">
-              <strong style="color: #dc2626; font-size: 14px;">🚨 Critical Odor Dispersion Zone</strong>
-              <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-                <b>Ammonia NH₃:</b> ${nh3} ppm<br/>
-                <b>Plume Radius:</b> 400 meters<br/>
-                <b>Risk:</b> Respiratory Irritation / Immediate Mitigation Required
-              </div>
+        const poly = L.polygon(zone.coordinates, {
+          color: color,
+          weight: 2.5,
+          dashArray: '6, 6',
+          fillColor: color,
+          fillOpacity: 0.35,
+        });
+
+        poly.bindPopup(`
+          <div style="font-family: sans-serif; padding: 4px;">
+            <strong style="color: ${color}; font-size: 14px;">🟧 ${zone.zone_name}</strong>
+            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
+              <b>Severity Level:</b> ${zone.severity_level}<br/>
+              <b>Ammonia NH₃:</b> ${zone.ammonia_ppm || 0} ppm<br/>
+              <b>Polygon Vertices:</b> ${zone.coordinates.length} points
             </div>
-          `);
-          odorLayerGroup.addLayer(redPlume);
-        } else if (nh3 > 10) {
-          // High Warning Zone (10-20 ppm NH3) -> 250m Orange Plume
-          const orangePlume = L.circle(center, {
-            radius: 250,
-            fillColor: '#f97316',
-            fillOpacity: 0.3,
-            color: '#ea580c',
-            weight: 2,
-          }).bindPopup(`
-            <div style="font-family: sans-serif; padding: 4px;">
-              <strong style="color: #ea580c; font-size: 14px;">⚠️ High Odor Warning Zone</strong>
-              <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-                <b>Ammonia NH₃:</b> ${nh3} ppm<br/>
-                <b>Plume Radius:</b> 250 meters
-              </div>
+          </div>
+        `);
+
+        odorGroup.addLayer(poly);
+      });
+    }
+
+    // 2. Render Vulnerable Community Polygons (🟩 Green)
+    if (showCommunities) {
+      communityPolygons.forEach((comm) => {
+        if (!comm.coordinates || comm.coordinates.length < 3) return;
+
+        const poly = L.polygon(comm.coordinates, {
+          color: '#10b981',
+          weight: 2.5,
+          dashArray: '4, 4',
+          fillColor: '#2dd36f',
+          fillOpacity: 0.25,
+        });
+
+        const iconEmoji = comm.community_type === 'School' ? '🏫' : comm.community_type === 'Hospital' ? '🏥' : '🏡';
+
+        poly.bindPopup(`
+          <div style="font-family: sans-serif; padding: 4px;">
+            <strong style="color: #059669; font-size: 14px;">${iconEmoji} ${comm.community_name}</strong>
+            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
+              <b>Type:</b> ${comm.community_type} Zone<br/>
+              <b>Est. Population:</b> ${(comm.estimated_population || 0).toLocaleString()} Residents
             </div>
-          `);
-          odorLayerGroup.addLayer(orangePlume);
-        } else if (nh3 > 5) {
-          // Moderate Caution Zone (5-10 ppm NH3) -> 150m Yellow Plume
-          const yellowPlume = L.circle(center, {
-            radius: 150,
-            fillColor: '#eab308',
-            fillOpacity: 0.25,
-            color: '#ca8a04',
-            weight: 1.5,
-          }).bindPopup(`
-            <div style="font-family: sans-serif; padding: 4px;">
-              <strong style="color: #ca8a04; font-size: 13px;">⚡ Moderate Odor Caution Zone</strong>
-              <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-                <b>Ammonia NH₃:</b> ${nh3} ppm<br/>
-                <b>Plume Radius:</b> 150 meters
-              </div>
-            </div>
-          `);
-          odorLayerGroup.addLayer(yellowPlume);
-        }
+          </div>
+        `);
+
+        commGroup.addLayer(poly);
       });
     }
 
     return () => {
-      map.removeLayer(odorLayerGroup);
+      map.removeLayer(odorGroup);
+      map.removeLayer(commGroup);
     };
-  }, [map, readings, sites, showOdorZones]);
+  }, [map, odorZones, communityPolygons, showOdorZones, showCommunities]);
 
   return null;
 };

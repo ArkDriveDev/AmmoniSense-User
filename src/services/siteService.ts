@@ -1,8 +1,8 @@
 import { supabase } from './supabase';
-import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
+import { CreateSitePayload, SiteRegistrationResult, OdorZone, CommunityPolygon } from '../types/site';
 
 /**
- * Register Monitoring Site with photo & GPS in an orchestrated single transaction sequence with rollback cleanup on error.
+ * Register Monitoring Site with photo & GPS without grid cells.
  */
 export const registerSiteWithPhoto = async (
   payload: CreateSitePayload
@@ -47,7 +47,7 @@ export const registerSiteWithPhoto = async (
       createdOwner = newOwner;
     }
 
-    // 2. Insert into monitoring_sites
+    // 2. Insert into monitoring_sites (no grid cells)
     const sitePayload = {
       site_code: payload.site_code,
       site_name: payload.site_name,
@@ -55,7 +55,6 @@ export const registerSiteWithPhoto = async (
       owner_id: createdOwner.id,
       current_latitude: payload.latitude,
       current_longitude: payload.longitude,
-      current_grid_cell_id: payload.grid_cell_id || 'A1',
       address: payload.address || payload.site_name,
       area_size_hectares: payload.area_size_hectares || 1.0,
       notes: payload.notes || null,
@@ -80,7 +79,6 @@ export const registerSiteWithPhoto = async (
       site_id: createdSite.id,
       latitude: payload.latitude,
       longitude: payload.longitude,
-      grid_cell_id: payload.grid_cell_id || 'A1',
       address: payload.address || payload.site_name,
       recorded_by: user.id,
       notes: `Initial registration location recorded via ${payload.gps_source || 'GPS'}.`,
@@ -130,7 +128,6 @@ export const registerSiteWithPhoto = async (
         photoRecord = newPhoto;
       }
 
-      // Update monitoring_sites with site_photo_id
       if (photoRecord?.id) {
         await supabase
           .from('monitoring_sites')
@@ -150,7 +147,6 @@ export const registerSiteWithPhoto = async (
   } catch (error: any) {
     console.error('Transaction failure during site registration, initiating cleanup rollback:', error);
 
-    // Rollback cleanup on failure
     if (createdSite?.id) {
       await supabase.from('site_locations').delete().eq('site_id', createdSite.id);
       await supabase.from('monitoring_sites').delete().eq('id', createdSite.id);
@@ -158,4 +154,91 @@ export const registerSiteWithPhoto = async (
 
     throw error;
   }
+};
+
+/**
+ * Fetch all Odor Zones from Supabase
+ */
+export const fetchOdorZones = async (): Promise<OdorZone[]> => {
+  const { data, error } = await supabase
+    .from('odor_zones')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Supabase fetch odor_zones notice:', error.message);
+    return [];
+  }
+  return data || [];
+};
+
+/**
+ * Save new Odor Zone to Supabase
+ */
+export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id || null;
+
+  const payload = {
+    site_id: zone.site_id || null,
+    zone_name: zone.zone_name,
+    severity_level: zone.severity_level,
+    ammonia_ppm: zone.ammonia_ppm,
+    coordinates: zone.coordinates,
+    created_by: userId,
+  };
+
+  const { data, error } = await supabase
+    .from('odor_zones')
+    .insert([payload])
+    .select('*')
+    .single();
+
+  if (error) {
+    throw new Error('Supabase save odor_zones error: ' + error.message);
+  }
+  return data;
+};
+
+/**
+ * Fetch all Community Polygons from Supabase
+ */
+export const fetchCommunityPolygons = async (): Promise<CommunityPolygon[]> => {
+  const { data, error } = await supabase
+    .from('community_polygons')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Supabase fetch community_polygons notice:', error.message);
+    return [];
+  }
+  return data || [];
+};
+
+/**
+ * Save new Community Polygon to Supabase
+ */
+export const saveCommunityPolygon = async (poly: CommunityPolygon): Promise<CommunityPolygon> => {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id || null;
+
+  const payload = {
+    community_name: poly.community_name,
+    community_type: poly.community_type,
+    estimated_population: poly.estimated_population,
+    coordinates: poly.coordinates,
+    created_by: userId,
+  };
+
+  const { data, error } = await supabase
+    .from('community_polygons')
+    .insert([payload])
+    .select('*')
+    .single();
+
+  if (error) {
+    throw new Error('Supabase save community_polygons error: ' + error.message);
+  }
+  return data;
 };

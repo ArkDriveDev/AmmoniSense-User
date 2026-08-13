@@ -8,6 +8,7 @@ import UserSites from './pages/user/UserSites';
 import UserDevices from './pages/user/UserDevices';
 import UserSensorData from './pages/user/UserSensorData';
 import UserMap from './pages/user/UserMap';
+import AreaMapping from './pages/user/AreaMapping';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './layouts/UserLayout';
@@ -41,6 +42,17 @@ export default function AppRouter() {
         }
       />
       <Route path="/spatial-map" element={<Navigate to="/map" replace />} />
+
+      <Route
+        path="/area-mapping"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <AreaMapping />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
 
       <Route path="/my-piggeries" element={<Navigate to="/monitoring-sites" replace />} />
       <Route

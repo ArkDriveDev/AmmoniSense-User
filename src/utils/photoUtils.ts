@@ -9,7 +9,6 @@ export interface InspectionPhotoRecord {
   photo_url: string;
   latitude: number;
   longitude: number;
-  grid_cell_id: string | null;
   site_id: number | null;
   is_used: boolean;
   is_site_photo?: boolean;
@@ -20,7 +19,6 @@ export interface InspectionPhotoRecord {
 }
 
 export interface StampOptions {
-  gridCellId?: string;
   latitude: number;
   longitude: number;
   ammoniaPpm?: number;
@@ -142,8 +140,8 @@ export const addStampToImage = (
       const latStr = options.latitude.toFixed(6);
       const lngStr = options.longitude.toFixed(6);
 
-      // Line 1: Grid Cell & Site Name
-      const line1 = `CELL: ${options.gridCellId || 'PENDING SELECTION'}  |  SITE: ${options.siteName || 'MENRO Site'}`;
+      // Line 1: Site Name
+      const line1 = `SITE: ${options.siteName || 'MENRO Site'}`;
       ctx.fillText(line1, padding, img.height - bannerHeight + padding + fontSizeLarge * 0.8);
 
       // Line 2: GPS Coordinates & Ammonia (if provided)
@@ -198,7 +196,7 @@ export const embedExifData = (
       .substring(0, 19);
 
     exif[piexif.ExifIFD.DateTimeOriginal] = dateStr;
-    exif[piexif.ExifIFD.UserComment] = `GridCell:${options.gridCellId || 'Unassigned'}|NH3:${options.ammoniaPpm || 0}`;
+    exif[piexif.ExifIFD.UserComment] = `NH3:${options.ammoniaPpm || 0}`;
 
     // Set GPS EXIF Data
     const latRef = options.latitude >= 0 ? 'N' : 'S';
@@ -324,7 +322,6 @@ export const step1_takeAndUploadPhoto = async (
         photo_url: photoUrlToSave,
         latitude,
         longitude,
-        grid_cell_id: null,
         site_id: siteId || null,
         is_used: false,
         uploaded_by: userId,
@@ -340,7 +337,6 @@ export const step1_takeAndUploadPhoto = async (
       photo_url: photoUrlToSave,
       latitude,
       longitude,
-      grid_cell_id: null,
       site_id: siteId || null,
       is_used: false,
       sensor_data_id: null,
@@ -357,24 +353,7 @@ export const step1_takeAndUploadPhoto = async (
 };
 
 /**
- * STEP 2: Update `grid_cell_id` in `inspection_photos` table
- */
-export const step2_updatePhotoGridCell = async (
-  photoId: number,
-  gridCellId: string
-): Promise<void> => {
-  try {
-    await supabase
-      .from('inspection_photos')
-      .update({ grid_cell_id: gridCellId })
-      .eq('id', photoId);
-  } catch (err) {
-    console.warn('Error updating grid_cell_id on inspection_photos:', err);
-  }
-};
-
-/**
- * STEP 4: Mark `inspection_photos` record as used and link `sensor_data_id`
+ * STEP 3: Mark `inspection_photos` record as used and link `sensor_data_id`
  */
 export const step4_markPhotoAsUsed = async (
   photoId: number,
@@ -500,7 +479,6 @@ export const captureSitePhoto = async (
         photo_url: photoUrlToSave,
         latitude,
         longitude,
-        grid_cell_id: null,
         site_id: null,
         is_used: true,
         is_site_photo: true,
@@ -516,7 +494,6 @@ export const captureSitePhoto = async (
         photo_url: photoUrlToSave,
         latitude,
         longitude,
-        grid_cell_id: null,
         site_id: null,
         is_used: true,
         is_site_photo: true,
@@ -538,4 +515,3 @@ export const captureSitePhoto = async (
     gpsSource,
   };
 };
-

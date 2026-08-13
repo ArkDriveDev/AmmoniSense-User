@@ -64,7 +64,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     area_size_hectares: '1.0',
     current_latitude: 8.3683,
     current_longitude: 124.8637,
-    current_grid_cell_id: 'A1',
     notes: '',
   });
 
@@ -82,7 +81,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           area_size_hectares: (editSite.area_size_hectares || 1.0).toString(),
           current_latitude: editSite.current_latitude || 8.3683,
           current_longitude: editSite.current_longitude || 124.8637,
-          current_grid_cell_id: editSite.current_grid_cell_id || 'A1',
           notes: editSite.notes || '',
         });
         if (editSite.site_photo_url) {
@@ -180,14 +178,12 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
       latitude: form.current_latitude,
       longitude: form.current_longitude,
-      grid_cell_id: form.current_grid_cell_id || 'A1',
       notes: form.notes,
       photo_record_id: photoRecord?.id,
       photo_url: photoRecord?.photo_url || photoPreview || undefined,
       gps_source: gpsSource,
     };
 
-    // If editing existing offline site locally
     if (editSite) {
       try {
         await offlineStorage.updateOfflineSite(editSite.id, {
@@ -198,7 +194,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
           current_latitude: form.current_latitude,
           current_longitude: form.current_longitude,
-          current_grid_cell_id: form.current_grid_cell_id || 'A1',
           site_photo_url: photoPreview || editSite.site_photo_url || '',
           site_photo_thumbnail: photoPreview || editSite.site_photo_thumbnail || '',
           notes: form.notes,
@@ -258,7 +253,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         },
         current_latitude: form.current_latitude,
         current_longitude: form.current_longitude,
-        current_grid_cell_id: form.current_grid_cell_id || 'A1',
         address: form.address || form.site_name,
         area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
         site_photo_url: photoPreview || photoRecord?.photo_url || '',
@@ -271,10 +265,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         lastModified: new Date().toISOString(),
       };
 
-      // Save OfflineSite to IndexedDB
       await offlineStorage.saveOfflineSite(offlineSiteRecord);
 
-      // Save item to offline queue for SyncService
       await offlineStorage.enqueueItem('SITE_REGISTRATION', sitePayload);
       offlineStorage.clearDraft(SITE_DRAFT_KEY);
 
@@ -388,7 +380,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             </IonCardContent>
           </IonCard>
 
-          {/* Form Controls inside Glass Items */}
           <IonItem className="premium-input-item" lines="none">
             <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Code</IonLabel>
             <IonInput
@@ -430,27 +421,14 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             />
           </IonItem>
 
-          <IonRow>
-            <IonCol size="6">
-              <IonItem className="premium-input-item" lines="none">
-                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Area (Hectares)</IonLabel>
-                <IonInput
-                  type="number"
-                  value={form.area_size_hectares}
-                  onIonChange={e => setForm({ ...form, area_size_hectares: e.detail.value! })}
-                />
-              </IonItem>
-            </IonCol>
-            <IonCol size="6">
-              <IonItem className="premium-input-item" lines="none">
-                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Grid Cell ID</IonLabel>
-                <IonInput
-                  value={form.current_grid_cell_id}
-                  onIonChange={e => setForm({ ...form, current_grid_cell_id: e.detail.value! })}
-                />
-              </IonItem>
-            </IonCol>
-          </IonRow>
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Area (Hectares)</IonLabel>
+            <IonInput
+              type="number"
+              value={form.area_size_hectares}
+              onIonChange={e => setForm({ ...form, area_size_hectares: e.detail.value! })}
+            />
+          </IonItem>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', marginBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

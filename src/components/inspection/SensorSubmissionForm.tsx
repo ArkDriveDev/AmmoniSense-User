@@ -21,23 +21,20 @@ import {
 } from '@ionic/react';
 import {
   cameraOutline,
-  locationOutline,
   bluetoothOutline,
   checkmarkCircleOutline,
   cloudUploadOutline,
   checkmarkDoneCircleOutline,
-  refreshOutline,
-  addOutline
+  addOutline,
+  shapesOutline
 } from 'ionicons/icons';
 import { supabase } from '../../services/supabase';
-import SiteGridMap, { SensorReadingMarker } from '../map/SiteGridMap';
 import CreateSiteModal from '../sites/CreateSiteModal';
 import offlineStorage, { SENSOR_DRAFT_KEY } from '../../services/OfflineStorageService';
 import syncService from '../../services/SyncService';
 import {
   InspectionPhotoRecord,
   step1_takeAndUploadPhoto,
-  step2_updatePhotoGridCell,
   step4_markPhotoAsUsed
 } from '../../utils/photoUtils';
 import bleService, { BLEReading } from '../../services/bleService';
@@ -53,7 +50,6 @@ interface MonitoringSite {
   created_by?: string | null;
   current_latitude?: number | null;
   current_longitude?: number | null;
-  current_grid_cell_id?: string | null;
   address?: string | null;
   area_size_hectares?: number | null;
   site_type?: string | null;
@@ -73,20 +69,16 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [devices, setDevices] = useState<{ id: number; device_uid: string }[]>([]);
   const [selectedDeviceUid, setSelectedDeviceUid] = useState<string>('');
 
-  // 4-Step State
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  // 3-Step State (No Grid Cells)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
   // STEP 1 State: Photo & GPS
   const [photoRecord, setPhotoRecord] = useState<InspectionPhotoRecord | null>(null);
   const [step1Loading, setStep1Loading] = useState<boolean>(false);
+  const [cellLat, setCellLat] = useState<number>(8.3683);
+  const [cellLng, setCellLng] = useState<number>(124.8637);
 
-  // STEP 2 State: Grid Cell
-  const [selectedCellId, setSelectedCellId] = useState<string>('B3');
-  const [cellLat, setCellLat] = useState<number>(14.5995);
-  const [cellLng, setCellLng] = useState<number>(120.9842);
-  const [previousReadings, setPreviousReadings] = useState<SensorReadingMarker[]>([]);
-
-  // STEP 3 State: Sensor Bluetooth Readings
+  // STEP 2 State: Sensor Bluetooth Readings
   const [ammonia, setAmmonia] = useState<string>('24.5');
   const [temperature, setTemperature] = useState<string>('28.5');
   const [humidity, setHumidity] = useState<string>('68.0');
@@ -96,13 +88,15 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [bleRssi, setBleRssi] = useState<number | null>(null);
   const [showBLESimulatorModal, setShowBLESimulatorModal] = useState<boolean>(false);
 
-  // STEP 4 State: Submission Loading
+  // STEP 3 State: Submission Loading
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
 
   // Toast State
   const [toastMsg, setToastMsg] = useState<string>('');
   const [showToast, setShowToast] = useState<boolean>(false);
   const [toastColor, setToastColor] = useState<string>('success');
+
+  const [showCreateSiteModal, setShowCreateSiteModal] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSites();
@@ -141,11 +135,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         setCellLat(siteLat);
         setCellLng(siteLng);
       }
-      if (site?.current_grid_cell_id) {
-        setSelectedCellId(site.current_grid_cell_id);
-      }
       fetchDevicesForSite(selectedSiteId);
-      fetchPreviousReadings(selectedSiteId);
     }
   }, [selectedSiteId]);
 
@@ -182,7 +172,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
           address: os.address,
           current_latitude: os.current_latitude,
           current_longitude: os.current_longitude,
-          current_grid_cell_id: os.current_grid_cell_id,
           isOffline: true,
         }));
       } catch (e) {}
@@ -216,46 +205,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     }
   };
 
-  const fetchPreviousReadings = async (siteId: number) => {
-    try {
-      const { data: siteDevices } = await supabase
-        .from('devices')
-        .select('device_uid')
-        .eq('site_id', siteId);
-
-      const uids = siteDevices?.map(d => d.device_uid) || [];
-
-      let query = supabase
-        .from('sensor_data')
-        .select('id, latitude, longitude, ammonia, grid_cell_id, device_uid, created_at, photo_url')
-        .order('created_at', { ascending: false })
-        .limit(30);
-
-      if (uids.length > 0) {
-        query = query.in('device_uid', uids);
-      }
-
-      const { data } = await query;
-      if (data) {
-        const formatted: SensorReadingMarker[] = data
-          .filter(d => d.latitude && d.longitude)
-          .map(d => ({
-            id: d.id,
-            latitude: d.latitude,
-            longitude: d.longitude,
-            ammonia: d.ammonia || 0,
-            grid_cell_id: d.grid_cell_id || undefined,
-            device_uid: d.device_uid,
-            created_at: d.created_at,
-            photo_url: d.photo_url || undefined,
-          }));
-        setPreviousReadings(formatted);
-      }
-    } catch (err) {
-      console.error('Error fetching previous readings:', err);
-    }
-  };
-
   // =========================================================
   // STEP 1: TAKE PHOTO
   // =========================================================
@@ -277,11 +226,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setCellLat(record.latitude);
       setCellLng(record.longitude);
 
-      setToastMsg(`Step 1 Complete! Photo uploaded & inserted into inspection_photos (is_used = false).`);
+      setToastMsg(`Step 1 Complete! Inspection photo uploaded & GPS captured.`);
       setToastColor('success');
       setShowToast(true);
 
-      // Auto advance to Step 2
       setCurrentStep(2);
     } catch (err: any) {
       console.error('Step 1 Error:', err);
@@ -294,29 +242,9 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   };
 
   // =========================================================
-  // STEP 2: SELECT GRID CELL
+  // STEP 2: CONNECT ESP32 BLUETOOTH / READ SENSOR
   // =========================================================
-  const handleStep2_SelectCell = async (cellId: string, lat: number, lng: number) => {
-    setSelectedCellId(cellId);
-    setCellLat(lat);
-    setCellLng(lng);
-
-    if (photoRecord?.id) {
-      await step2_updatePhotoGridCell(photoRecord.id, cellId);
-    }
-
-    setToastMsg(`Step 2 Complete! Selected Grid Cell ${cellId} and updated inspection_photos.`);
-    setToastColor('success');
-    setShowToast(true);
-
-    // Auto advance to Step 3
-    setCurrentStep(3);
-  };
-
-  // =========================================================
-  // STEP 3: CONNECT ESP32 BLUETOOTH / READ SENSOR
-  // =========================================================
-  const handleStep3_ConnectBluetooth = async () => {
+  const handleStep2_ConnectBluetooth = async () => {
     setBtConnecting(true);
     try {
       let reading: BLEReading | null = null;
@@ -336,7 +264,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         if (reading.device_uid) setSelectedDeviceUid(reading.device_uid);
         if (reading.rssi !== undefined) setBleRssi(reading.rssi);
 
-        setToastMsg(`Step 3 Complete! Received BLE telemetry from ${reading.device_uid}.`);
+        setToastMsg(`Step 2 Complete! Received BLE telemetry from ${reading.device_uid}.`);
         setToastColor('success');
         setShowToast(true);
       }
@@ -350,9 +278,9 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   };
 
   // =========================================================
-  // STEP 4: SUBMIT ALL DATA
+  // STEP 3: SUBMIT ALL DATA
   // =========================================================
-  const handleStep4_SubmitAll = async () => {
+  const handleStep3_SubmitAll = async () => {
     if (!ammonia) {
       setToastMsg('Please enter an ammonia reading');
       setToastColor('warning');
@@ -381,7 +309,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         humidity: isNaN(humNum) ? null : humNum,
         battery: isNaN(battNum) ? 100 : battNum,
         status,
-        grid_cell_id: selectedCellId,
         latitude: cellLat,
         longitude: cellLng,
         submitted_by: userId,
@@ -393,7 +320,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         throw new Error('OFFLINE_MODE');
       }
 
-      // Online submission path
       const { data: insertedSensorData, error: sensorError } = await supabase
         .from('sensor_data')
         .insert([sensorPayload])
@@ -410,7 +336,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         await step4_markPhotoAsUsed(photoRecord.id, sensorDataId);
       }
 
-      setToastMsg(`🎉 Step 4 Success! Sensor reading & photo fully submitted & linked!`);
+      setToastMsg(`🎉 Inspection Success! Sensor reading & photo fully submitted & linked!`);
       setToastColor('success');
       setShowToast(true);
       offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
@@ -418,7 +344,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setPhotoRecord(null);
       setCurrentStep(1);
 
-      if (selectedSiteId) fetchPreviousReadings(selectedSiteId);
       if (onSuccess) onSuccess();
     } catch (err: any) {
       console.warn('Network error or offline mode during inspection submit, queueing item:', err);
@@ -435,7 +360,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         humidity: parseFloat(humidity) || 0,
         battery: parseFloat(battery) || 100,
         status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
-        grid_cell_id: selectedCellId,
         latitude: cellLat,
         longitude: cellLng,
         photo_url: photoRecord?.photo_url || null,
@@ -450,14 +374,11 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setPhotoRecord(null);
       setCurrentStep(1);
 
-      if (selectedSiteId) fetchPreviousReadings(selectedSiteId);
       if (onSuccess) onSuccess();
     } finally {
       setSubmitLoading(false);
     }
   };
-
-  const [showCreateSiteModal, setShowCreateSiteModal] = useState<boolean>(false);
 
   return (
     <div style={{ maxWidth: '850px', margin: '0 auto' }}>
@@ -496,22 +417,20 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         </IonCardContent>
       </IonCard>
 
-      {/* 4-STEP WIZARD PROGRESS HEADER */}
+      {/* 3-STEP WIZARD PROGRESS HEADER (No Grid Cells) */}
       <IonGrid style={{ padding: 0, marginBottom: '16px' }}>
         <IonRow>
           {[
-            { num: 1, title: 'STEP 1: Take Photo', icon: cameraOutline },
-            { num: 2, title: 'STEP 2: Grid Cell', icon: locationOutline },
-            { num: 3, title: 'STEP 3: ESP32 Bluetooth', icon: bluetoothOutline },
-            { num: 4, title: 'STEP 4: Submit All', icon: cloudUploadOutline },
+            { num: 1, title: 'STEP 1: GPS Photo', icon: cameraOutline },
+            { num: 2, title: 'STEP 2: BLE Sensor', icon: bluetoothOutline },
+            { num: 3, title: 'STEP 3: Submit All', icon: cloudUploadOutline },
           ].map(s => {
             const isActive = currentStep === s.num;
             const isDone = currentStep > s.num;
             return (
-              <IonCol key={s.num} size="6" size-md="3">
+              <IonCol key={s.num} size="4">
                 <div
                   onClick={() => {
-                    // Allow navigating to completed or active steps
                     if (s.num <= currentStep || (s.num === 2 && photoRecord)) {
                       setCurrentStep(s.num as any);
                     }
@@ -533,7 +452,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                     gap: '4px'
                   }}
                 >
-                  <IonIcon icon={isDone ? checkmarkDoneCircleOutline : s.icon} style={{ fontSize: '18px' }} />
+                  <IonIcon icon={isDone ? checkmarkCircleOutline : s.icon} style={{ fontSize: '18px' }} />
                   <span>{s.title}</span>
                 </div>
               </IonCol>
@@ -553,16 +472,13 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
           </IonCardHeader>
           <IonCardContent>
             <p style={{ fontSize: '14px', color: '#64748b', marginTop: 0 }}>
-              Take an inspection photo. GPS coordinates will be captured, the photo will be uploaded to Supabase Storage, and recorded into <code>inspection_photos</code> with <code>is_used = false</code>.
+              Take an inspection photo. GPS coordinates will be captured and linked to your inspection.
             </p>
 
             {photoRecord ? (
               <div style={{ textAlign: 'center', margin: '16px 0' }}>
                 <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', borderRadius: '8px', overflow: 'hidden', border: '2px solid #2dd36f' }}>
                   <img src={photoRecord.dataUrl || photoRecord.photo_url} alt="Captured" style={{ width: '100%', maxHeight: '240px', objectFit: 'cover' }} />
-                  <IonChip color="warning" style={{ position: 'absolute', top: '8px', right: '8px' }}>
-                    is_used = false
-                  </IonChip>
                 </div>
                 <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>
                   <b>GPS:</b> {photoRecord.latitude.toFixed(5)}°, {photoRecord.longitude.toFixed(5)}° | <b>Photo ID:</b> #{photoRecord.id}
@@ -589,7 +505,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   No Monitoring Site Selected
                 </h4>
                 <p style={{ margin: 0, color: '#b45309', fontSize: '13px', maxWidth: '400px', lineHeight: '1.4' }}>
-                  Please select a site using the <b>MONITORING SITE</b> dropdown above, or click <b>+ New Site</b> in the top bar to create one first.
+                  Please select a site using the <b>MONITORING SITE</b> dropdown above.
                 </p>
               </div>
             ) : (
@@ -620,56 +536,20 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
             {photoRecord && (
               <IonButton expand="block" color="primary" onClick={() => setCurrentStep(2)} style={{ marginTop: '16px' }}>
-                Proceed to STEP 2: Select Grid Cell ➔
+                Proceed to STEP 2: BLE Sensor ➔
               </IonButton>
             )}
           </IonCardContent>
         </IonCard>
       )}
 
-      {/* STEP 2: SELECT GRID CELL CARD */}
+      {/* STEP 2: ESP32 BLUETOOTH SENSOR READING */}
       {currentStep === 2 && (
         <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
           <IonCardHeader>
             <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IonIcon icon={locationOutline} color="secondary" />
-              STEP 2: Select Grid Cell on Leaflet Map
-            </IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <p style={{ fontSize: '14px', color: '#64748b', marginTop: 0 }}>
-              The map is automatically centered on your photo's captured GPS (<b>{cellLat.toFixed(5)}°, {cellLng.toFixed(5)}°</b>). Tap a grid cell to select it.
-            </p>
-
-            <SiteGridMap
-              centerLat={cellLat}
-              centerLng={cellLng}
-              siteName={selectedSite?.site_name || 'Monitoring Site'}
-              selectedCellId={selectedCellId}
-              onSelectCell={handleStep2_SelectCell}
-              readings={previousReadings}
-              height="380px"
-            />
-
-            <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                Selected Cell: <IonBadge color="primary" style={{ fontSize: '14px' }}>{selectedCellId}</IonBadge>
-              </div>
-              <IonButton color="secondary" onClick={() => setCurrentStep(3)}>
-                Proceed to STEP 3: Sensor Reading ➔
-              </IonButton>
-            </div>
-          </IonCardContent>
-        </IonCard>
-      )}
-
-      {/* STEP 3: ESP32 BLUETOOTH SENSOR READING */}
-      {currentStep === 3 && (
-        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-          <IonCardHeader>
-            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IonIcon icon={bluetoothOutline} color="tertiary" />
-              STEP 3: Read Sensor via Bluetooth (ESP32)
+              STEP 2: Read Sensor via Bluetooth (ESP32)
             </IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
@@ -703,7 +583,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               marginBottom: '16px'
             }}>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <IonButton color="tertiary" onClick={handleStep3_ConnectBluetooth} disabled={btConnecting}>
+                <IonButton color="tertiary" onClick={handleStep2_ConnectBluetooth} disabled={btConnecting}>
                   {btConnecting ? (
                     <>
                       <IonSpinner name="crescent" />
@@ -767,28 +647,27 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               </IonCol>
             </IonRow>
 
-            <IonButton expand="block" color="primary" onClick={() => setCurrentStep(4)} style={{ marginTop: '16px' }}>
-              Proceed to STEP 4: Submit All ➔
+            <IonButton expand="block" color="primary" onClick={() => setCurrentStep(3)} style={{ marginTop: '16px' }}>
+              Proceed to STEP 3: Submit All ➔
             </IonButton>
           </IonCardContent>
         </IonCard>
       )}
 
-      {/* STEP 4: SUBMIT ALL DATA CARD */}
-      {currentStep === 4 && (
+      {/* STEP 3: SUBMIT ALL DATA CARD */}
+      {currentStep === 3 && (
         <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
           <IonCardHeader>
             <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IonIcon icon={cloudUploadOutline} color="success" />
-              STEP 4: Review & Submit All Inspection Data
+              STEP 3: Review & Submit All Inspection Data
             </IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
             <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div><b>Site:</b> {selectedSite?.site_name || 'N/A'}</div>
-              <div><b>Grid Cell:</b> <IonBadge color="primary">{selectedCellId}</IonBadge></div>
-              <div><b>GPS:</b> {cellLat.toFixed(5)}°, {cellLng.toFixed(5)}°</div>
               <div><b>Device:</b> {selectedDeviceUid}</div>
+              <div><b>GPS:</b> {cellLat.toFixed(5)}°, {cellLng.toFixed(5)}°</div>
               <div><b>Ammonia NH₃:</b> <IonBadge color={parseFloat(ammonia) > 40 ? 'warning' : 'success'}>{ammonia} ppm</IonBadge></div>
               <div><b>Photo Linked:</b> {photoRecord ? `Photo #${photoRecord.id}` : 'None'}</div>
             </div>
@@ -797,14 +676,14 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               expand="block"
               color="success"
               size="large"
-              onClick={handleStep4_SubmitAll}
+              onClick={handleStep3_SubmitAll}
               disabled={submitLoading}
               style={{ fontWeight: 'bold' }}
             >
               {submitLoading ? (
                 <>
                   <IonSpinner name="crescent" />
-                  &nbsp;Inserting sensor_data & linking photo...
+                  &nbsp;Submitting Inspection Data...
                 </>
               ) : (
                 <>
