@@ -76,10 +76,12 @@ const WORLD_MASK_RING: [number, number][] = [
 
 export const getSiteTypeColor = (type?: string): string => {
   const t = (type || '').toLowerCase();
-  if (t.includes('piggery') || t.includes('pig')) return '#10b981'; // Green
-  if (t.includes('ambient') || t.includes('agricultural') || t.includes('farm')) return '#3b82f6'; // Blue
-  if (t.includes('industrial') || t.includes('factory')) return '#f97316'; // Orange
-  return '#3b82f6'; // Default Blue
+  if (t.includes('piggery') || t.includes('pig') || t.includes('swine')) return '#10b981'; // Green 🟢
+  if (t.includes('ambient') || t.includes('monitoring') || t.includes('zone')) return '#3b82f6'; // Blue 🔵
+  if (t.includes('industrial') || t.includes('factory') || t.includes('plant')) return '#f97316'; // Orange 🟠
+  if (t.includes('agricultural') || t.includes('agri') || t.includes('farm') || t.includes('poultry')) return '#8b5cf6'; // Purple 🟣
+  if (t.includes('critical') || t.includes('danger') || t.includes('high risk')) return '#ef4444'; // Red 🔴
+  return '#64748b'; // Gray ⚪ (Other/Unspecified)
 };
 
 export const getAmmoniaColor = (ammonia: number): string => {

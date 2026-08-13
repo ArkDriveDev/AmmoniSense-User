@@ -11,7 +11,6 @@ import {
   IonSpinner,
   IonSearchbar,
   IonChip,
-  IonLabel,
   IonBadge,
   IonCard,
   IonToast,
@@ -55,9 +54,9 @@ export default function UserMap() {
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
   const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
 
-  // Search and Filters
+  // Search and Filters: All | Piggery | Ambient | Industrial | Critical
   const [searchText, setSearchText] = useState<string>('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'piggery' | 'ambient' | 'critical'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'piggery' | 'ambient' | 'industrial' | 'critical'>('all');
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
@@ -200,8 +199,9 @@ export default function UserMap() {
   // Filter sites by search text & filter chip
   const filteredSites = sites.filter((site) => {
     if (activeFilter === 'critical') return false;
-    if (activeFilter === 'piggery' && !site.site_type?.toLowerCase().includes('piggery')) return false;
-    if (activeFilter === 'ambient' && !site.site_type?.toLowerCase().includes('ambient') && !site.site_type?.toLowerCase().includes('agricultural')) return false;
+    if (activeFilter === 'piggery' && !site.site_type?.toLowerCase().includes('piggery') && !site.site_type?.toLowerCase().includes('pig') && !site.site_type?.toLowerCase().includes('swine')) return false;
+    if (activeFilter === 'ambient' && !site.site_type?.toLowerCase().includes('ambient') && !site.site_type?.toLowerCase().includes('monitoring')) return false;
+    if (activeFilter === 'industrial' && !site.site_type?.toLowerCase().includes('industrial') && !site.site_type?.toLowerCase().includes('factory')) return false;
 
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
@@ -215,7 +215,7 @@ export default function UserMap() {
 
   // Filter readings by search text & filter chip
   const filteredReadings = readings.filter((reading) => {
-    if (activeFilter === 'piggery' || activeFilter === 'ambient') return false;
+    if (activeFilter === 'piggery' || activeFilter === 'ambient' || activeFilter === 'industrial') return false;
     if (activeFilter === 'critical' && reading.ammonia <= 20) return false;
 
     if (!searchText.trim()) return true;
@@ -317,13 +317,14 @@ export default function UserMap() {
             />
           </div>
 
-          {/* Filter Chips: All | Piggery | Ambient | Critical */}
+          {/* Filter Chips: All | Piggery | Ambient | Industrial | Critical */}
           <div
             style={{
               display: 'flex',
               gap: '6px',
               overflowX: 'auto',
               paddingBottom: '4px',
+              scrollbarWidth: 'none',
             }}
           >
             <IonChip
@@ -349,6 +350,14 @@ export default function UserMap() {
               style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'ambient' ? '#3b82f6' : '#ffffff', color: activeFilter === 'ambient' ? '#ffffff' : '#475569' }}
             >
               Ambient 🔵
+            </IonChip>
+            <IonChip
+              color={activeFilter === 'industrial' ? 'warning' : 'medium'}
+              outline={activeFilter !== 'industrial'}
+              onClick={() => setActiveFilter('industrial')}
+              style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'industrial' ? '#f97316' : '#ffffff', color: activeFilter === 'industrial' ? '#ffffff' : '#475569' }}
+            >
+              Industrial 🟠
             </IonChip>
             <IonChip
               color={activeFilter === 'critical' ? 'danger' : 'medium'}
@@ -624,7 +633,7 @@ export default function UserMap() {
 
             <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
-                Sensor Data Ammonia Thresholds (PPM)
+                Sensor Readings Ammonia Levels (PPM)
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -648,20 +657,32 @@ export default function UserMap() {
 
             <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
-                Monitoring Site Pins by Type
+                Monitoring Site Marker Pin Colors
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10b981' }}></span>
-                  <b>Piggery</b> (Green Pin)
+                  <b>Piggery Farm</b> (Green Pin)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#3b82f6' }}></span>
-                  <b>Ambient</b> (Blue Pin)
+                  <b>Ambient Monitoring Zone</b> (Blue Pin)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f97316' }}></span>
-                  <b>Industrial</b> (Orange Pin)
+                  <b>Industrial Facility</b> (Orange Pin)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#8b5cf6' }}></span>
+                  <b>Agricultural Zone</b> (Purple Pin)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
+                  <b>Critical Zone</b> (Red Pin)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#64748b' }}></span>
+                  <b>Other / Unspecified Site</b> (Gray Pin)
                 </div>
               </div>
             </IonCard>
