@@ -32,7 +32,9 @@ import offlineStorage from '../../services/OfflineStorageService';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
+  PhotoTagMarkerData,
   SITE_BRAND_COLOR,
+  PHOTO_TAG_BRAND_COLOR,
   getAmmoniaColor,
   getAmmoniaSeverityLabel
 } from '../../components/map/FullMapView';
@@ -52,6 +54,7 @@ export default function UserMap() {
   const [loading, setLoading] = useState<boolean>(true);
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
   const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
+  const [photoTags, setPhotoTags] = useState<PhotoTagMarkerData[]>([]);
 
   // Search input
   const [searchText, setSearchText] = useState<string>('');
@@ -59,6 +62,7 @@ export default function UserMap() {
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
   const [showReadingsLayer, setShowReadingsLayer] = useState<boolean>(true);
+  const [showPhotoTagsLayer, setShowPhotoTagsLayer] = useState<boolean>(true);
   const [showBoundaryLayer, setShowBoundaryLayer] = useState<boolean>(true);
 
   // Navigation & Location
@@ -69,6 +73,7 @@ export default function UserMap() {
   // Bottom Sheet Details State
   const [selectedSite, setSelectedSite] = useState<SiteMarkerData | null>(null);
   const [selectedReading, setSelectedReading] = useState<ReadingMarkerData | null>(null);
+  const [selectedPhotoTag, setSelectedPhotoTag] = useState<PhotoTagMarkerData | null>(null);
 
   // Modals & UI Toggles
   const [showLegend, setShowLegend] = useState<boolean>(false);
@@ -86,7 +91,7 @@ export default function UserMap() {
 
   const loadMapData = async () => {
     setLoading(true);
-    await Promise.all([fetchSites(), fetchReadings()]);
+    await Promise.all([fetchSites(), fetchReadings(), fetchPhotoTags()]);
     setLoading(false);
   };
 
@@ -219,6 +224,85 @@ export default function UserMap() {
     }
   };
 
+  const fetchPhotoTags = async () => {
+    let serverPhotoTags: PhotoTagMarkerData[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('inspection_photos')
+        .select(`
+          id,
+          photo_url,
+          latitude,
+          longitude,
+          grid_cell_id,
+          site_id,
+          is_used,
+          uploaded_at,
+          monitoring_sites (
+            site_name
+          )
+        `)
+        .order('uploaded_at', { ascending: false })
+        .limit(200);
+
+      if (!error && data) {
+        serverPhotoTags = data
+          .map((p: any) => ({
+            id: p.id,
+            latitude: p.latitude || 8.3683,
+            longitude: p.longitude || 124.8637,
+            photo_url: p.photo_url,
+            grid_cell_id: p.grid_cell_id,
+            site_id: p.site_id,
+            site_name: Array.isArray(p.monitoring_sites)
+              ? p.monitoring_sites[0]?.site_name
+              : p.monitoring_sites?.site_name || 'Inspection Site',
+            is_used: p.is_used,
+            uploaded_at: p.uploaded_at,
+            is_pending_sync: false,
+          }))
+          .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
+      }
+    } catch (err) {
+      console.warn('Error fetching inspection photo tags:', err);
+    }
+
+    try {
+      const queue = await offlineStorage.getQueue();
+      const offlinePhotoTags: PhotoTagMarkerData[] = queue
+        .filter((q) => q.type === 'SENSOR_READING' && q.payload?.photo_url)
+        .map((q) => ({
+          id: q.id,
+          latitude: q.payload.latitude || 8.3683,
+          longitude: q.payload.longitude || 124.8637,
+          photo_url: q.payload.photo_url,
+          grid_cell_id: q.payload.grid_cell_id,
+          site_id: q.payload.site_id || null,
+          site_name: 'Offline Inspection Tag',
+          is_used: false,
+          uploaded_at: q.timestamp,
+          is_pending_sync: true,
+        }))
+        .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
+
+      setPhotoTags([...offlinePhotoTags, ...serverPhotoTags]);
+    } catch (e) {
+      console.error('Error reading offline photo tags queue:', e);
+      setPhotoTags(serverPhotoTags);
+    }
+  };
+
+  // Filter photo tags by search query
+  const filteredPhotoTags = photoTags.filter((tag) => {
+    if (!searchText.trim()) return true;
+    const query = searchText.toLowerCase();
+    return (
+      tag.grid_cell_id?.toLowerCase().includes(query) ||
+      tag.site_name?.toLowerCase().includes(query) ||
+      tag.id.toString().includes(query)
+    );
+  });
+
   // Filter sites by search query
   const filteredSites = sites.filter((site) => {
     if (!searchText.trim()) return true;
@@ -271,6 +355,7 @@ export default function UserMap() {
   const closeBottomSheet = () => {
     setSelectedSite(null);
     setSelectedReading(null);
+    setSelectedPhotoTag(null);
   };
 
   return (
@@ -339,8 +424,10 @@ export default function UserMap() {
           <FullMapView
             sites={filteredSites}
             readings={filteredReadings}
+            photoTags={filteredPhotoTags}
             showSitesLayer={showSitesLayer}
             showReadingsLayer={showReadingsLayer}
+            showPhotoTagsLayer={showPhotoTagsLayer}
             showBoundaryLayer={showBoundaryLayer}
             centerLat={mapCenter.lat}
             centerLng={mapCenter.lng}
@@ -353,6 +440,10 @@ export default function UserMap() {
             onSelectReading={(reading) => {
               closeBottomSheet();
               setSelectedReading(reading);
+            }}
+            onSelectPhotoTag={(tag) => {
+              closeBottomSheet();
+              setSelectedPhotoTag(tag);
             }}
           />
         )}
@@ -388,7 +479,7 @@ export default function UserMap() {
         </div>
 
         {/* BOTTOM SHEET DETAIL DRAWER */}
-        {(selectedSite || selectedReading) && (
+        {(selectedSite || selectedReading || selectedPhotoTag) && (
           <div
             style={{
               position: 'absolute',
@@ -536,6 +627,77 @@ export default function UserMap() {
                 )}
               </div>
             )}
+
+            {/* PHOTO TAG DETAILS */}
+            {selectedPhotoTag && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Inspection Photo Tag (Step 1)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>
+                        📷 Grid Cell: {selectedPhotoTag.grid_cell_id || 'Captured Tag'}
+                      </span>
+                      <IonBadge style={{ background: selectedPhotoTag.is_used ? '#6366f1' : '#8b5cf6', color: '#ffffff' }}>
+                        {selectedPhotoTag.is_used ? 'Step 1 Tag Submitted' : 'Step 1 Active Tag'}
+                      </IonBadge>
+                      {selectedPhotoTag.is_pending_sync && <PendingSyncBadge />}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedPhotoTag.photo_url && (
+                  <div style={{ width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
+                    <img src={selectedPhotoTag.photo_url} alt="Inspection Photo Tag" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Grid Cell ID</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.grid_cell_id || 'Pending Selection'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.latitude.toFixed(5)}°, {selectedPhotoTag.longitude.toFixed(5)}°</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Captured / Uploaded</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {selectedPhotoTag.uploaded_at ? new Date(selectedPhotoTag.uploaded_at).toLocaleString() : 'Recent'}
+                    </strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setShowPhotoModal(true);
+                    }}
+                  >
+                    <IonIcon icon={eyeOutline} slot="start" /> Full Photo View
+                  </IonButton>
+                  <IonButton
+                    expand="block"
+                    className="btn-ammoni btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      closeBottomSheet();
+                      navigate('/my-sensor-data');
+                    }}
+                  >
+                    Complete Inspection ➔
+                  </IonButton>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -567,6 +729,15 @@ export default function UserMap() {
                   onChange={(e) => setShowReadingsLayer(e.target.checked)}
                 />
                 <b>Sensor Readings</b> (Dots)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showPhotoTagsLayer}
+                  onChange={(e) => setShowPhotoTagsLayer(e.target.checked)}
+                />
+                <b>Step 1 Photo Tags</b> (📷 Pins)
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
@@ -607,6 +778,18 @@ export default function UserMap() {
               </div>
             </IonCard>
 
+            <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
+                Step 1 Inspection Photo Tags
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: PHOTO_TAG_BRAND_COLOR }}></span>
+                  <b>Step 1 Photo Tag</b> (📷 Camera location tag from mobile inspection)
+                </div>
+              </div>
+            </IonCard>
+
             <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
                 Sensor Readings Ammonia Levels (PPM)
@@ -641,9 +824,9 @@ export default function UserMap() {
         <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
           <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
             <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>Inspection Photo</h2>
-            {selectedReading?.photo_url && (
+            {(selectedReading?.photo_url || selectedPhotoTag?.photo_url) && (
               <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>
-                <img src={selectedReading.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
+                <img src={selectedReading?.photo_url || selectedPhotoTag?.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
               </div>
             )}
             <IonButton expand="block" color="medium" onClick={() => setShowPhotoModal(false)}>

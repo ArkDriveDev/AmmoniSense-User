@@ -3,46 +3,24 @@ import {
   IonContent,
   IonHeader,
   IonToolbar,
-  IonTitle,
-  IonSegment,
-  IonSegmentButton,
-  IonLabel,
-  IonIcon
+  IonTitle
 } from '@ionic/react';
-import { useState } from 'react';
-import { addCircleOutline, mapOutline } from 'ionicons/icons';
+import { useNavigate } from 'react-router-dom';
 import SensorSubmissionForm from '../../components/inspection/SensorSubmissionForm';
-import AdminSensorDataViewer from '../../components/admin/AdminSensorDataViewer';
 
 export default function UserSensorData() {
-  const [segment, setSegment] = useState<'submit' | 'view'>('submit');
+  const navigate = useNavigate();
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>MENRO Spatial Sensor Readings</IonTitle>
-        </IonToolbar>
-        <IonToolbar>
-          <IonSegment value={segment} onIonChange={e => setSegment(e.detail.value as 'submit' | 'view')}>
-            <IonSegmentButton value="submit">
-              <IonIcon icon={addCircleOutline} />
-              <IonLabel>Grid Inspection & Camera</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="view">
-              <IonIcon icon={mapOutline} />
-              <IonLabel>Map & Sensor Logs</IonLabel>
-            </IonSegmentButton>
-          </IonSegment>
+          <IonTitle>MENRO Grid Inspection & Sensor Form</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
-        {segment === 'submit' ? (
-          <SensorSubmissionForm onSuccess={() => setSegment('view')} />
-        ) : (
-          <AdminSensorDataViewer />
-        )}
+        <SensorSubmissionForm onSuccess={() => navigate('/map')} />
       </IonContent>
     </IonPage>
   );
