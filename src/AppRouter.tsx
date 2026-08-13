@@ -7,6 +7,7 @@ import UserDashboard from './pages/user/UserDashboard';
 import UserSites from './pages/user/UserSites';
 import UserDevices from './pages/user/UserDevices';
 import UserSensorData from './pages/user/UserSensorData';
+import UserMap from './pages/user/UserMap';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './layouts/UserLayout';
@@ -28,6 +29,18 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/map"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <UserMap />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/spatial-map" element={<Navigate to="/map" replace />} />
 
       <Route path="/my-piggeries" element={<Navigate to="/monitoring-sites" replace />} />
       <Route

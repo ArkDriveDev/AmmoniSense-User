@@ -29,7 +29,8 @@ import {
   logOutOutline,
   personCircleOutline,
   closeOutline,
-  menuOutline
+  menuOutline,
+  mapOutline
 } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 
@@ -144,6 +145,19 @@ export default function UserLayout({ children }: any) {
             >
               <IonIcon icon={homeOutline} slot="start" />
               <IonLabel>Dashboard</IonLabel>
+            </IonItem>
+
+            <IonItem 
+              button 
+              onClick={() => navigate('/map')}
+              color={isActive('/map') || isActive('/spatial-map') ? 'primary' : undefined}
+              style={isActive('/map') || isActive('/spatial-map') ? { 
+                borderLeft: '4px solid var(--ion-color-primary)',
+                fontWeight: 'bold'
+              } : {}}
+            >
+              <IonIcon icon={mapOutline} slot="start" />
+              <IonLabel>Spatial Map</IonLabel>
             </IonItem>
 
             <IonItem 
