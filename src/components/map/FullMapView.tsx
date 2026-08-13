@@ -36,11 +36,9 @@ interface FullMapViewProps {
   readings?: ReadingMarkerData[];
   showSitesLayer?: boolean;
   showReadingsLayer?: boolean;
-  showGridLayer?: boolean;
   showBoundaryLayer?: boolean;
   onSelectSite?: (site: SiteMarkerData) => void;
   onSelectReading?: (reading: ReadingMarkerData) => void;
-  onSelectGridCell?: (cellId: string, cellReadings: ReadingMarkerData[]) => void;
   centerLat?: number;
   centerLng?: number;
   zoom?: number;
@@ -48,7 +46,13 @@ interface FullMapViewProps {
   height?: string;
 }
 
-// Manolo Fortich, Bukidnon Approximate Municipal Boundary Polygon
+// Manolo Fortich Bounding Box Restriction
+export const MANOLO_FORTICH_BOUNDS: L.LatLngBoundsExpression = [
+  [8.2200, 124.7000], // South-West
+  [8.5000, 125.0200]  // North-East
+];
+
+// Manolo Fortich Municipal Boundary Polygon
 const MANOLO_FORTICH_BOUNDARY: [number, number][] = [
   [8.4350, 124.7700],
   [8.4550, 124.8400],
@@ -65,10 +69,8 @@ export const getSiteTypeColor = (type?: string): string => {
   const t = (type || '').toLowerCase();
   if (t.includes('piggery') || t.includes('pig')) return '#10b981'; // Green
   if (t.includes('ambient') || t.includes('agricultural') || t.includes('farm')) return '#3b82f6'; // Blue
-  if (t.includes('industrial') || t.includes('factory')) return '#f59e0b'; // Amber / Orange
-  if (t.includes('poultry') || t.includes('chicken')) return '#8b5cf6'; // Purple
-  if (t.includes('river') || t.includes('water')) return '#06b6d4'; // Cyan / Teal
-  return '#10b981'; // Default Green
+  if (t.includes('industrial') || t.includes('factory')) return '#f97316'; // Orange
+  return '#3b82f6'; // Default Blue
 };
 
 export const getAmmoniaColor = (ammonia: number): string => {
@@ -90,11 +92,9 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   readings = [],
   showSitesLayer = true,
   showReadingsLayer = true,
-  showGridLayer = true,
   showBoundaryLayer = true,
   onSelectSite,
   onSelectReading,
-  onSelectGridCell,
   centerLat = 8.3683,
   centerLng = 124.8637,
   zoom = 13,
@@ -107,12 +107,9 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   const boundaryLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const sitesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const readingsLayerGroupRef = useRef<L.LayerGroup | null>(null);
-  const gridLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const userLocLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
-  const [currentZoom, setCurrentZoom] = useState<number>(zoom);
-
-  // Initialize Map Instance
+  // Initialize Map Instance with Strict Bounds
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -124,10 +121,14 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     const map = L.map(mapContainerRef.current, {
       center: [centerLat, centerLng],
       zoom: zoom,
-      zoomControl: false, // We render custom zoom controls or let user interact
+      minZoom: 11,
+      maxZoom: 18,
+      maxBounds: MANOLO_FORTICH_BOUNDS,
+      maxBoundsViscosity: 1.0, // Strictly prevent panning outside bounds
+      zoomControl: false,
     });
 
-    // Add high quality tile layer
+    // High resolution tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | MENRO Manolo Fortich',
       maxZoom: 20,
@@ -136,12 +137,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     boundaryLayerGroupRef.current = L.layerGroup().addTo(map);
     sitesLayerGroupRef.current = L.layerGroup().addTo(map);
     readingsLayerGroupRef.current = L.layerGroup().addTo(map);
-    gridLayerGroupRef.current = L.layerGroup().addTo(map);
     userLocLayerGroupRef.current = L.layerGroup().addTo(map);
-
-    map.on('zoomend', () => {
-      setCurrentZoom(map.getZoom());
-    });
 
     mapRef.current = map;
 
@@ -153,14 +149,14 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     };
   }, []);
 
-  // Update Center if changed
+  // Update Center
   useEffect(() => {
     if (mapRef.current) {
       mapRef.current.setView([centerLat, centerLng], zoom);
     }
   }, [centerLat, centerLng, zoom]);
 
-  // Render User GPS Location
+  // Render User GPS Marker if within bounds
   useEffect(() => {
     if (!mapRef.current || !userLocLayerGroupRef.current) return;
     const userGroup = userLocLayerGroupRef.current;
@@ -183,14 +179,14 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         stroke: false,
       });
 
-      userMarker.bindPopup('<div style="font-weight: bold; color: #1e3a8a;">📍 Your Current Location</div>');
+      userMarker.bindPopup('<div style="font-weight: bold; color: #1e3a8a;">📍 Your Location (Manolo Fortich)</div>');
 
       userGroup.addLayer(pulseCircle);
       userGroup.addLayer(userMarker);
     }
   }, [userLocation]);
 
-  // Render Municipal Boundary Layer
+  // Render Municipal Boundary
   useEffect(() => {
     if (!mapRef.current || !boundaryLayerGroupRef.current) return;
     const boundaryGroup = boundaryLayerGroupRef.current;
@@ -202,13 +198,13 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         weight: 2.5,
         dashArray: '6, 6',
         fillColor: '#3880ff',
-        fillOpacity: 0.05,
+        fillOpacity: 0.06,
       });
 
       const labelIcon = L.divIcon({
         className: 'boundary-label-marker',
         html: `<div style="
-          background: rgba(15, 60, 92, 0.85);
+          background: rgba(15, 60, 92, 0.88);
           color: white;
           padding: 4px 10px;
           border-radius: 12px;
@@ -218,7 +214,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
           box-shadow: 0 2px 8px rgba(0,0,0,0.25);
           backdrop-filter: blur(4px);
           white-space: nowrap;
-        ">🏛️ Manolo Fortich, Bukidnon Boundary</div>`,
+        ">🏛️ Manolo Fortich Municipality</div>`,
         iconSize: [180, 24],
         iconAnchor: [90, 12],
       });
@@ -230,7 +226,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     }
   }, [showBoundaryLayer]);
 
-  // Render Monitoring Sites (Layer 1)
+  // Render Site Markers (Layer 1)
   useEffect(() => {
     if (!mapRef.current || !sitesLayerGroupRef.current) return;
     const sitesGroup = sitesLayerGroupRef.current;
@@ -287,7 +283,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     });
   }, [sites, showSitesLayer, onSelectSite]);
 
-  // Render Sensor Data Readings (Layer 2)
+  // Render Sensor Reading Dots (Layer 2)
   useEffect(() => {
     if (!mapRef.current || !readingsLayerGroupRef.current) return;
     const readingsGroup = readingsLayerGroupRef.current;
@@ -309,7 +305,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         fillOpacity: 0.85,
       });
 
-      // Subtle pulse halo for critical readings
       if (reading.ammonia > 20) {
         const pulse = L.circle([reading.latitude, reading.longitude], {
           radius: 100,
@@ -327,93 +322,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
       readingsGroup.addLayer(circleMarker);
     });
   }, [readings, showReadingsLayer, onSelectReading]);
-
-  // Render Spatial Grid Overlay (Layer 3)
-  useEffect(() => {
-    if (!mapRef.current || !gridLayerGroupRef.current) return;
-    const gridGroup = gridLayerGroupRef.current;
-    gridGroup.clearLayers();
-
-    if (!showGridLayer) return;
-
-    // Create 6x6 spatial grid around Manolo Fortich center
-    const gridSize = 6;
-    const cellDegreeOffset = 0.015; // ~1.5 km per cell
-
-    const halfGrid = Math.floor(gridSize / 2);
-    const startLat = centerLat - halfGrid * cellDegreeOffset;
-    const startLng = centerLng - halfGrid * cellDegreeOffset;
-
-    const cols = ['A', 'B', 'C', 'D', 'E', 'F'];
-
-    for (let r = 0; r < gridSize; r++) {
-      for (let c = 0; c < gridSize; c++) {
-        const colLetter = cols[c] || `C${c + 1}`;
-        const rowNum = r + 1;
-        const cellId = `${colLetter}${rowNum}`;
-
-        const south = startLat + r * cellDegreeOffset;
-        const north = south + cellDegreeOffset;
-        const west = startLng + c * cellDegreeOffset;
-        const east = west + cellDegreeOffset;
-
-        const bounds = L.latLngBounds([
-          [south, west],
-          [north, east],
-        ]);
-        const center = bounds.getCenter();
-
-        // Calculate average ammonia in cell
-        const cellReadings = readings.filter(rd => {
-          if (rd.grid_cell_id && rd.grid_cell_id.toUpperCase() === cellId) return true;
-          return bounds.contains([rd.latitude, rd.longitude]);
-        });
-
-        const avgAmmonia =
-          cellReadings.length > 0
-            ? cellReadings.reduce((sum, r) => sum + (r.ammonia || 0), 0) / cellReadings.length
-            : null;
-
-        const cellColor = avgAmmonia !== null ? getAmmoniaColor(avgAmmonia) : '#64748b';
-
-        const rectangle = L.rectangle(bounds, {
-          color: cellColor,
-          weight: 1.5,
-          fillColor: cellColor,
-          fillOpacity: avgAmmonia !== null ? 0.12 : 0.03,
-          dashArray: '4, 4',
-        });
-
-        const labelText = avgAmmonia !== null ? `${cellId} (${avgAmmonia.toFixed(1)} PPM)` : `${cellId}`;
-
-        const labelIcon = L.divIcon({
-          className: 'grid-overlay-label',
-          html: `<div style="
-            font-size: 10px;
-            font-weight: 700;
-            color: ${avgAmmonia !== null ? '#ffffff' : '#334155'};
-            background: ${avgAmmonia !== null ? cellColor : 'rgba(255, 255, 255, 0.85)'};
-            padding: 2px 6px;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            text-align: center;
-            white-space: nowrap;
-          ">${labelText}</div>`,
-          iconSize: [80, 18],
-          iconAnchor: [40, 9],
-        });
-
-        const labelMarker = L.marker(center, { icon: labelIcon, interactive: false });
-
-        rectangle.on('click', () => {
-          if (onSelectGridCell) onSelectGridCell(cellId, cellReadings);
-        });
-
-        gridGroup.addLayer(rectangle);
-        gridGroup.addLayer(labelMarker);
-      }
-    }
-  }, [centerLat, centerLng, readings, showGridLayer, onSelectGridCell]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height, overflow: 'hidden' }}>

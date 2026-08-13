@@ -14,7 +14,6 @@ import {
   IonLabel,
   IonBadge,
   IonCard,
-  IonCardContent,
   IonToast,
   IonModal,
   IonPopover
@@ -24,16 +23,10 @@ import {
   locateOutline,
   layersOutline,
   informationCircleOutline,
-  addOutline,
   closeOutline,
-  businessOutline,
   hardwareChipOutline,
-  chevronForwardOutline,
   eyeOutline,
-  calendarOutline,
-  locationOutline,
-  funnelOutline,
-  checkmarkCircleOutline
+  locationOutline
 } from 'ionicons/icons';
 
 import { supabase } from '../../services/supabase';
@@ -49,6 +42,12 @@ import { Geolocation } from '@capacitor/geolocation';
 import { useNavigate } from 'react-router-dom';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 
+// Manolo Fortich Coordinates & Bounds Check
+const MANOLO_FORTICH_CENTER = { lat: 8.3683, lng: 124.8637, zoom: 13 };
+const IS_IN_MANOLO_FORTICH = (lat: number, lng: number) => {
+  return lat >= 8.2200 && lat <= 8.5000 && lng >= 124.7000 && lng <= 125.0200;
+};
+
 export default function UserMap() {
   const navigate = useNavigate();
 
@@ -58,16 +57,14 @@ export default function UserMap() {
 
   // Search and Filters
   const [searchText, setSearchText] = useState<string>('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'piggery' | 'ambient' | 'critical' | 'warning'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'piggery' | 'ambient' | 'critical'>('all');
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
   const [showReadingsLayer, setShowReadingsLayer] = useState<boolean>(true);
-  const [showGridLayer, setShowGridLayer] = useState<boolean>(true);
   const [showBoundaryLayer, setShowBoundaryLayer] = useState<boolean>(true);
 
-  // Map Navigation State
-  const MANOLO_FORTICH_CENTER = { lat: 8.3683, lng: 124.8637, zoom: 13 };
+  // Navigation & Location
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom?: number }>(MANOLO_FORTICH_CENTER);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState<boolean>(false);
@@ -75,7 +72,6 @@ export default function UserMap() {
   // Bottom Sheet Details State
   const [selectedSite, setSelectedSite] = useState<SiteMarkerData | null>(null);
   const [selectedReading, setSelectedReading] = useState<ReadingMarkerData | null>(null);
-  const [selectedGridCell, setSelectedGridCell] = useState<{ id: string; readings: ReadingMarkerData[] } | null>(null);
 
   // Modals & UI Toggles
   const [showLegend, setShowLegend] = useState<boolean>(false);
@@ -119,20 +115,23 @@ export default function UserMap() {
         `);
 
       if (!sitesErr && sitesData) {
-        const formattedSites: SiteMarkerData[] = sitesData.map((s: any) => ({
-          id: s.id,
-          site_code: s.site_code,
-          site_name: s.site_name,
-          site_type: s.site_type || 'Agricultural',
-          address: s.address,
-          latitude: s.current_latitude || 8.3683,
-          longitude: s.current_longitude || 124.8637,
-          grid_cell_id: s.current_grid_cell_id || 'A1',
-          owner_name: s.site_owners?.owner_name || 'Inspector Owner',
-          photo_url: Array.isArray(s.inspection_photos)
-            ? s.inspection_photos[0]?.photo_url
-            : s.inspection_photos?.photo_url,
-        }));
+        const formattedSites: SiteMarkerData[] = sitesData
+          .map((s: any) => ({
+            id: s.id,
+            site_code: s.site_code,
+            site_name: s.site_name,
+            site_type: s.site_type || 'Agricultural',
+            address: s.address,
+            latitude: s.current_latitude || 8.3683,
+            longitude: s.current_longitude || 124.8637,
+            grid_cell_id: s.current_grid_cell_id || 'A1',
+            owner_name: s.site_owners?.owner_name || 'Inspector Owner',
+            photo_url: Array.isArray(s.inspection_photos)
+              ? s.inspection_photos[0]?.photo_url
+              : s.inspection_photos?.photo_url,
+          }))
+          .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+
         setSites(formattedSites);
       }
     } catch (err) {
@@ -150,26 +149,27 @@ export default function UserMap() {
         .limit(200);
 
       if (!error && data) {
-        serverReadings = data.map((r: any) => ({
-          id: r.id,
-          ammonia: r.ammonia || 0,
-          temperature: r.temperature,
-          humidity: r.humidity,
-          battery: r.battery,
-          latitude: r.latitude || 8.3683,
-          longitude: r.longitude || 124.8637,
-          grid_cell_id: r.grid_cell_id,
-          device_uid: r.device_uid,
-          created_at: r.created_at,
-          photo_url: r.photo_url,
-          is_pending_sync: false,
-        }));
+        serverReadings = data
+          .map((r: any) => ({
+            id: r.id,
+            ammonia: r.ammonia || 0,
+            temperature: r.temperature,
+            humidity: r.humidity,
+            battery: r.battery,
+            latitude: r.latitude || 8.3683,
+            longitude: r.longitude || 124.8637,
+            grid_cell_id: r.grid_cell_id,
+            device_uid: r.device_uid,
+            created_at: r.created_at,
+            photo_url: r.photo_url,
+            is_pending_sync: false,
+          }))
+          .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
       }
     } catch (err) {
       console.warn('Error fetching sensor data:', err);
     }
 
-    // Include offline pending queue sensor readings
     try {
       const queue = await offlineStorage.getQueue();
       const offlineReadings: ReadingMarkerData[] = queue
@@ -187,7 +187,8 @@ export default function UserMap() {
           created_at: q.timestamp,
           photo_url: q.payload.photo_url,
           is_pending_sync: true,
-        }));
+        }))
+        .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
 
       setReadings([...offlineReadings, ...serverReadings]);
     } catch (e) {
@@ -196,9 +197,9 @@ export default function UserMap() {
     }
   };
 
-  // Filter sites according to search text & filter chip
+  // Filter sites by search text & filter chip
   const filteredSites = sites.filter((site) => {
-    if (activeFilter === 'critical' || activeFilter === 'warning') return false; // Filter applies to readings
+    if (activeFilter === 'critical') return false;
     if (activeFilter === 'piggery' && !site.site_type?.toLowerCase().includes('piggery')) return false;
     if (activeFilter === 'ambient' && !site.site_type?.toLowerCase().includes('ambient') && !site.site_type?.toLowerCase().includes('agricultural')) return false;
 
@@ -212,11 +213,10 @@ export default function UserMap() {
     );
   });
 
-  // Filter readings according to search text & filter chip
+  // Filter readings by search text & filter chip
   const filteredReadings = readings.filter((reading) => {
     if (activeFilter === 'piggery' || activeFilter === 'ambient') return false;
     if (activeFilter === 'critical' && reading.ammonia <= 20) return false;
-    if (activeFilter === 'warning' && (reading.ammonia <= 5 || reading.ammonia > 20)) return false;
 
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
@@ -232,10 +232,17 @@ export default function UserMap() {
     setLocating(true);
     try {
       const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-      const userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setUserLocation(userCoords);
-      setMapCenter({ ...userCoords, zoom: 16 });
-      setToastMsg('📍 Centered on your current GPS location');
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      if (IS_IN_MANOLO_FORTICH(lat, lng)) {
+        setUserLocation({ lat, lng });
+        setMapCenter({ lat, lng, zoom: 15 });
+        setToastMsg('📍 Centered on your location in Manolo Fortich');
+      } else {
+        setMapCenter(MANOLO_FORTICH_CENTER);
+        setToastMsg('📍 Your GPS location is outside Manolo Fortich. Map view is restricted to Manolo Fortich.');
+      }
       setShowToast(true);
     } catch (err: any) {
       console.warn('Geolocation error:', err);
@@ -246,24 +253,16 @@ export default function UserMap() {
     }
   };
 
-  // Center on Manolo Fortich
-  const handleCenterManoloFortich = () => {
-    setMapCenter(MANOLO_FORTICH_CENTER);
-    setToastMsg('📍 Centered on Manolo Fortich, Bukidnon');
-    setShowToast(true);
-  };
-
   const closeBottomSheet = () => {
     setSelectedSite(null);
     setSelectedReading(null);
-    setSelectedGridCell(null);
   };
 
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Spatial Monitoring Map</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>Manolo Fortich Map</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => setShowLegend(true)} style={{ color: '#ffffff' }}>
               <IonIcon icon={informationCircleOutline} slot="icon-only" />
@@ -312,20 +311,19 @@ export default function UserMap() {
             <IonSearchbar
               value={searchText}
               onIonInput={(e) => setSearchText(e.detail.value!)}
-              placeholder="Search site, address, code, or grid cell..."
+              placeholder="Search site, address, code..."
               showClearButton="always"
               style={{ '--background': 'transparent', '--box-shadow': 'none', padding: 0 }}
             />
           </div>
 
-          {/* Horizontal Filter Chips */}
+          {/* Filter Chips: All | Piggery | Ambient | Critical */}
           <div
             style={{
               display: 'flex',
               gap: '6px',
               overflowX: 'auto',
               paddingBottom: '4px',
-              scrollbarWidth: 'none',
             }}
           >
             <IonChip
@@ -342,7 +340,7 @@ export default function UserMap() {
               onClick={() => setActiveFilter('piggery')}
               style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'piggery' ? '#10b981' : '#ffffff', color: activeFilter === 'piggery' ? '#ffffff' : '#475569' }}
             >
-              Piggeries 🐷
+              Piggery 🟢
             </IonChip>
             <IonChip
               color={activeFilter === 'ambient' ? 'tertiary' : 'medium'}
@@ -350,15 +348,7 @@ export default function UserMap() {
               onClick={() => setActiveFilter('ambient')}
               style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'ambient' ? '#3b82f6' : '#ffffff', color: activeFilter === 'ambient' ? '#ffffff' : '#475569' }}
             >
-              Ambient Zones 🍃
-            </IonChip>
-            <IonChip
-              color={activeFilter === 'warning' ? 'warning' : 'medium'}
-              outline={activeFilter !== 'warning'}
-              onClick={() => setActiveFilter('warning')}
-              style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'warning' ? '#eab308' : '#ffffff', color: activeFilter === 'warning' ? '#ffffff' : '#475569' }}
-            >
-              Warning (5-10 PPM) 🟡
+              Ambient 🔵
             </IonChip>
             <IonChip
               color={activeFilter === 'critical' ? 'danger' : 'medium'}
@@ -366,7 +356,7 @@ export default function UserMap() {
               onClick={() => setActiveFilter('critical')}
               style={{ fontWeight: 600, fontSize: '12px', background: activeFilter === 'critical' ? '#ef4444' : '#ffffff', color: activeFilter === 'critical' ? '#ffffff' : '#475569' }}
             >
-              Critical (&gt;20 PPM) 🔴
+              Critical 🔴
             </IonChip>
           </div>
         </div>
@@ -375,7 +365,7 @@ export default function UserMap() {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#F1F5F9' }}>
             <IonSpinner name="crescent" color="primary" />
-            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Map & Sensors...</p>
+            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Map...</p>
           </div>
         ) : (
           <FullMapView
@@ -383,7 +373,6 @@ export default function UserMap() {
             readings={filteredReadings}
             showSitesLayer={showSitesLayer}
             showReadingsLayer={showReadingsLayer}
-            showGridLayer={showGridLayer}
             showBoundaryLayer={showBoundaryLayer}
             centerLat={mapCenter.lat}
             centerLng={mapCenter.lng}
@@ -396,10 +385,6 @@ export default function UserMap() {
             onSelectReading={(reading) => {
               closeBottomSheet();
               setSelectedReading(reading);
-            }}
-            onSelectGridCell={(cellId, cellReadings) => {
-              closeBottomSheet();
-              setSelectedGridCell({ id: cellId, readings: cellReadings });
             }}
           />
         )}
@@ -416,23 +401,6 @@ export default function UserMap() {
             gap: '10px',
           }}
         >
-          {/* Center Manolo Fortich */}
-          <IonButton
-            size="small"
-            shape="round"
-            onClick={handleCenterManoloFortich}
-            style={{
-              '--background': '#ffffff',
-              '--color': '#0F3C5C',
-              '--box-shadow': '0 4px 14px rgba(0,0,0,0.2)',
-              width: '44px',
-              height: '44px',
-              fontWeight: 'bold',
-            }}
-          >
-            🏛️
-          </IonButton>
-
           {/* Locate GPS Button */}
           <IonButton
             size="small"
@@ -452,7 +420,7 @@ export default function UserMap() {
         </div>
 
         {/* BOTTOM SHEET DETAIL DRAWER */}
-        {(selectedSite || selectedReading || selectedGridCell) && (
+        {(selectedSite || selectedReading) && (
           <div
             style={{
               position: 'absolute',
@@ -467,7 +435,6 @@ export default function UserMap() {
               padding: '20px',
               maxHeight: '75vh',
               overflowY: 'auto',
-              animation: 'slideUp 0.3s ease-out',
             }}
           >
             {/* Drawer Header Handle & Close Button */}
@@ -478,7 +445,7 @@ export default function UserMap() {
               </IonButton>
             </div>
 
-            {/* SITE DETAILS BOTTOM SHEET */}
+            {/* SITE DETAILS */}
             {selectedSite && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -499,7 +466,6 @@ export default function UserMap() {
                   {selectedSite.address || 'Manolo Fortich, Bukidnon'}
                 </p>
 
-                {/* Photo Preview if available */}
                 {selectedSite.photo_url && (
                   <div style={{ width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
                     <img src={selectedSite.photo_url} alt={selectedSite.site_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -512,37 +478,34 @@ export default function UserMap() {
                     <strong style={{ color: '#0f172a' }}>{selectedSite.owner_name}</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Grid Cell ID</span>
-                    <strong style={{ color: '#0f172a' }}>Cell {selectedSite.grid_cell_id || 'A1'}</strong>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Municipality</span>
+                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
                     <strong style={{ color: '#0f172a' }}>{selectedSite.latitude.toFixed(4)}°, {selectedSite.longitude.toFixed(4)}°</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Municipality</span>
-                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Status</span>
+                    <strong style={{ color: '#10b981' }}>Active Site</strong>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <IonButton
-                    expand="block"
-                    className="btn-ammoni btn-primary"
-                    style={{ flex: 1 }}
-                    onClick={() => {
-                      closeBottomSheet();
-                      navigate(`/devices?site=${selectedSite.id}`);
-                    }}
-                  >
-                    <IonIcon icon={hardwareChipOutline} slot="start" />
-                    View Site Devices
-                  </IonButton>
-                </div>
+                <IonButton
+                  expand="block"
+                  className="btn-ammoni btn-primary"
+                  onClick={() => {
+                    closeBottomSheet();
+                    navigate(`/devices?site=${selectedSite.id}`);
+                  }}
+                >
+                  <IonIcon icon={hardwareChipOutline} slot="start" />
+                  View Site Devices
+                </IonButton>
               </div>
             )}
 
-            {/* SENSOR READING DETAILS BOTTOM SHEET */}
+            {/* SENSOR READING DETAILS */}
             {selectedReading && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -578,8 +541,8 @@ export default function UserMap() {
                     <strong style={{ color: '#0f172a' }}>{selectedReading.device_uid || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Grid Cell ID</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedReading.grid_cell_id || 'N/A'}</strong>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Location</span>
+                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Temperature / Humidity</span>
@@ -599,55 +562,8 @@ export default function UserMap() {
                     fill="outline"
                     onClick={() => setShowPhotoModal(true)}
                   >
-                    <IonIcon icon={eyeOutline} slot="start" /> View Photo & EXIF Metadata
+                    <IonIcon icon={eyeOutline} slot="start" /> View Inspection Photo
                   </IonButton>
-                )}
-              </div>
-            )}
-
-            {/* GRID CELL SUMMARY BOTTOM SHEET */}
-            {selectedGridCell && (
-              <div>
-                <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                  Spatial Grid Cell {selectedGridCell.id}
-                </h3>
-                <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: '#64748b' }}>
-                  {selectedGridCell.readings.length} sensor readings recorded within cell bounds.
-                </p>
-
-                {selectedGridCell.readings.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
-                    No sensor readings recorded in this grid cell yet.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {selectedGridCell.readings.map((r) => (
-                      <div
-                        key={r.id}
-                        onClick={() => setSelectedReading(r)}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '10px 14px',
-                          background: '#f8fafc',
-                          borderRadius: '10px',
-                          border: '1px solid #e2e8f0',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div>
-                          <strong style={{ fontSize: '14px', color: getAmmoniaColor(r.ammonia) }}>
-                            NH₃: {r.ammonia.toFixed(1)} PPM
-                          </strong>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>
-                            Device: {r.device_uid} • {new Date(r.created_at).toLocaleTimeString()}
-                          </div>
-                        </div>
-                        <IonIcon icon={chevronForwardOutline} style={{ color: '#94a3b8' }} />
-                      </div>
-                    ))}
-                  </div>
                 )}
               </div>
             )}
@@ -662,7 +578,7 @@ export default function UserMap() {
         >
           <div style={{ padding: '16px', minWidth: '220px' }}>
             <h4 style={{ margin: '0 0 12px 0', fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
-              Map Layers & Overlays
+              Map Layers
             </h4>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -682,15 +598,6 @@ export default function UserMap() {
                   onChange={(e) => setShowReadingsLayer(e.target.checked)}
                 />
                 <b>Sensor Readings</b> (Dots)
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showGridLayer}
-                  onChange={(e) => setShowGridLayer(e.target.checked)}
-                />
-                <b>Spatial Grid Overlay</b> (A1-F6)
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
@@ -746,19 +653,15 @@ export default function UserMap() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10b981' }}></span>
-                  <b>Piggery / Livestock Farm</b> (Green Pin)
+                  <b>Piggery</b> (Green Pin)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#3b82f6' }}></span>
-                  <b>Ambient / Agricultural Zone</b> (Blue Pin)
+                  <b>Ambient</b> (Blue Pin)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f59e0b' }}></span>
-                  <b>Industrial Facility</b> (Orange Pin)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#8b5cf6' }}></span>
-                  <b>Poultry Farm</b> (Purple Pin)
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f97316' }}></span>
+                  <b>Industrial</b> (Orange Pin)
                 </div>
               </div>
             </IonCard>
@@ -769,10 +672,10 @@ export default function UserMap() {
           </div>
         </IonModal>
 
-        {/* PHOTO & EXIF MODAL */}
+        {/* PHOTO MODAL */}
         <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
           <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-            <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>EXIF Inspection Photo</h2>
+            <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>Inspection Photo</h2>
             {selectedReading?.photo_url && (
               <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>
                 <img src={selectedReading.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
@@ -788,7 +691,7 @@ export default function UserMap() {
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
           message={toastMsg}
-          duration={3000}
+          duration={3500}
           position="bottom"
         />
       </IonContent>
