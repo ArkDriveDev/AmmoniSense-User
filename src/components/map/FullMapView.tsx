@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import OdorZonePolygonLayer from './OdorZonePolygonLayer';
 
 export interface SiteMarkerData {
   id: string | number;
@@ -54,6 +55,8 @@ interface FullMapViewProps {
   showReadingsLayer?: boolean;
   showPhotoTagsLayer?: boolean;
   showBoundaryLayer?: boolean;
+  showOdorZonesLayer?: boolean;
+  showCommunitiesLayer?: boolean;
   onSelectSite?: (site: SiteMarkerData) => void;
   onSelectReading?: (reading: ReadingMarkerData) => void;
   onSelectPhotoTag?: (tag: PhotoTagMarkerData) => void;
@@ -118,6 +121,8 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   showReadingsLayer = true,
   showPhotoTagsLayer = true,
   showBoundaryLayer = true,
+  showOdorZonesLayer = true,
+  showCommunitiesLayer = true,
   onSelectSite,
   onSelectReading,
   onSelectPhotoTag,
@@ -129,6 +134,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   const boundaryLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const sitesLayerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -168,12 +174,14 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     userLocLayerGroupRef.current = L.layerGroup().addTo(map);
 
     mapRef.current = map;
+    setMapInstance(map);
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
+      setMapInstance(null);
     };
   }, []);
 
@@ -462,6 +470,13 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   return (
     <div style={{ position: 'relative', width: '100%', height, overflow: 'hidden' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', zIndex: 1 }} />
+      <OdorZonePolygonLayer
+        map={mapInstance}
+        readings={readings}
+        sites={sites}
+        showOdorZones={showOdorZonesLayer}
+        showCommunities={showCommunitiesLayer}
+      />
     </div>
   );
 };

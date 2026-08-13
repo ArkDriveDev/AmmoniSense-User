@@ -40,6 +40,8 @@ import {
   step2_updatePhotoGridCell,
   step4_markPhotoAsUsed
 } from '../../utils/photoUtils';
+import bleService, { BLEReading } from '../../services/bleService';
+import BLESimulatorModal from './BLESimulatorModal';
 
 interface MonitoringSite {
   id: number;
@@ -91,6 +93,8 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [battery, setBattery] = useState<string>('92.0');
   const [btConnecting, setBtConnecting] = useState<boolean>(false);
   const [btConnected, setBtConnected] = useState<boolean>(false);
+  const [bleRssi, setBleRssi] = useState<number | null>(null);
+  const [showBLESimulatorModal, setShowBLESimulatorModal] = useState<boolean>(false);
 
   // STEP 4 State: Submission Loading
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
@@ -102,6 +106,29 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
   useEffect(() => {
     fetchSites();
+
+    // Subscribe to real-time BLE telemetry (Hardware BLE or Simulator stream)
+    const unsubscribe = bleService.onReading((reading: BLEReading) => {
+      setAmmonia(reading.ammonia.toString());
+      setTemperature(reading.temperature.toString());
+      setHumidity(reading.humidity.toString());
+      setBattery(reading.battery.toString());
+      setBtConnected(true);
+      if (reading.device_uid) {
+        setSelectedDeviceUid(reading.device_uid);
+      }
+      if (reading.rssi !== undefined) {
+        setBleRssi(reading.rssi);
+      }
+
+      setToastMsg(`📡 BLE Telemetry Auto-Populated from ${reading.device_uid} (${reading.ammonia} ppm NH₃)`);
+      setToastColor('success');
+      setShowToast(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -292,26 +319,29 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const handleStep3_ConnectBluetooth = async () => {
     setBtConnecting(true);
     try {
-      // Simulate Web Bluetooth / ESP32 Sensor read
-      await new Promise(r => setTimeout(r, 1200));
+      let reading: BLEReading | null = null;
+      try {
+        reading = await bleService.scanAndConnect();
+      } catch (scanErr: any) {
+        console.info('Scanning fallback to simulator connection');
+        reading = await bleService.simulateConnection('moderate');
+      }
 
-      const randomAmmonia = (15 + Math.random() * 25).toFixed(1);
-      const randomTemp = (27 + Math.random() * 4).toFixed(1);
-      const randomHum = (60 + Math.random() * 15).toFixed(1);
+      if (reading) {
+        setAmmonia(reading.ammonia.toString());
+        setTemperature(reading.temperature.toString());
+        setHumidity(reading.humidity.toString());
+        setBattery(reading.battery.toString());
+        setBtConnected(true);
+        if (reading.device_uid) setSelectedDeviceUid(reading.device_uid);
+        if (reading.rssi !== undefined) setBleRssi(reading.rssi);
 
-      setAmmonia(randomAmmonia);
-      setTemperature(randomTemp);
-      setHumidity(randomHum);
-      setBtConnected(true);
-
-      setToastMsg(`Step 3 Complete! Received Bluetooth sensor readings from ESP32.`);
-      setToastColor('success');
-      setShowToast(true);
-
-      // Auto advance to Step 4
-      setCurrentStep(4);
+        setToastMsg(`Step 3 Complete! Received BLE telemetry from ${reading.device_uid}.`);
+        setToastColor('success');
+        setShowToast(true);
+      }
     } catch (err: any) {
-      setToastMsg('Bluetooth connection failed: ' + err.message);
+      setToastMsg('Bluetooth connection failed: ' + (err.message || 'Error'));
       setToastColor('warning');
       setShowToast(true);
     } finally {
@@ -672,24 +702,37 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               textAlign: 'center',
               marginBottom: '16px'
             }}>
-              <IonButton color="tertiary" onClick={handleStep3_ConnectBluetooth} disabled={btConnecting}>
-                {btConnecting ? (
-                  <>
-                    <IonSpinner name="crescent" />
-                    &nbsp;Connecting Bluetooth...
-                  </>
-                ) : (
-                  <>
-                    <IonIcon icon={bluetoothOutline} slot="start" />
-                    {btConnected ? 'Re-scan ESP32 Bluetooth' : 'Connect & Read ESP32 Sensor'}
-                  </>
-                )}
-              </IonButton>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <IonButton color="tertiary" onClick={handleStep3_ConnectBluetooth} disabled={btConnecting}>
+                  {btConnecting ? (
+                    <>
+                      <IonSpinner name="crescent" />
+                      &nbsp;Connecting BLE...
+                    </>
+                  ) : (
+                    <>
+                      <IonIcon icon={bluetoothOutline} slot="start" />
+                      {btConnected ? 'Re-scan ESP32 BLE' : 'Connect ESP32 BLE'}
+                    </>
+                  )}
+                </IonButton>
+
+                <IonButton fill="outline" color="dark" onClick={() => setShowBLESimulatorModal(true)}>
+                  📡 Launch BLE Simulator
+                </IonButton>
+              </div>
 
               {btConnected && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: '#166534', fontWeight: 600 }}>
-                  <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                  Bluetooth Connected: Data Synchronized
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <span>
+                    <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                    BLE Connected ({selectedDeviceUid})
+                  </span>
+                  {bleRssi && (
+                    <IonBadge color="success" style={{ fontSize: '10px' }}>
+                      RSSI: {bleRssi} dBm
+                    </IonBadge>
+                  )}
                 </div>
               )}
             </div>
@@ -792,6 +835,11 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
             setSelectedSiteId(newSite.id);
           }
         }}
+      />
+
+      <BLESimulatorModal
+        isOpen={showBLESimulatorModal}
+        onClose={() => setShowBLESimulatorModal(false)}
       />
     </div>
   );

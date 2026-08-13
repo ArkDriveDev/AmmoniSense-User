@@ -64,6 +64,8 @@ export default function UserMap() {
   const [showReadingsLayer, setShowReadingsLayer] = useState<boolean>(true);
   const [showPhotoTagsLayer, setShowPhotoTagsLayer] = useState<boolean>(true);
   const [showBoundaryLayer, setShowBoundaryLayer] = useState<boolean>(true);
+  const [showOdorZonesLayer, setShowOdorZonesLayer] = useState<boolean>(true);
+  const [showCommunitiesLayer, setShowCommunitiesLayer] = useState<boolean>(true);
 
   // Navigation & Location
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom?: number }>(MANOLO_FORTICH_CENTER);
@@ -499,6 +501,8 @@ export default function UserMap() {
             showReadingsLayer={showReadingsLayer}
             showPhotoTagsLayer={showPhotoTagsLayer}
             showBoundaryLayer={showBoundaryLayer}
+            showOdorZonesLayer={showOdorZonesLayer}
+            showCommunitiesLayer={showCommunitiesLayer}
             centerLat={mapCenter.lat}
             centerLng={mapCenter.lng}
             zoom={mapCenter.zoom}
