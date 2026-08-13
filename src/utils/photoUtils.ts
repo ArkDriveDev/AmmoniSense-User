@@ -27,6 +27,53 @@ export interface StampOptions {
   siteName?: string;
 }
 
+/**
+ * Capture photo via Capacitor Camera plugin with automatic HTML5 fallback if plugin is unimplemented
+ */
+export const captureImageWithCameraOrFallback = async (): Promise<string> => {
+  try {
+    const photo = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.DataUrl,
+      source: CameraSource.Camera,
+    });
+    if (photo.dataUrl) return photo.dataUrl;
+  } catch (err: any) {
+    console.warn('Capacitor Camera plugin error/unimplemented, invoking HTML5 camera capture fallback:', err);
+  }
+
+  // Fallback: HTML5 Input File with capture="environment"
+  return new Promise<string>((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.setAttribute('capture', 'environment');
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.onchange = (e: any) => {
+      const file = e.target?.files?.[0];
+      if (!file) {
+        if (document.body.contains(input)) document.body.removeChild(input);
+        return reject(new Error('User cancelled camera capture'));
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (document.body.contains(input)) document.body.removeChild(input);
+        resolve(event.target?.result as string);
+      };
+      reader.onerror = (error) => {
+        if (document.body.contains(input)) document.body.removeChild(input);
+        reject(error);
+      };
+      reader.readAsDataURL(file);
+    };
+
+    input.click();
+  });
+};
+
 // Convert decimal degrees to EXIF Rational format [[deg, 1], [min, 1], [sec*100, 100]]
 const degToExifRational = (deg: number): [[number, number], [number, number], [number, number]] => {
   const absolute = Math.abs(deg);
@@ -242,17 +289,8 @@ export const step1_takeAndUploadPhoto = async (
     console.warn('Could not fetch device GPS location, using fallback:', geoErr);
   }
 
-  // 2. Capture photo via Capacitor Camera
-  const photo = await Camera.getPhoto({
-    quality: 90,
-    allowEditing: false,
-    resultType: CameraResultType.DataUrl,
-    source: CameraSource.Camera,
-  });
-
-  if (!photo.dataUrl) {
-    throw new Error('Failed to capture photo data URL from camera');
-  }
+  // 2. Capture photo via Capacitor Camera (with web/unimplemented fallback)
+  const capturedDataUrl = await captureImageWithCameraOrFallback();
 
   const stampOptions: StampOptions = {
     latitude,
@@ -261,7 +299,7 @@ export const step1_takeAndUploadPhoto = async (
   };
 
   // 3. Stamp visible canvas overlay
-  const stampedDataUrl = await addStampToImage(photo.dataUrl, stampOptions);
+  const stampedDataUrl = await addStampToImage(capturedDataUrl, stampOptions);
 
   // 4. Embed EXIF GPS metadata
   const finalDataUrl = embedExifData(stampedDataUrl, stampOptions);
@@ -405,21 +443,12 @@ export interface CaptureSitePhotoResult {
 export const captureSitePhoto = async (
   siteName: string = 'New Monitoring Site'
 ): Promise<CaptureSitePhotoResult> => {
-  // 1. Capture photo via Capacitor Camera
-  const photo = await Camera.getPhoto({
-    quality: 90,
-    allowEditing: false,
-    resultType: CameraResultType.DataUrl,
-    source: CameraSource.Camera,
-  });
-
-  if (!photo.dataUrl) {
-    throw new Error('Failed to capture photo from camera');
-  }
+  // 1. Capture photo via Capacitor Camera (with web/unimplemented fallback)
+  const capturedDataUrl = await captureImageWithCameraOrFallback();
 
   // 2. Try EXIF GPS extraction from captured photo
   let gpsSource: GpsSource = 'photo_exif';
-  let extracted = extractGpsFromExif(photo.dataUrl);
+  let extracted = extractGpsFromExif(capturedDataUrl);
   let latitude = extracted?.latitude;
   let longitude = extracted?.longitude;
 
@@ -448,7 +477,7 @@ export const captureSitePhoto = async (
   };
 
   // 4. Stamp & Embed EXIF
-  const stampedDataUrl = await addStampToImage(photo.dataUrl, stampOptions);
+  const stampedDataUrl = await addStampToImage(capturedDataUrl, stampOptions);
   const finalDataUrl = embedExifData(stampedDataUrl, stampOptions);
 
   // 5. Upload photo to Supabase Storage
