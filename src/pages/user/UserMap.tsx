@@ -137,33 +137,121 @@ export default function UserMap() {
           .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
       }
     } catch (err) {
-      console.error('Error fetching monitoring sites:', err);
+      console.warn('Network error or offline mode while fetching monitoring sites from Supabase:', err);
     }
 
+    let offlineFormatted: SiteMarkerData[] = [];
     try {
+      // 1. Fetch from IndexedDB offline_sites store
       const offlineRecords = await offlineStorage.getOfflineSites();
-      const offlineFormatted: SiteMarkerData[] = offlineRecords
-        .map((os) => ({
-          id: os.id,
-          site_code: os.site_code,
-          site_name: os.site_name,
-          site_type: os.site_type || 'Agricultural',
-          address: os.address,
-          latitude: os.current_latitude || 8.3683,
-          longitude: os.current_longitude || 124.8637,
-          grid_cell_id: os.current_grid_cell_id || 'A1',
-          owner_name: os.owner?.owner_name || 'Inspector Owner',
-          photo_url: os.site_photo_thumbnail || os.site_photo_url,
-          isOffline: true,
-          is_pending_sync: true,
-        }))
+      const idbOfflineFormatted: SiteMarkerData[] = offlineRecords
+        .map((os: any) => {
+          const lat = (typeof os.current_latitude === 'number' && os.current_latitude !== 0)
+            ? os.current_latitude
+            : (typeof os.latitude === 'number' && os.latitude !== 0)
+            ? os.latitude
+            : 8.3683;
+
+          const lng = (typeof os.current_longitude === 'number' && os.current_longitude !== 0)
+            ? os.current_longitude
+            : (typeof os.longitude === 'number' && os.longitude !== 0)
+            ? os.longitude
+            : 124.8637;
+
+          return {
+            id: os.id,
+            site_code: os.site_code || 'OFFLINE',
+            site_name: os.site_name || 'Offline Site',
+            site_type: os.site_type || 'Agricultural',
+            address: os.address || os.site_name,
+            latitude: lat,
+            longitude: lng,
+            grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
+            owner_name: os.owner?.owner_name || 'Inspector Owner',
+            photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
+            isOffline: true,
+            is_pending_sync: true,
+          };
+        })
         .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
 
-      setSites([...offlineFormatted, ...onlineFormatted]);
+      // 2. Fetch from IndexedDB offline queue ('SITE_REGISTRATION')
+      let queuedOfflineFormatted: SiteMarkerData[] = [];
+      try {
+        const queue = await offlineStorage.getQueue();
+        queuedOfflineFormatted = queue
+          .filter((q) => q.type === 'SITE_REGISTRATION' && q.payload)
+          .map((q) => {
+            const p = q.payload;
+            const lat = p.current_latitude || p.latitude || 8.3683;
+            const lng = p.current_longitude || p.longitude || 124.8637;
+            return {
+              id: q.id || `queue_${Date.now()}`,
+              site_code: p.site_code || 'QUEUED',
+              site_name: p.site_name || 'Unsubmitted Site',
+              site_type: p.site_type || 'Agricultural',
+              address: p.address || p.site_name,
+              latitude: lat,
+              longitude: lng,
+              grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
+              owner_name: 'Inspector Owner',
+              photo_url: p.site_photo_url || p.photo_url,
+              isOffline: true,
+              is_pending_sync: true,
+            };
+          })
+          .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+      } catch (qErr) {
+        console.warn('Error fetching queued site registrations:', qErr);
+      }
+
+      // 3. Check localStorage fallback for 'offline_sites'
+      let lsOfflineFormatted: SiteMarkerData[] = [];
+      try {
+        const lsStr = localStorage.getItem('offline_sites');
+        if (lsStr) {
+          const lsArr = JSON.parse(lsStr);
+          if (Array.isArray(lsArr)) {
+            lsOfflineFormatted = lsArr
+              .map((os: any) => ({
+                id: os.id || `ls_${Date.now()}`,
+                site_code: os.site_code || 'LS_OFFLINE',
+                site_name: os.site_name || 'Offline Site',
+                site_type: os.site_type || 'Agricultural',
+                address: os.address || os.site_name,
+                latitude: os.current_latitude || os.latitude || 8.3683,
+                longitude: os.current_longitude || os.longitude || 124.8637,
+                grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
+                owner_name: os.owner?.owner_name || 'Inspector Owner',
+                photo_url: os.site_photo_thumbnail || os.site_photo_url,
+                isOffline: true,
+                is_pending_sync: true,
+              }))
+              .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+          }
+        }
+      } catch (lsErr) {
+        console.warn('Error reading localStorage offline_sites:', lsErr);
+      }
+
+      // Deduplicate all offline records by id
+      const offlineMap = new Map<string | number, SiteMarkerData>();
+      [...idbOfflineFormatted, ...queuedOfflineFormatted, ...lsOfflineFormatted].forEach((item) => {
+        offlineMap.set(item.id, item);
+      });
+      offlineFormatted = Array.from(offlineMap.values());
     } catch (err) {
       console.error('Error loading offline sites for map:', err);
-      setSites(onlineFormatted);
     }
+
+    // Combine offline sites and online sites, avoiding duplicates if online has synced an offline site ID
+    const combinedMap = new Map<string | number, SiteMarkerData>();
+    // First add offline sites (unsubmitted / pending sync)
+    offlineFormatted.forEach((s) => combinedMap.set(s.id, s));
+    // Then add online sites
+    onlineFormatted.forEach((s) => combinedMap.set(s.id, s));
+
+    setSites(Array.from(combinedMap.values()));
   };
 
   const fetchReadings = async () => {
