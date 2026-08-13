@@ -266,7 +266,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     }
   }, [showBoundaryLayer]);
 
-  // Render Site Markers with Uniform Brand Color (#1D5D9B)
+  // Render Site Markers: 🔴 Red Pin for Unsubmitted/Offline, 🟢 Green Pin for Submitted/Online
   useEffect(() => {
     if (!mapRef.current || !sitesLayerGroupRef.current) return;
     const sitesGroup = sitesLayerGroupRef.current;
@@ -275,23 +275,27 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     if (!showSitesLayer) return;
 
     sites.forEach((site) => {
-      if (!site.latitude || !site.longitude) return;
+      const lat = typeof site.latitude === 'number' ? site.latitude : (site as any).current_latitude;
+      const lng = typeof site.longitude === 'number' ? site.longitude : (site as any).current_longitude;
 
-      const isOffline = site.isOffline || site.is_pending_sync;
-      const color = isOffline ? '#ef4444' : SITE_BRAND_COLOR; // Red for unsubmitted offline sites
+      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
+
+      const isOffline = Boolean(site.isOffline || site.is_pending_sync);
+      const color = isOffline ? '#ef4444' : '#22c55e'; // 🔴 Red for offline/unsubmitted, 🟢 Green for online/submitted
+      const pinEmoji = isOffline ? '🔴' : '🟢';
 
       const customIcon = L.divIcon({
         className: 'site-pin-marker',
         html: `
           <div style="
             position: relative;
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             background: ${color};
             border: 2.5px solid #ffffff;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -300,22 +304,23 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
             <div style="
               transform: rotate(45deg);
               color: #ffffff;
-              font-size: 14px;
+              font-size: 15px;
               font-weight: bold;
               display: flex;
               align-items: center;
               justify-content: center;
             ">
-              ${isOffline ? '🔴' : '🏢'}
+              ${pinEmoji}
             </div>
           </div>
         `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -34],
       });
 
       if (isOffline) {
-        const pulseCircle = L.circle([site.latitude, site.longitude], {
+        const pulseCircle = L.circle([lat, lng], {
           radius: 120,
           fillColor: '#ef4444',
           fillOpacity: 0.25,
@@ -324,7 +329,19 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         sitesGroup.addLayer(pulseCircle);
       }
 
-      const marker = L.marker([site.latitude, site.longitude], { icon: customIcon });
+      const popupContent = `
+        <div style="font-family: sans-serif; padding: 4px; min-width: 140px;">
+          <strong style="font-size: 14px; color: #0f172a; display: block; margin-bottom: 2px;">${site.site_name}</strong>
+          ${isOffline 
+            ? '<div style="color: #ef4444; font-weight: bold; font-size: 12px; margin-bottom: 4px;">⏳ Pending Submission (Offline)</div>' 
+            : '<div style="color: #22c55e; font-weight: bold; font-size: 12px; margin-bottom: 4px;">✅ Synced Online Site</div>'
+          }
+          <div style="font-size: 12px; color: #475569;">${site.address || 'Manolo Fortich, Bukidnon'}</div>
+        </div>
+      `;
+
+      const marker = L.marker([lat, lng], { icon: customIcon });
+      marker.bindPopup(popupContent);
 
       marker.on('click', () => {
         if (onSelectSite) onSelectSite(site);

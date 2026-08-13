@@ -95,6 +95,16 @@ export default function UserMap() {
     setLoading(false);
   };
 
+  const resolveSiteCoords = (latRaw?: any, lngRaw?: any) => {
+    let lat = typeof latRaw === 'number' ? latRaw : parseFloat(latRaw);
+    let lng = typeof lngRaw === 'number' ? lngRaw : parseFloat(lngRaw);
+
+    if (isNaN(lat) || isNaN(lng) || !IS_IN_MANOLO_FORTICH(lat, lng)) {
+      return { latitude: 8.3683, longitude: 124.8637 };
+    }
+    return { latitude: lat, longitude: lng };
+  };
+
   const fetchSites = async () => {
     let onlineFormatted: SiteMarkerData[] = [];
     try {
@@ -118,23 +128,25 @@ export default function UserMap() {
         `);
 
       if (!sitesErr && sitesData) {
-        onlineFormatted = sitesData
-          .map((s: any) => ({
+        onlineFormatted = sitesData.map((s: any) => {
+          const coords = resolveSiteCoords(s.current_latitude, s.current_longitude);
+          return {
             id: s.id,
             site_code: s.site_code,
             site_name: s.site_name,
             site_type: s.site_type || 'Agricultural',
             address: s.address,
-            latitude: s.current_latitude || 8.3683,
-            longitude: s.current_longitude || 124.8637,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
             grid_cell_id: s.current_grid_cell_id || 'A1',
             owner_name: s.site_owners?.owner_name || 'Inspector Owner',
             photo_url: Array.isArray(s.inspection_photos)
               ? s.inspection_photos[0]?.photo_url
               : s.inspection_photos?.photo_url,
             isOffline: false,
-          }))
-          .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+            is_pending_sync: false,
+          };
+        });
       }
     } catch (err) {
       console.warn('Network error or offline mode while fetching monitoring sites from Supabase:', err);
@@ -144,36 +156,27 @@ export default function UserMap() {
     try {
       // 1. Fetch from IndexedDB offline_sites store
       const offlineRecords = await offlineStorage.getOfflineSites();
-      const idbOfflineFormatted: SiteMarkerData[] = offlineRecords
-        .map((os: any) => {
-          const lat = (typeof os.current_latitude === 'number' && os.current_latitude !== 0)
-            ? os.current_latitude
-            : (typeof os.latitude === 'number' && os.latitude !== 0)
-            ? os.latitude
-            : 8.3683;
+      const idbOfflineFormatted: SiteMarkerData[] = offlineRecords.map((os: any) => {
+        const coords = resolveSiteCoords(
+          os.current_latitude ?? os.latitude,
+          os.current_longitude ?? os.longitude
+        );
 
-          const lng = (typeof os.current_longitude === 'number' && os.current_longitude !== 0)
-            ? os.current_longitude
-            : (typeof os.longitude === 'number' && os.longitude !== 0)
-            ? os.longitude
-            : 124.8637;
-
-          return {
-            id: os.id,
-            site_code: os.site_code || 'OFFLINE',
-            site_name: os.site_name || 'Offline Site',
-            site_type: os.site_type || 'Agricultural',
-            address: os.address || os.site_name,
-            latitude: lat,
-            longitude: lng,
-            grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
-            owner_name: os.owner?.owner_name || 'Inspector Owner',
-            photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
-            isOffline: true,
-            is_pending_sync: true,
-          };
-        })
-        .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+        return {
+          id: os.id,
+          site_code: os.site_code || 'OFFLINE',
+          site_name: os.site_name || 'Offline Site',
+          site_type: os.site_type || 'Agricultural',
+          address: os.address || os.site_name,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
+          owner_name: os.owner?.owner_name || 'Inspector Owner',
+          photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
+          isOffline: true,
+          is_pending_sync: true,
+        };
+      });
 
       // 2. Fetch from IndexedDB offline queue ('SITE_REGISTRATION')
       let queuedOfflineFormatted: SiteMarkerData[] = [];
@@ -183,24 +186,26 @@ export default function UserMap() {
           .filter((q) => q.type === 'SITE_REGISTRATION' && q.payload)
           .map((q) => {
             const p = q.payload;
-            const lat = p.current_latitude || p.latitude || 8.3683;
-            const lng = p.current_longitude || p.longitude || 124.8637;
+            const coords = resolveSiteCoords(
+              p.current_latitude ?? p.latitude,
+              p.current_longitude ?? p.longitude
+            );
+
             return {
               id: q.id || `queue_${Date.now()}`,
               site_code: p.site_code || 'QUEUED',
               site_name: p.site_name || 'Unsubmitted Site',
               site_type: p.site_type || 'Agricultural',
               address: p.address || p.site_name,
-              latitude: lat,
-              longitude: lng,
+              latitude: coords.latitude,
+              longitude: coords.longitude,
               grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
               owner_name: 'Inspector Owner',
               photo_url: p.site_photo_url || p.photo_url,
               isOffline: true,
               is_pending_sync: true,
             };
-          })
-          .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+          });
       } catch (qErr) {
         console.warn('Error fetching queued site registrations:', qErr);
       }
@@ -212,22 +217,26 @@ export default function UserMap() {
         if (lsStr) {
           const lsArr = JSON.parse(lsStr);
           if (Array.isArray(lsArr)) {
-            lsOfflineFormatted = lsArr
-              .map((os: any) => ({
+            lsOfflineFormatted = lsArr.map((os: any) => {
+              const coords = resolveSiteCoords(
+                os.current_latitude ?? os.latitude,
+                os.current_longitude ?? os.longitude
+              );
+              return {
                 id: os.id || `ls_${Date.now()}`,
                 site_code: os.site_code || 'LS_OFFLINE',
                 site_name: os.site_name || 'Offline Site',
                 site_type: os.site_type || 'Agricultural',
                 address: os.address || os.site_name,
-                latitude: os.current_latitude || os.latitude || 8.3683,
-                longitude: os.current_longitude || os.longitude || 124.8637,
+                latitude: coords.latitude,
+                longitude: coords.longitude,
                 grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
                 owner_name: os.owner?.owner_name || 'Inspector Owner',
                 photo_url: os.site_photo_thumbnail || os.site_photo_url,
                 isOffline: true,
                 is_pending_sync: true,
-              }))
-              .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+              };
+            });
           }
         }
       } catch (lsErr) {
@@ -251,7 +260,9 @@ export default function UserMap() {
     // Then add online sites
     onlineFormatted.forEach((s) => combinedMap.set(s.id, s));
 
-    setSites(Array.from(combinedMap.values()));
+    const finalSites = Array.from(combinedMap.values());
+    console.log('📍 Total sites loaded for map display:', finalSites.length, finalSites);
+    setSites(finalSites);
   };
 
   const fetchReadings = async () => {
