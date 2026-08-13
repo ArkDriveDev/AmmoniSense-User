@@ -190,6 +190,15 @@ class SyncService {
     if (error) {
       throw new Error(`monitoring_sites insert error: ${error.message}`);
     }
+    // Delete local OfflineSite record from IndexedDB once synced to Supabase
+    if (item.payload?.temp_id || item.payload?.id) {
+      const tempId = item.payload.temp_id || item.payload.id;
+      try {
+        await offlineStorage.deleteOfflineSite(tempId);
+      } catch (e) {
+        console.warn('Could not remove local offline site record:', e);
+      }
+    }
   }
 
   private async syncDeviceTag(item: QueueItem): Promise<void> {

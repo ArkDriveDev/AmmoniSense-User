@@ -1,6 +1,8 @@
 // OfflineStorageService.ts
 // Handles localStorage for auth session & form drafts, and IndexedDB for offline queue & photo blobs.
 
+import { OfflineSite } from '../types/site';
+
 export interface QueueItem {
   id: string;
   type: 'SENSOR_READING' | 'SITE_REGISTRATION' | 'DEVICE_TAG';
@@ -19,9 +21,10 @@ export interface StoredPhoto {
 }
 
 const DB_NAME = 'AmmoniSenseOfflineDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const QUEUE_STORE = 'offline_queue';
 const PHOTO_STORE = 'photo_store';
+const OFFLINE_SITES_STORE = 'offline_sites';
 
 // LOCALSTORAGE KEYS
 const SESSION_KEY = 'ammonisense_session';
@@ -50,6 +53,9 @@ class OfflineStorageService {
         }
         if (!db.objectStoreNames.contains(PHOTO_STORE)) {
           db.createObjectStore(PHOTO_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(OFFLINE_SITES_STORE)) {
+          db.createObjectStore(OFFLINE_SITES_STORE, { keyPath: 'id' });
         }
       };
 
@@ -248,6 +254,69 @@ class OfflineStorageService {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(PHOTO_STORE, 'readwrite');
       const store = tx.objectStore(PHOTO_STORE);
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // ==========================================
+  // INDEXEDDB OFFLINE SITES HELPERS
+  // ==========================================
+
+  async saveOfflineSite(site: OfflineSite): Promise<OfflineSite> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
+      const req = store.put(site);
+      req.onsuccess = () => resolve(site);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getOfflineSites(): Promise<OfflineSite[]> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readonly');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async updateOfflineSite(id: string, updates: Partial<OfflineSite>): Promise<void> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
+      const getReq = store.get(id);
+
+      getReq.onsuccess = () => {
+        const item: OfflineSite = getReq.result;
+        if (item) {
+          const updatedItem = {
+            ...item,
+            ...updates,
+            lastModified: new Date().toISOString(),
+          };
+          const putReq = store.put(updatedItem);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        } else {
+          resolve();
+        }
+      };
+      getReq.onerror = () => reject(getReq.error);
+    });
+  }
+
+  async deleteOfflineSite(id: string): Promise<void> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
       const req = store.delete(id);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);

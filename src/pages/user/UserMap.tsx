@@ -91,6 +91,7 @@ export default function UserMap() {
   };
 
   const fetchSites = async () => {
+    let onlineFormatted: SiteMarkerData[] = [];
     try {
       const { data: sitesData, error: sitesErr } = await supabase
         .from('monitoring_sites')
@@ -112,7 +113,7 @@ export default function UserMap() {
         `);
 
       if (!sitesErr && sitesData) {
-        const formattedSites: SiteMarkerData[] = sitesData
+        onlineFormatted = sitesData
           .map((s: any) => ({
             id: s.id,
             site_code: s.site_code,
@@ -126,13 +127,37 @@ export default function UserMap() {
             photo_url: Array.isArray(s.inspection_photos)
               ? s.inspection_photos[0]?.photo_url
               : s.inspection_photos?.photo_url,
+            isOffline: false,
           }))
           .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
-
-        setSites(formattedSites);
       }
     } catch (err) {
       console.error('Error fetching monitoring sites:', err);
+    }
+
+    try {
+      const offlineRecords = await offlineStorage.getOfflineSites();
+      const offlineFormatted: SiteMarkerData[] = offlineRecords
+        .map((os) => ({
+          id: os.id,
+          site_code: os.site_code,
+          site_name: os.site_name,
+          site_type: os.site_type || 'Agricultural',
+          address: os.address,
+          latitude: os.current_latitude || 8.3683,
+          longitude: os.current_longitude || 124.8637,
+          grid_cell_id: os.current_grid_cell_id || 'A1',
+          owner_name: os.owner?.owner_name || 'Inspector Owner',
+          photo_url: os.site_photo_thumbnail || os.site_photo_url,
+          isOffline: true,
+          is_pending_sync: true,
+        }))
+        .filter((s) => IS_IN_MANOLO_FORTICH(s.latitude, s.longitude));
+
+      setSites([...offlineFormatted, ...onlineFormatted]);
+    } catch (err) {
+      console.error('Error loading offline sites for map:', err);
+      setSites(onlineFormatted);
     }
   };
 
@@ -391,13 +416,14 @@ export default function UserMap() {
             {/* SITE DETAILS */}
             {selectedSite && (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <IonBadge style={{ background: SITE_BRAND_COLOR, color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <IonBadge style={{ background: selectedSite.isOffline ? '#ef4444' : SITE_BRAND_COLOR, color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
                     {selectedSite.site_type || 'Agricultural'}
                   </IonBadge>
                   <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
                     {selectedSite.site_code}
                   </span>
+                  {selectedSite.isOffline && <PendingSyncBadge />}
                 </div>
 
                 <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
@@ -569,9 +595,15 @@ export default function UserMap() {
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
                 Monitoring Site Pins
               </h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
-                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
-                <b>Monitoring Site</b> (AmmoniSense Brand Marker)
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
+                  <b>Monitoring Site</b> (Synced Brand Marker)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
+                  <b>Unsynced Offline Site</b> (🔴 Pending Sync Indicator)
+                </div>
               </div>
             </IonCard>
 

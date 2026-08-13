@@ -14,6 +14,8 @@ export interface SiteMarkerData {
   grid_cell_id?: string;
   photo_url?: string;
   status?: string;
+  isOffline?: boolean;
+  is_pending_sync?: boolean;
 }
 
 export interface ReadingMarkerData {
@@ -253,6 +255,9 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     sites.forEach((site) => {
       if (!site.latitude || !site.longitude) return;
 
+      const isOffline = site.isOffline || site.is_pending_sync;
+      const color = isOffline ? '#ef4444' : SITE_BRAND_COLOR; // Red for unsubmitted offline sites
+
       const customIcon = L.divIcon({
         className: 'site-pin-marker',
         html: `
@@ -260,7 +265,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
             position: relative;
             width: 32px;
             height: 32px;
-            background: ${SITE_BRAND_COLOR};
+            background: ${color};
             border: 2.5px solid #ffffff;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
@@ -279,13 +284,23 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
               align-items: center;
               justify-content: center;
             ">
-              🏢
+              ${isOffline ? '🔴' : '🏢'}
             </div>
           </div>
         `,
         iconSize: [32, 32],
         iconAnchor: [16, 32],
       });
+
+      if (isOffline) {
+        const pulseCircle = L.circle([site.latitude, site.longitude], {
+          radius: 120,
+          fillColor: '#ef4444',
+          fillOpacity: 0.25,
+          stroke: false,
+        });
+        sitesGroup.addLayer(pulseCircle);
+      }
 
       const marker = L.marker([site.latitude, site.longitude], { icon: customIcon });
 

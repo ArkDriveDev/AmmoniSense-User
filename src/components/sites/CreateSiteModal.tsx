@@ -35,17 +35,19 @@ import {
 import { Geolocation } from '@capacitor/geolocation';
 import { captureSitePhoto, InspectionPhotoRecord } from '../../utils/photoUtils';
 import { registerSiteWithPhoto } from '../../services/siteService';
+import { supabase } from '../../services/supabase';
 import offlineStorage, { SITE_DRAFT_KEY } from '../../services/OfflineStorageService';
 import syncService from '../../services/SyncService';
-import { GpsSource } from '../../types/site';
+import { GpsSource, OfflineSite } from '../../types/site';
 
 export interface CreateSiteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSiteCreated?: (newSite: any) => void;
+  editSite?: OfflineSite | null;
 }
 
-export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClose, onSiteCreated }) => {
+export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClose, onSiteCreated, editSite }) => {
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [capturingPhoto, setCapturingPhoto] = useState(false);
@@ -60,8 +62,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     site_type: 'Piggery',
     address: '',
     area_size_hectares: '1.0',
-    current_latitude: 14.5995,
-    current_longitude: 120.9842,
+    current_latitude: 8.3683,
+    current_longitude: 124.8637,
     current_grid_cell_id: 'A1',
     notes: '',
   });
@@ -71,20 +73,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
   useEffect(() => {
     if (isOpen) {
-      // Restore draft if present
-      const draft = offlineStorage.getDraft<typeof form>(SITE_DRAFT_KEY);
-      if (draft && draft.site_name) {
-        setForm(draft);
-      } else if (!photoPreview) {
-        fetchCurrentGps();
+      if (editSite) {
+        setForm({
+          site_code: editSite.site_code || `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
+          site_name: editSite.site_name || '',
+          site_type: editSite.site_type || 'Piggery',
+          address: editSite.address || '',
+          area_size_hectares: (editSite.area_size_hectares || 1.0).toString(),
+          current_latitude: editSite.current_latitude || 8.3683,
+          current_longitude: editSite.current_longitude || 124.8637,
+          current_grid_cell_id: editSite.current_grid_cell_id || 'A1',
+          notes: editSite.notes || '',
+        });
+        if (editSite.site_photo_url) {
+          setPhotoPreview(editSite.site_photo_url);
+        }
+      } else {
+        const draft = offlineStorage.getDraft<typeof form>(SITE_DRAFT_KEY);
+        if (draft && draft.site_name) {
+          setForm(draft);
+        } else if (!photoPreview) {
+          fetchCurrentGps();
+        }
       }
     }
-  }, [isOpen]);
+  }, [isOpen, editSite]);
 
   const updateForm = (fields: Partial<typeof form>) => {
     setForm(prev => {
       const updated = { ...prev, ...fields };
-      offlineStorage.saveDraft(SITE_DRAFT_KEY, updated);
+      if (!editSite) {
+        offlineStorage.saveDraft(SITE_DRAFT_KEY, updated);
+      }
       return updated;
     });
   };
@@ -148,7 +168,11 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     }
 
     setLoading(true);
+
+    const tempId = editSite?.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
     const sitePayload = {
+      temp_id: tempId,
       site_code: form.site_code,
       site_name: form.site_name,
       site_type: form.site_type,
@@ -159,9 +183,42 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       grid_cell_id: form.current_grid_cell_id || 'A1',
       notes: form.notes,
       photo_record_id: photoRecord?.id,
-      photo_url: photoRecord?.photo_url,
+      photo_url: photoRecord?.photo_url || photoPreview || undefined,
       gps_source: gpsSource,
     };
+
+    // If editing existing offline site locally
+    if (editSite) {
+      try {
+        await offlineStorage.updateOfflineSite(editSite.id, {
+          site_code: form.site_code,
+          site_name: form.site_name,
+          site_type: form.site_type,
+          address: form.address || form.site_name,
+          area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+          current_latitude: form.current_latitude,
+          current_longitude: form.current_longitude,
+          current_grid_cell_id: form.current_grid_cell_id || 'A1',
+          site_photo_url: photoPreview || editSite.site_photo_url || '',
+          site_photo_thumbnail: photoPreview || editSite.site_photo_thumbnail || '',
+          notes: form.notes,
+          lastModified: new Date().toISOString(),
+        });
+
+        setToastMsg(`Offline site "${form.site_name}" updated locally.`);
+        setShowToast(true);
+
+        if (onSiteCreated) {
+          onSiteCreated({ ...editSite, ...sitePayload });
+        }
+        onClose();
+      } catch (err: any) {
+        console.error('Error updating offline site locally:', err);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     try {
       if (!syncService.isOnline()) {
@@ -182,20 +239,49 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     } catch (err: any) {
       console.warn('Network error or offline mode during site creation, queueing item:', err);
       
-      // Save item to offline queue
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id || 'inspector_user';
+
+      const offlineSiteRecord: OfflineSite = {
+        id: tempId,
+        isOffline: true,
+        isSynced: false,
+        site_code: form.site_code,
+        site_name: form.site_name,
+        site_type: form.site_type,
+        owner_id: null,
+        owner: {
+          owner_name: 'Inspector Owner',
+          contact_number: '',
+          email: '',
+          address: form.address || form.site_name,
+        },
+        current_latitude: form.current_latitude,
+        current_longitude: form.current_longitude,
+        current_grid_cell_id: form.current_grid_cell_id || 'A1',
+        address: form.address || form.site_name,
+        area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+        site_photo_url: photoPreview || photoRecord?.photo_url || '',
+        site_photo_thumbnail: photoPreview || photoRecord?.photo_url || '',
+        created_at: new Date().toISOString(),
+        created_by: userId,
+        notes: form.notes,
+        syncStatus: 'pending',
+        retryCount: 0,
+        lastModified: new Date().toISOString(),
+      };
+
+      // Save OfflineSite to IndexedDB
+      await offlineStorage.saveOfflineSite(offlineSiteRecord);
+
+      // Save item to offline queue for SyncService
       await offlineStorage.enqueueItem('SITE_REGISTRATION', sitePayload);
       offlineStorage.clearDraft(SITE_DRAFT_KEY);
 
-      setToastMsg(`📶 Offline Mode: Site "${form.site_name}" queued locally for auto-sync!`);
+      setToastMsg(`📶 Offline Mode: Site "${form.site_name}" saved locally & queued for auto-sync!`);
       setShowToast(true);
 
-      const optimisticSite = {
-        id: `offline_${Date.now()}`,
-        ...sitePayload,
-        is_pending_sync: true,
-      };
-
-      if (onSiteCreated) onSiteCreated(optimisticSite);
+      if (onSiteCreated) onSiteCreated(offlineSiteRecord);
 
       setPhotoRecord(null);
       setPhotoPreview(null);

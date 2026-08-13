@@ -140,10 +140,30 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         query = query.eq('owner_id', ownerId);
       }
 
+      let onlineSites: any[] = [];
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
-        setSites(data);
-        setSelectedSiteId(data[0].id);
+      if (!error && data) {
+        onlineSites = data;
+      }
+
+      let offlineSitesList: any[] = [];
+      try {
+        const offlineRecords = await offlineStorage.getOfflineSites();
+        offlineSitesList = offlineRecords.map(os => ({
+          id: os.id,
+          site_name: `${os.site_name} (🔴 Offline)`,
+          address: os.address,
+          current_latitude: os.current_latitude,
+          current_longitude: os.current_longitude,
+          current_grid_cell_id: os.current_grid_cell_id,
+          isOffline: true,
+        }));
+      } catch (e) {}
+
+      const allSites = [...offlineSitesList, ...onlineSites];
+      if (allSites.length > 0) {
+        setSites(allSites);
+        setSelectedSiteId(allSites[0].id);
       }
     } catch (err) {
       console.error('Error fetching sites:', err);

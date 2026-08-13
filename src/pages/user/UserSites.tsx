@@ -20,7 +20,19 @@ import {
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { refreshOutline, locationOutline, addOutline, businessOutline, hardwareChipOutline, chevronForwardOutline } from 'ionicons/icons';
+import offlineStorage from '../../services/OfflineStorageService';
+import PendingSyncBadge from '../../components/common/PendingSyncBadge';
+import { OfflineSite } from '../../types/site';
+import {
+  refreshOutline,
+  locationOutline,
+  addOutline,
+  businessOutline,
+  hardwareChipOutline,
+  chevronForwardOutline,
+  createOutline,
+  trashOutline
+} from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 import CreateSiteModal from '../../components/sites/CreateSiteModal';
 
@@ -28,7 +40,9 @@ export default function UserSites() {
   const navigate = useNavigate();
   const [sites, setSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deviceCounts, setDeviceCounts] = useState<Record<number, number>>({});
+  const [deviceCounts, setDeviceCounts] = useState<Record<string | number, number>>({});
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingOfflineSite, setEditingOfflineSite] = useState<OfflineSite | null>(null);
 
   useEffect(() => {
     fetchSites();
@@ -36,64 +50,96 @@ export default function UserSites() {
 
   const fetchSites = async () => {
     setLoading(true);
+    let onlineSitesList: any[] = [];
+
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
 
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
+      if (userId) {
+        const { data: owners } = await supabase
+          .from('site_owners')
+          .select('id')
+          .eq('created_by', userId);
 
-      const { data: owners } = await supabase
-        .from('site_owners')
-        .select('id')
-        .eq('created_by', userId);
+        const ownerId = owners && owners.length > 0 ? owners[0].id : null;
 
-      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+        if (ownerId) {
+          const { data, error } = await supabase
+            .from('monitoring_sites')
+            .select('*')
+            .eq('owner_id', ownerId);
 
-      let sitesList: any[] = [];
-      if (ownerId) {
-        const { data, error } = await supabase
-          .from('monitoring_sites')
-          .select('*')
-          .eq('owner_id', ownerId);
-
-        if (!error && data) {
-          sitesList = data.map(l => ({
-            id: l.id,
-            site_name: l.site_name,
-            location: l.address,
-            site_code: l.site_code,
-            site_type: l.site_type || 'Agricultural'
-          }));
+          if (!error && data) {
+            onlineSitesList = data.map(l => ({
+              id: l.id,
+              site_name: l.site_name,
+              location: l.address,
+              site_code: l.site_code,
+              site_type: l.site_type || 'Agricultural',
+              isOffline: false,
+            }));
+          }
         }
       }
+    } catch (err) {
+      console.warn('Network error or offline during fetchSites:', err);
+    }
 
-      setSites(sitesList);
+    // Load offline sites from IndexedDB
+    try {
+      const offlineRecords = await offlineStorage.getOfflineSites();
+      const offlineSitesList = offlineRecords.map((os) => ({
+        id: os.id,
+        site_name: os.site_name,
+        location: os.address,
+        site_code: os.site_code,
+        site_type: os.site_type || 'Agricultural',
+        isOffline: true,
+        is_pending_sync: true,
+        offlineRecord: os,
+      }));
 
-      const counts: Record<number, number> = {};
-      for (const item of sitesList) {
-        const { count } = await supabase
-          .from('devices')
-          .select('id', { count: 'exact', head: true })
-          .eq('site_id', item.id);
-        counts[item.id] = count || 0;
+      const combinedSites = [...offlineSitesList, ...onlineSitesList];
+      setSites(combinedSites);
+
+      const counts: Record<string | number, number> = {};
+      for (const item of onlineSitesList) {
+        try {
+          const { count } = await supabase
+            .from('devices')
+            .select('id', { count: 'exact', head: true })
+            .eq('site_id', item.id);
+          counts[item.id] = count || 0;
+        } catch {}
       }
       setDeviceCounts(counts);
     } catch (err) {
-      console.error('Unexpected error:', err);
+      console.error('Unexpected error loading offline sites:', err);
+      setSites(onlineSitesList);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteOfflineSite = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this unsynced offline site?')) {
+      await offlineStorage.deleteOfflineSite(id);
+      await fetchSites();
+    }
+  };
+
+  const handleEditOfflineSite = (e: React.MouseEvent, site: OfflineSite) => {
+    e.stopPropagation();
+    setEditingOfflineSite(site);
+    setShowCreateModal(true);
   };
 
   const handleRefresh = async (event: CustomEvent) => {
     await fetchSites();
     event.detail.complete();
   };
-
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
   return (
     <IonPage>
@@ -165,16 +211,17 @@ export default function UserSites() {
                 key={s.id} 
                 className="premium-card premium-card-accent" 
                 style={{ margin: 0, cursor: 'pointer' }}
-                onClick={() => navigate(`/devices?site=${s.id}`)}
+                onClick={() => !s.isOffline && navigate(`/devices?site=${s.id}`)}
               >
                 <IonCardContent style={{ padding: '18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>{s.site_name}</h2>
                         <IonBadge style={{ background: '#EBF3FA', color: '#1D5D9B', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
                           {s.site_type}
                         </IonBadge>
+                        {s.isOffline && <PendingSyncBadge />}
                       </div>
 
                       <p style={{ margin: '4px 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -188,11 +235,36 @@ export default function UserSites() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                      <IonBadge style={{ background: 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)', color: '#ffffff', padding: '6px 12px', borderRadius: '20px', fontWeight: 700 }}>
-                        <IonIcon icon={hardwareChipOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                        {deviceCounts[s.id] || 0} Devices
-                      </IonBadge>
-                      <IonIcon icon={chevronForwardOutline} style={{ color: '#94A3B8', fontSize: '20px' }} />
+                      {s.isOffline ? (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <IonButton
+                            size="small"
+                            fill="clear"
+                            color="primary"
+                            onClick={(e) => handleEditOfflineSite(e, s.offlineRecord)}
+                            title="Edit offline site"
+                          >
+                            <IonIcon icon={createOutline} slot="icon-only" />
+                          </IonButton>
+                          <IonButton
+                            size="small"
+                            fill="clear"
+                            color="danger"
+                            onClick={(e) => handleDeleteOfflineSite(e, s.id)}
+                            title="Delete offline site"
+                          >
+                            <IonIcon icon={trashOutline} slot="icon-only" />
+                          </IonButton>
+                        </div>
+                      ) : (
+                        <>
+                          <IonBadge style={{ background: 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)', color: '#ffffff', padding: '6px 12px', borderRadius: '20px', fontWeight: 700 }}>
+                            <IonIcon icon={hardwareChipOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                            {deviceCounts[s.id] || 0} Devices
+                          </IonBadge>
+                          <IonIcon icon={chevronForwardOutline} style={{ color: '#94A3B8', fontSize: '20px' }} />
+                        </>
+                      )}
                     </div>
                   </div>
                 </IonCardContent>
@@ -203,8 +275,12 @@ export default function UserSites() {
 
         <CreateSiteModal
           isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => {
+            setShowCreateModal(false);
+            setEditingOfflineSite(null);
+          }}
           onSiteCreated={() => fetchSites()}
+          editSite={editingOfflineSite}
         />
       </IonContent>
     </IonPage>
