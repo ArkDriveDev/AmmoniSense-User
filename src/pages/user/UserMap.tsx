@@ -34,6 +34,9 @@ import { fetchOdorZones, fetchCommunityPolygons, deleteSite } from '../../servic
 import { OdorZone, CommunityPolygon } from '../../types/site';
 import FullMapView, {
   SiteMarkerData,
+  ReadingMarkerData,
+  PhotoTagMarkerData,
+  SITE_BRAND_COLOR,
   PHOTO_TAG_BRAND_COLOR,
   getAmmoniaColor,
   getAmmoniaSeverityLabel
@@ -42,10 +45,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { useNavigate } from 'react-router-dom';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 
-// Manolo Fortich Coordinates & Bounds Check
-const MANOLO_FORTICH_CENTER = { lat: 8.3683, lng: 124.8637, zoom: 13 };
-const IS_IN_MANOLO_FORTICH = (lat: number, lng: number) => {
-  return lat >= 8.2200 && lat <= 8.5000 && lng >= 124.7000 && lng <= 125.0200;
+// Default Center Coordinates: Manolo Fortich Municipality
 };
 
 export default function UserMap() {
