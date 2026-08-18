@@ -586,18 +586,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   devices.map(d => (
                     <IonSelectOption key={d.device_uid} value={d.device_uid}>
                       {d.device_uid}
-                  No Monitoring Site Selected
-                </h4>
-                <p style={{ margin: 0, color: '#b45309', fontSize: '13px', maxWidth: '400px', lineHeight: '1.4' }}>
-                  Please select a site using the <b>MONITORING SITE</b> dropdown above, or click <b>+ New Site</b> in the top bar to create one first.
-                </p>
-              </div>
-            ) : (
-              <div style={{
-                height: '180px',
-                border: '2px dashed #cbd5e1',
-                borderRadius: '12px',
-                display: 'flex',
+                    </IonSelectOption>
+                  ))
+                ) : (
+                  <IonSelectOption value="ESP32-AMMONIA-NODE-01">
+                    ESP32-AMMONIA-NODE-01
+                  </IonSelectOption>
+                )}
+              </IonSelect>
+            </IonItem>
+
+            <div style={{
+              backgroundColor: btConnected ? '#f0fdf4' : '#f8fafc',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
