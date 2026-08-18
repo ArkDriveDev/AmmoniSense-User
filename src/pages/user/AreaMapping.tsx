@@ -58,3 +58,23 @@ export default function AreaMapping() {
       ]);
       setOdorZones(zones);
       setCommunityPolygons(comms);
+    } catch (err: any) {
+      console.error('Error loading spatial polygon data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async (event: CustomEvent) => {
+    await loadData();
+    event.detail.complete();
+  };
+
+  const handleSaveOdorZone = async (zone: OdorZone) => {
+    try {
+      const saved = await saveOdorZone(zone);
+      setOdorZones((prev) => [saved, ...prev]);
+      setToastMsg(`🟧 Odor Zone "${zone.zone_name}" saved successfully!`);
+      setToastColor('success');
+      setShowToast(true);
+    } catch (err: any) {
