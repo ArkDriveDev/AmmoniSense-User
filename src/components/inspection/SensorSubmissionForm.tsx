@@ -466,18 +466,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                     cursor: 'pointer',
                     fontSize: '12px',
                     fontWeight: 600,
-              <IonLabel position="stacked" style={{ fontWeight: 'bold', fontSize: '13px', color: '#475569' }}>
-                MONITORING SITE
-              </IonLabel>
-              <IonSelect
-                value={selectedSiteId}
-                placeholder="Select Site"
-                onIonChange={e => setSelectedSiteId(e.detail.value)}
-              >
-                {sites.map(site => (
-                  <IonSelectOption key={site.id} value={site.id}>
-                    {site.site_name} ({site.site_code})
-                  </IonSelectOption>
+                    boxShadow: isActive ? '0 3px 8px rgba(56, 128, 255, 0.3)' : 'none',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <IonIcon icon={isDone ? checkmarkCircleOutline : s.icon} style={{ fontSize: '18px' }} />
+                  <span>{s.title}</span>
+                </div>
+              </IonCol>
                 ))}
               </IonSelect>
             </IonItem>
