@@ -103,3 +103,38 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
+
+    const handleMapClick = (e: L.LeafletMouseEvent) => {
+      const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
+      setVertices((prev) => [...prev, newPoint]);
+    };
+
+    map.on('click', handleMapClick);
+
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, []);
+
+  // Render vertices, preview polyline, and polygon on map
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    // Clear existing markers & shapes
+    markersRef.current.forEach((m) => map.removeLayer(m));
+    markersRef.current = [];
+
+    if (polylineRef.current) {
+      map.removeLayer(polylineRef.current);
+      polylineRef.current = null;
+    }
+
+    if (polygonRef.current) {
+      map.removeLayer(polygonRef.current);
+      polygonRef.current = null;
+    }
+
+    const color = drawingMode === 'odor_zone' ? '#f97316' : '#22c55e'; // Orange for Odor Zone, Green for Community
+
+    // Render vertex markers
