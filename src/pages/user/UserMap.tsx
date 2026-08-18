@@ -214,18 +214,18 @@ export default function UserMap() {
           .map((q) => {
             const p = q.payload;
             const coords = resolveSiteCoords(
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-                grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
-                owner_name: os.owner?.owner_name || 'Inspector Owner',
-                photo_url: os.site_photo_thumbnail || os.site_photo_url,
-                isOffline: true,
-                is_pending_sync: true,
-              };
-            });
-          }
-        }
-      } catch (lsErr) {
+              p.current_latitude ?? p.latitude,
+              p.current_longitude ?? p.longitude
+            );
+
+            return {
+              id: q.id || `queue_${Date.now()}`,
+              site_code: p.site_code || 'QUEUED',
+              site_name: p.site_name || 'Unsubmitted Site',
+              site_type: p.site_type || 'Agricultural',
+              address: p.address || p.site_name,
+              latitude: coords.latitude,
+              longitude: coords.longitude,
         console.warn('Error reading localStorage offline_sites:', lsErr);
       }
 
