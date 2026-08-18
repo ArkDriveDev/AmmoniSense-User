@@ -142,18 +142,18 @@ export const registerSiteWithPhoto = async (
     return {
       owner: createdOwner,
       site: createdSite,
-      owner: createdOwner,
-      site: createdSite,
       location: createdLocation,
       photo: photoRecord,
     };
   } catch (error: any) {
     console.error('Transaction failure during site registration, initiating cleanup rollback:', error);
 
-    // Rollback cleanup on failure
     if (createdSite?.id) {
       await supabase.from('site_locations').delete().eq('site_id', createdSite.id);
       await supabase.from('monitoring_sites').delete().eq('id', createdSite.id);
+    }
+
+    throw error;
     }
 
     throw error;
