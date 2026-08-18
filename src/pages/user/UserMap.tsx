@@ -166,18 +166,18 @@ export default function UserMap() {
             photo_url: s.site_photo_thumbnail || s.site_photo_url,
             isOffline: false,
             is_pending_sync: false,
-      try {
-        const queue = await offlineStorage.getQueue();
-        queuedOfflineFormatted = queue
-          .filter((q) => q.type === 'SITE_REGISTRATION' && q.payload)
-          .map((q) => {
-            const p = q.payload;
-            const coords = resolveSiteCoords(
-              p.current_latitude ?? p.latitude,
-              p.current_longitude ?? p.longitude
-            );
+          };
+        });
+      } else if (sitesErr) {
+        console.warn('Supabase fetch sites error:', sitesErr.message);
+      }
+    } catch (err) {
+      console.warn('Network error or offline mode while fetching monitoring sites from Supabase:', err);
+    }
 
-            return {
+    const onlineCodes = new Set(onlineFormatted.map((s) => s.site_code).filter(Boolean));
+
+    let offlineFormatted: SiteMarkerData[] = [];
               id: q.id || `queue_${Date.now()}`,
               site_code: p.site_code || 'QUEUED',
               site_name: p.site_name || 'Unsubmitted Site',
