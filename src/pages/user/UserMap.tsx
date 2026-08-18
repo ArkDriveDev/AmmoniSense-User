@@ -622,18 +622,18 @@ export default function UserMap() {
               <IonButton fill="clear" size="small" onClick={closeBottomSheet} style={{ position: 'absolute', right: '12px', top: '12px', color: '#64748b' }}>
                 <IonIcon icon={closeOutline} style={{ fontSize: '24px' }} />
               </IonButton>
+            </div>
 
-                <IonButton
-                  expand="block"
-                  className="btn-ammoni btn-primary"
-                  onClick={() => {
-                    closeBottomSheet();
-                    navigate(`/devices?site=${selectedSite.id}`);
-                  }}
-                >
-                  <IonIcon icon={hardwareChipOutline} slot="start" />
-                  View Site Devices
-                </IonButton>
+            {/* SITE DETAILS */}
+            {selectedSite && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <IonBadge style={{ background: selectedSite.isOffline ? '#ef4444' : SITE_BRAND_COLOR, color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
+                    {selectedSite.site_type || 'Agricultural'}
+                  </IonBadge>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
+                    {selectedSite.site_code}
+                  </span>
               </div>
             )}
 
