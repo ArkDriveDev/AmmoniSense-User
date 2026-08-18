@@ -94,18 +94,18 @@ export default function UserMap() {
   const [showToast, setShowToast] = useState<boolean>(false);
 
   useEffect(() => {
-  };
+    loadMapData();
 
-  const resolveSiteCoords = (latRaw?: any, lngRaw?: any) => {
-    let lat = typeof latRaw === 'number' ? latRaw : parseFloat(latRaw);
-    let lng = typeof lngRaw === 'number' ? lngRaw : parseFloat(lngRaw);
+    const handleSiteChanged = () => {
+      fetchSites();
+    };
 
-    if (isNaN(lat) || isNaN(lng) || !IS_IN_MANOLO_FORTICH(lat, lng)) {
-      return { latitude: 8.3683, longitude: 124.8637 };
-    }
-    return { latitude: lat, longitude: lng };
-  };
+    window.addEventListener('site_deleted', handleSiteChanged);
+    window.addEventListener('site_synced', handleSiteChanged);
 
+    return () => {
+      window.removeEventListener('site_deleted', handleSiteChanged);
+      window.removeEventListener('site_synced', handleSiteChanged);
   const fetchSites = async () => {
     let onlineFormatted: SiteMarkerData[] = [];
     try {
