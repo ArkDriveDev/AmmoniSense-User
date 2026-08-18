@@ -586,17 +586,17 @@ export default function UserMap() {
             shape="round"
             onClick={handleLocateUser}
             disabled={locating}
-                  {selectedSite.isOffline && <PendingSyncBadge />}
-                </div>
-
-                <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
-                  {selectedSite.site_name}
-                </h2>
-
-                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <IonIcon icon={locationOutline} style={{ color: '#1d5d9b' }} />
-                  {selectedSite.address || 'Manolo Fortich, Bukidnon'}
-                </p>
+            style={{
+              '--background': 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)',
+              '--color': '#ffffff',
+              '--box-shadow': '0 4px 14px rgba(0,0,0,0.25)',
+              width: '44px',
+              height: '44px',
+            }}
+          >
+            {locating ? <IonSpinner name="crescent" style={{ width: '20px', height: '20px' }} /> : <IonIcon icon={locateOutline} style={{ fontSize: '22px' }} />}
+          </IonButton>
+        </div>
 
                 {selectedSite.photo_url && (
                   <div style={{ width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
