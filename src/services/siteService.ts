@@ -22,6 +22,7 @@ export const registerSiteWithPhoto = async (
     const ownerEmail = payload.owner_email || user.email || `inspector_${user.id.slice(0, 6)}@menro.gov.ph`;
     const ownerName = payload.owner_name || user.user_metadata?.full_name || user.email || 'Inspector Owner';
 
+    const { data: existingOwners } = await supabase
       .from('site_owners')
       .select('*')
       .eq('email', ownerEmail);
@@ -33,7 +34,6 @@ export const registerSiteWithPhoto = async (
         .from('site_owners')
         .insert([
           {
-            owner_name: ownerName,
             email: ownerEmail,
             created_by: user.id,
           },
