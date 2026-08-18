@@ -102,3 +102,38 @@ class BLECentralService {
       this.telemetryListeners = this.telemetryListeners.filter((l) => l !== listener);
     };
   }
+
+  public onDevicesDiscovered(listener: BLECentralDeviceListener): () => void {
+    this.deviceListeners.push(listener);
+    return () => {
+      this.deviceListeners = this.deviceListeners.filter((l) => l !== listener);
+    };
+  }
+
+  public onStateChange(listener: BLECentralStateListener): () => void {
+    this.stateListeners.push(listener);
+    return () => {
+      this.stateListeners = this.stateListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notifyTelemetryListeners(reading: BLECentralReading) {
+    this.telemetryListeners.forEach((fn) => fn(reading));
+  }
+
+  private notifyDeviceListeners(devices: BLECentralDevice[]) {
+    this.deviceListeners.forEach((fn) => fn(devices));
+  }
+
+  /**
+   * Parse 12-byte Float32 Little-Endian DataView binary payload from actual GATT notification
+   * Bytes 0-3: Ammonia Float32
+   * Bytes 4-7: Temp Float32
+   * Bytes 8-11: Humidity Float32
+   */
+  public parse12ByteFloat32DataView(dataView: DataView, deviceId: string, deviceName: string, rssi?: number): BLECentralReading | null {
+    try {
+      if (dataView.byteLength < 12) {
+        console.warn(`BLE DataView buffer length (${dataView.byteLength} bytes) is less than expected 12 bytes.`);
+        return null;
+      }
