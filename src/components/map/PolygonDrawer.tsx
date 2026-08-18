@@ -218,3 +218,22 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     }
 
     if (drawingMode === 'odor_zone') {
+      const zone: OdorZone = {
+        zone_name: zoneName || 'Odor Impact Zone',
+        severity_level: severityLevel,
+        ammonia_ppm: parseFloat(ammoniaPpm) || 0,
+        coordinates: vertices,
+      };
+      if (onSaveOdorZone) onSaveOdorZone(zone);
+    } else {
+      const comm: CommunityPolygon = {
+        community_name: communityName || 'Community Zone',
+        community_type: communityType,
+        estimated_population: parseInt(population, 10) || 0,
+        coordinates: vertices,
+      };
+      if (onSaveCommunity) onSaveCommunity(comm);
+    }
+
+    handleClear();
+  };
