@@ -33,3 +33,37 @@ class BLEService {
 
   public static SERVICE_UUID = '0000181a-0000-1000-8000-00805f9b34fb';
   public static AMMONIA_CHAR_UUID = '00002a6e-0000-1000-8000-00805f9b34fb';
+  public static CHANNEL_NAME = 'ammonisense_ble_stream';
+
+  constructor() {
+    this.initBroadcastChannel();
+  }
+
+  private initBroadcastChannel() {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      this.broadcastChannel = new BroadcastChannel(BLEService.CHANNEL_NAME);
+      this.broadcastChannel.onmessage = (event) => {
+        if (event.data && event.data.type === 'BLE_TELEMETRY') {
+          const reading: BLEReading = event.data.payload;
+          this.setState('streaming');
+          this.notifyReadingListeners(reading);
+        }
+      };
+    }
+  }
+
+  public getState(): BLEConnectionState {
+    return this.currentState;
+  }
+
+  public setState(state: BLEConnectionState) {
+    this.currentState = state;
+    this.stateListeners.forEach((fn) => fn(state));
+  }
+
+  public onReading(listener: BLEListener): () => void {
+    this.readingListeners.push(listener);
+    return () => {
+      this.readingListeners = this.readingListeners.filter((l) => l !== listener);
+    };
+  }
