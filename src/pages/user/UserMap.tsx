@@ -574,18 +574,18 @@ export default function UserMap() {
             position: 'absolute',
             bottom: '32px',
             right: '16px',
-            </div>
-
-            {/* SITE DETAILS */}
-            {selectedSite && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                  <IonBadge style={{ background: selectedSite.isOffline ? '#ef4444' : SITE_BRAND_COLOR, color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
-                    {selectedSite.site_type || 'Agricultural'}
-                  </IonBadge>
-                  <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
-                    {selectedSite.site_code}
-                  </span>
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
+          {/* Locate GPS Button */}
+          <IonButton
+            size="small"
+            shape="round"
+            onClick={handleLocateUser}
+            disabled={locating}
                   {selectedSite.isOffline && <PendingSyncBadge />}
                 </div>
 
