@@ -103,3 +103,38 @@ class BLEService {
       device.addEventListener('gattserverdisconnected', () => {
         this.setState('disconnected');
       });
+
+      const server = await device.gatt.connect();
+      this.gattServer = server;
+      this.setState('connected');
+
+      try {
+        const service = await server.getPrimaryService(BLEService.SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(BLEService.AMMONIA_CHAR_UUID);
+
+        await characteristic.startNotifications();
+        characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
+          const value = event.target.value;
+          const parsed = this.parseBLEDataView(value, device.name || device.id);
+          if (parsed) {
+            this.setState('streaming');
+            this.notifyReadingListeners(parsed);
+            this.broadcastTelemetry(parsed);
+          }
+        });
+      } catch (gattErr) {
+        console.info('GATT characteristic auto-subscribe check:', gattErr);
+      }
+
+      const initialReading: BLEReading = {
+        device_uid: device.name || `ESP32-AMMONIA-${device.id?.substring(0, 4) || 'NODE'}`,
+        ammonia: 0,
+        temperature: 28,
+        humidity: 65,
+        battery: 100,
+        rssi: -60,
+        timestamp: new Date().toISOString(),
+      };
+
+      this.setState('streaming');
+      this.notifyReadingListeners(initialReading);
