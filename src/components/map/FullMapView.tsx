@@ -383,3 +383,38 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
 
       if (reading.ammonia > 20) {
         const pulse = L.circle([reading.latitude, reading.longitude], {
+          radius: 100,
+          fillColor: '#ef4444',
+          fillOpacity: 0.2,
+          stroke: false,
+        });
+        readingsGroup.addLayer(pulse);
+      }
+
+      circleMarker.on('click', () => {
+        if (onSelectReading) onSelectReading(reading);
+      });
+
+      readingsGroup.addLayer(circleMarker);
+    });
+  }, [readings, showReadingsLayer, onSelectReading]);
+
+  // Render Photo Tag Markers (Layer 3 - Step 1 Inspection Photos)
+  useEffect(() => {
+    if (!mapRef.current || !photoTagsLayerGroupRef.current) return;
+    const photoGroup = photoTagsLayerGroupRef.current;
+    photoGroup.clearLayers();
+
+    if (!showPhotoTagsLayer) return;
+
+    photoTags.forEach((tag) => {
+      if (!tag.latitude || !tag.longitude) return;
+
+      const isPending = tag.is_pending_sync || !tag.is_used;
+      const markerColor = isPending ? '#8b5cf6' : '#6366f1'; // Purple/Indigo pin for photo tags
+
+      const photoIcon = L.divIcon({
+        className: 'photo-tag-marker',
+        html: `
+          <div style="
+            position: relative;
