@@ -538,18 +538,18 @@ export default function UserMap() {
             <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Monitoring Sites...</p>
           </div>
         ) : (
-            style={{
-              '--background': 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)',
-              '--color': '#ffffff',
-              '--box-shadow': '0 4px 14px rgba(0,0,0,0.25)',
-              width: '44px',
-              height: '44px',
-            }}
-          >
-            {locating ? <IonSpinner name="crescent" style={{ width: '20px', height: '20px' }} /> : <IonIcon icon={locateOutline} style={{ fontSize: '22px' }} />}
-          </IonButton>
-        </div>
-
+          <FullMapView
+            sites={filteredSites}
+            readings={filteredReadings}
+            photoTags={filteredPhotoTags}
+            showSitesLayer={showSitesLayer}
+            showReadingsLayer={showReadingsLayer}
+            showPhotoTagsLayer={showPhotoTagsLayer}
+            showBoundaryLayer={showBoundaryLayer}
+            showOdorZonesLayer={showOdorZonesLayer}
+            odorZones={odorZones}
+            communityPolygons={communityPolygons}
+            centerLat={mapCenter.lat}
         {/* BOTTOM SHEET DETAIL DRAWER */}
         {(selectedSite || selectedReading || selectedPhotoTag) && (
           <div
