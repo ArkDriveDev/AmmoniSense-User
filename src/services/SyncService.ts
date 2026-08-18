@@ -68,3 +68,38 @@ class SyncService {
     } catch {
       return 0;
     }
+  }
+
+  // ==========================================
+  // SYNC EXECUTION ENGINE
+  // ==========================================
+
+  public async syncAll(): Promise<{ success: number; failed: number }> {
+    if (!this.onlineStatus || this.isSyncing) {
+      return { success: 0, failed: 0 };
+    }
+
+    this.isSyncing = true;
+    let successCount = 0;
+    let failedCount = 0;
+
+    try {
+      const queue = await offlineStorage.getQueue();
+      const pendingItems = queue.filter((item) => item.status !== 'failed' || item.retryCount < 3);
+
+      if (pendingItems.length === 0) {
+        this.isSyncing = false;
+        this.notifyListeners('sync_complete');
+        return { success: 0, failed: 0 };
+      }
+
+      this.notifyListeners('sync_start');
+
+      for (const item of pendingItems) {
+        if (!this.onlineStatus) break; // Network lost mid-sync
+
+        try {
+          await offlineStorage.updateQueueItemStatus(item.id, 'syncing');
+          this.notifyListeners('sync_progress', item, `Syncing ${item.type}...`);
+
+          await this.processItem(item);
