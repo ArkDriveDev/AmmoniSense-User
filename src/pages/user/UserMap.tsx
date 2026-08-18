@@ -366,7 +366,7 @@ export default function UserMap() {
     try {
       const { data, error } = await supabase
         .from('inspection_photos')
-        .select('*')
+        .select('*, monitoring_sites(site_name)')
         .order('uploaded_at', { ascending: false })
         .limit(200);
 
@@ -379,7 +379,7 @@ export default function UserMap() {
             photo_url: p.photo_url,
             grid_cell_id: p.grid_cell_id,
             site_id: p.site_id,
-            site_name: 'Inspection Site',
+            site_name: p.monitoring_sites?.site_name || 'Inspection Site',
             is_used: p.is_used,
             uploaded_at: p.uploaded_at,
             is_pending_sync: false,
