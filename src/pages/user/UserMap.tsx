@@ -278,3 +278,38 @@ export default function UserMap() {
       // Deduplicate all offline records by id
       const offlineMap = new Map<string | number, SiteMarkerData>();
       [...idbOfflineFormatted, ...queuedOfflineFormatted, ...lsOfflineFormatted].forEach((item) => {
+        if (!onlineCodes.has(item.site_code)) {
+          offlineMap.set(item.id, item);
+        }
+      });
+      offlineFormatted = Array.from(offlineMap.values());
+    } catch (err) {
+      console.error('Error loading offline sites for map:', err);
+    }
+
+    // Combine offline sites and online sites, avoiding duplicates if online has synced an offline site ID
+    const combinedMap = new Map<string | number, SiteMarkerData>();
+    // First add offline sites (unsubmitted / pending sync)
+    offlineFormatted.forEach((s) => combinedMap.set(s.id, s));
+    // Then add online sites
+    onlineFormatted.forEach((s) => combinedMap.set(s.id, s));
+
+    const finalSites = Array.from(combinedMap.values());
+    console.log('📍 Total sites loaded for map display:', finalSites.length, finalSites);
+    setSites(finalSites);
+  };
+
+  const fetchReadings = async () => {
+    let serverReadings: ReadingMarkerData[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('sensor_data')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (!error && data) {
+        serverReadings = data
+          .map((r: any) => ({
+            id: r.id,
+            ammonia: r.ammonia || 0,
