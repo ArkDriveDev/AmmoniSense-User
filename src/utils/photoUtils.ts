@@ -348,3 +348,38 @@ export const step1_takeAndUploadPhoto = async (
 
   return {
     ...inserted,
+    dataUrl: finalDataUrl,
+  };
+};
+
+/**
+ * STEP 3: Mark `inspection_photos` record as used and link `sensor_data_id`
+ */
+export const step4_markPhotoAsUsed = async (
+  photoId: number,
+  sensorDataId: number
+): Promise<void> => {
+  try {
+    await supabase
+      .from('inspection_photos')
+      .update({
+        sensor_data_id: sensorDataId,
+        is_used: true,
+      })
+      .eq('id', photoId);
+  } catch (err) {
+    console.warn('Error linking photo to sensor_data:', err);
+  }
+};
+
+/**
+ * Extract GPS Coordinates (Latitude, Longitude) from JPEG DataURL EXIF header
+ */
+export const extractGpsFromExif = (dataUrl: string): { latitude: number; longitude: number } | null => {
+  try {
+    const exifObj = piexif.load(dataUrl);
+    const gps = exifObj?.GPS;
+    if (!gps) return null;
+
+    const latRaw = gps[piexif.GPSIFD.GPSLatitude];
+    const latRef = gps[piexif.GPSIFD.GPSLatitudeRef];
