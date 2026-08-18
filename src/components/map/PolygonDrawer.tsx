@@ -358,3 +358,31 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
                     <IonSelectOption value="Hospital">Hospital / Health Center</IonSelectOption>
                     <IonSelectOption value="Commercial">Commercial District</IonSelectOption>
                     <IonSelectOption value="Agricultural">Agricultural Zone</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
+                <IonItem lines="full" style={{ flex: 1 }}>
+                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Est. Population</IonLabel>
+                  <IonInput type="number" value={population} onIonChange={(e) => setPopulation(e.detail.value!)} />
+                </IonItem>
+              </div>
+            </div>
+          )}
+
+          <IonButton
+            expand="block"
+            color={drawingMode === 'odor_zone' ? 'warning' : 'success'}
+            size="large"
+            onClick={handleSaveShape}
+            disabled={vertices.length < 3}
+            style={{ marginTop: '14px', fontWeight: 700 }}
+          >
+            <IonIcon icon={saveOutline} slot="start" />
+            Save {drawingMode === 'odor_zone' ? '🟧 Odor Zone Polygon' : '🟩 Community Polygon'}
+          </IonButton>
+        </IonCardContent>
+      </IonCard>
+    </div>
+  );
+};
+
+export default PolygonDrawer;
