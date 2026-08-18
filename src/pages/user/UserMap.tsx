@@ -628,3 +628,38 @@ export default function UserMap() {
             {selectedSite && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <IonBadge style={{ background: selectedSite.isOffline ? '#ef4444' : SITE_BRAND_COLOR, color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
+                    {selectedSite.site_type || 'Agricultural'}
+                  </IonBadge>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
+                    {selectedSite.site_code}
+                  </span>
+                  {selectedSite.isOffline && <PendingSyncBadge />}
+                </div>
+
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedSite.site_name}
+                </h2>
+
+                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <IonIcon icon={locationOutline} style={{ color: '#1d5d9b' }} />
+                  {selectedSite.address || 'Manolo Fortich, Bukidnon'}
+                </p>
+
+                {selectedSite.photo_url && (
+                  <div style={{ width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
+                    <img src={selectedSite.photo_url} alt={selectedSite.site_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Owner / Operator</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedSite.owner_name}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Municipality</span>
+                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
