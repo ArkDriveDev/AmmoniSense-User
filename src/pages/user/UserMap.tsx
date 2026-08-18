@@ -934,3 +934,15 @@ export default function UserMap() {
             <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
                 Sensor Readings Ammonia Levels (PPM)
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#22c55e' }}></span>
+                  <b>0 - 5 PPM:</b> Normal / Safe (Green)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#eab308' }}></span>
+                  <b>5 - 10 PPM:</b> Warning Threshold (Yellow)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f97316' }}></span>
