@@ -237,23 +237,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
             reading.photo_url
               ? `<img src="${reading.photo_url}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 4px;" alt="Sensor photo" />`
               : ''
-          }
-        </div>
-      `;
-
-      circleMarker.bindPopup(popupContent);
-      markersGroup.addLayer(circleMarker);
-    });
-  }, [centerLat, centerLng, activeCellId, readings, gridSize, cellSizeMeters, currentZoom]);
-
-  return (
-    <div style={{ position: 'relative', width: '100%', height, borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--ion-color-light-shade, #cbd5e1)' }}>
-      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-
-      {/* Overlay Header Info Badge */}
-      <div style={{
-        position: 'absolute',
-        top: '12px',
-        left: '50px',
-        zIndex: 1000,
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
