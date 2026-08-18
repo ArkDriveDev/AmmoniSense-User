@@ -10,6 +10,7 @@ export const registerSiteWithPhoto = async (
 ): Promise<SiteRegistrationResult> => {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
+  if (!user) throw new Error('User authentication required');
 
   let createdOwner: any = null;
   let createdSite: any = null;
@@ -21,7 +22,6 @@ export const registerSiteWithPhoto = async (
     const ownerEmail = payload.owner_email || user.email || `inspector_${user.id.slice(0, 6)}@menro.gov.ph`;
     const ownerName = payload.owner_name || user.user_metadata?.full_name || user.email || 'Inspector Owner';
 
-    const { data: existingOwners } = await supabase
       .from('site_owners')
       .select('*')
       .eq('email', ownerEmail);
