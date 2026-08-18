@@ -103,3 +103,38 @@ export default function UserLayout({ children }: any) {
             </IonButtons>
           </IonToolbar>
         </IonHeader>
+
+        <IonContent>
+          {/* User Profile */}
+          <div style={{ 
+            padding: '16px', 
+            textAlign: 'center',
+            borderBottom: '1px solid var(--ion-color-light)',
+            marginBottom: '8px'
+          }}>
+            <IonAvatar style={{ 
+              width: '64px', 
+              height: '64px', 
+              margin: '0 auto 8px auto',
+              backgroundColor: 'var(--ion-color-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <IonIcon icon={personCircleOutline} style={{ 
+                fontSize: '48px', 
+                color: 'white' 
+              }} />
+            </IonAvatar>
+            <IonText>
+              <h3 style={{ margin: '4px 0', fontWeight: 'bold' }}>{userName}</h3>
+              <p style={{ fontSize: '12px', color: 'gray', margin: '0' }}>{userEmail}</p>
+            </IonText>
+          </div>
+
+          {/* Navigation */}
+          <IonList style={{ padding: '0' }}>
+            <IonItem 
+              button 
+              onClick={() => navigate('/dashboard')}
+              color={isActive('/dashboard') ? 'primary' : undefined}
