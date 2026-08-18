@@ -766,18 +766,18 @@ export default function UserMap() {
                     expand="block"
                     fill="outline"
                     onClick={() => setShowPhotoModal(true)}
+                  >
+                    <IonIcon icon={eyeOutline} slot="start" /> View Inspection Photo
                   </IonButton>
-                </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* LAYER TOGGLE POPOVER */}
-        <IonPopover
-          isOpen={showLayerPopover}
-          event={popoverEvent}
-          onDidDismiss={() => setShowLayerPopover(false)}
+            {/* PHOTO TAG DETAILS */}
+            {selectedPhotoTag && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div>
         >
           <div style={{ padding: '16px', minWidth: '220px' }}>
             <h4 style={{ margin: '0 0 12px 0', fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
