@@ -67,3 +67,39 @@ class BLEService {
       this.readingListeners = this.readingListeners.filter((l) => l !== listener);
     };
   }
+
+  public onStateChange(listener: BLEStateListener): () => void {
+    this.stateListeners.push(listener);
+    return () => {
+      this.stateListeners = this.stateListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notifyReadingListeners(reading: BLEReading) {
+    this.readingListeners.forEach((fn) => fn(reading));
+  }
+
+  /**
+   * Scan and connect to actual Bluetooth Low Energy ESP32 Device
+   */
+  public async scanAndConnect(): Promise<BLEReading | null> {
+    const nav = navigator as any;
+    if (!nav.bluetooth) {
+      console.warn('Web Bluetooth is not supported in this browser environment.');
+      this.setState('disconnected');
+      return null;
+    }
+
+    try {
+      this.setState('scanning');
+      const device = await nav.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [BLEService.SERVICE_UUID, 'generic_access'],
+      });
+
+      this.bluetoothDevice = device;
+      this.setState('connecting');
+
+      device.addEventListener('gattserverdisconnected', () => {
+        this.setState('disconnected');
+      });
