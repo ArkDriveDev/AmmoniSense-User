@@ -258,3 +258,23 @@ class BLECentralService {
       const centralDevice: BLECentralDevice = {
         id: device.id || `BLE-${Math.floor(1000 + Math.random() * 9000)}`,
         name: device.name || 'ESP32 Ammonia Node',
+        rssi: -60,
+        connected: false,
+      };
+
+      this.bluetoothDevice = device;
+      this.discoveredDevices = [centralDevice];
+      this.notifyDeviceListeners(this.discoveredDevices);
+      this.setState('disconnected');
+      return this.discoveredDevices;
+    } catch (err: any) {
+      console.warn('BLE Central hardware scan cancelled or failed:', err);
+      this.setState('disconnected');
+      throw err;
+    }
+  }
+
+  /**
+   * Connect to actual hardware BLE Central Device and subscribe to 12-byte Float32 GATT Characteristic notifications
+   */
+  public async connectAndSubscribe(device: BLECentralDevice): Promise<void> {
