@@ -298,18 +298,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setBtConnecting(false);
     }
   };
-    setCellLat(lat);
-    setCellLng(lng);
 
-    if (photoRecord?.id) {
-      await step2_updatePhotoGridCell(photoRecord.id, cellId);
+  // =========================================================
+  // STEP 3: SUBMIT ALL DATA
+  // =========================================================
+  const handleStep3_SubmitAll = async () => {
+    if (!ammonia) {
+      setToastMsg('Please enter an ammonia reading');
+      setToastColor('warning');
+      setShowToast(true);
+      return;
     }
 
-    setToastMsg(`Step 2 Complete! Selected Grid Cell ${cellId} and updated inspection_photos.`);
-    setToastColor('success');
-    setShowToast(true);
-
-    // Auto advance to Step 3
     setCurrentStep(3);
   };
 
