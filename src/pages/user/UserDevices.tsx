@@ -173,3 +173,36 @@ export default function UserDevices() {
                               Firmware v{d.firmware_version || '1.0.0'}
                             </span>
                           </div>
+                        </div>
+
+                        <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
+                          <IonIcon icon={timeOutline} style={{ color: '#94A3B8' }} />
+                          Installed: {new Date(d.installed_at).toLocaleDateString()}
+                          {d.last_seen && (
+                            <span style={{ color: '#475569' }}>
+                              • Last seen: {new Date(d.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                        <span className={`status-badge ${isOnline ? 'safe' : 'offline'}`}>
+                          <span className="pulse-dot"></span>
+                          {isOnline ? 'Online' : 'Offline'}
+                        </span>
+                        <IonBadge style={{ background: '#E2E8F0', color: '#475569', fontSize: '10px', fontWeight: 700 }}>
+                          {d.status || 'ACTIVE'}
+                        </IonBadge>
+                      </div>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              );
+            })}
+          </div>
+        )}
+      </IonContent>
+    </IonPage>
+  );
+}
