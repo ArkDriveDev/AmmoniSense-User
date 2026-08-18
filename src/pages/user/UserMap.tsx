@@ -838,18 +838,18 @@ export default function UserMap() {
                   </IonButton>
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
-                  <b>Monitoring Site</b> (Synced Brand Marker)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
-                  <b>Unsynced Offline Site</b> (🔴 Pending Sync Indicator)
-                </div>
-              </div>
-            </IonCard>
+            )}
+          </div>
+        )}
 
+        {/* LAYER TOGGLE POPOVER */}
+        <IonPopover
+          isOpen={showLayerPopover}
+          event={popoverEvent}
+          onDidDismiss={() => setShowLayerPopover(false)}
+        >
+          <div style={{ padding: '16px', minWidth: '220px' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
             <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
                 Step 1 Inspection Photo Tags
