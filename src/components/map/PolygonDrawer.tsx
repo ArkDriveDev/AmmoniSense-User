@@ -243,3 +243,38 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       {/* Drawer Mode Switcher & Tools */}
       <IonCard className="premium-card" style={{ margin: '0 0 12px 0', padding: '12px' }}>
         <IonCardContent style={{ padding: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <IonChip
+                color={drawingMode === 'odor_zone' ? 'warning' : 'medium'}
+                outline={drawingMode !== 'odor_zone'}
+                onClick={() => {
+                  setDrawingMode('odor_zone');
+                  handleClear();
+                }}
+                style={{ fontWeight: 700, cursor: 'pointer' }}
+              >
+                🟧 Odor Zone Polygon
+              </IonChip>
+              <IonChip
+                color={drawingMode === 'community' ? 'success' : 'medium'}
+                outline={drawingMode !== 'community'}
+                onClick={() => {
+                  setDrawingMode('community');
+                  handleClear();
+                }}
+                style={{ fontWeight: 700, cursor: 'pointer' }}
+              >
+                🟩 Community Polygon
+              </IonChip>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonBadge style={{ background: '#E2E8F0', color: '#334155', fontSize: '11px', fontWeight: 700 }}>
+                {vertices.length} Vertices
+              </IonBadge>
+              {surfaceAreaHa > 0 && (
+                <IonBadge style={{ background: 'rgba(29, 93, 155, 0.12)', color: '#1D5D9B', fontSize: '11px', fontWeight: 700 }}>
+                  Area: {surfaceAreaHa} ha
+                </IonBadge>
+              )}
