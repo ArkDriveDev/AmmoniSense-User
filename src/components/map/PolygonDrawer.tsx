@@ -278,3 +278,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
                   Area: {surfaceAreaHa} ha
                 </IonBadge>
               )}
+            </div>
+          </div>
+        </IonCardContent>
+      </IonCard>
+
+      {/* Map Container */}
+      <div style={{ position: 'relative', width: '100%', height, borderRadius: '12px', overflow: 'hidden', border: '2px solid #CBD5E1' }}>
+        <div ref={mapContainerRef} style={{ width: '100%', height: '100%', cursor: 'crosshair' }} />
+
+        {/* Map Drawing Overlay Instruction Banner */}
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          zIndex: 1000,
+          background: 'rgba(15, 23, 42, 0.88)',
+          color: '#ffffff',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '11px',
