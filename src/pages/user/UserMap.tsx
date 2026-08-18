@@ -658,18 +658,18 @@ export default function UserMap() {
                     <strong style={{ color: '#0f172a' }}>{selectedSite.owner_name}</strong>
                   </div>
                   <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Municipality</span>
+                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedSite.latitude.toFixed(4)}°, {selectedSite.longitude.toFixed(4)}°</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Status</span>
+                    <strong style={{ color: '#10b981' }}>Active Site</strong>
                   </div>
                 </div>
-
-                {selectedReading.photo_url && (
-                  <div style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
-                    <img src={selectedReading.photo_url} alt="Reading Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Device UID</span>
                     <strong style={{ color: '#0f172a' }}>{selectedReading.device_uid || 'N/A'}</strong>
                   </div>
                   <div>
