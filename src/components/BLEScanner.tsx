@@ -138,3 +138,38 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
             BLE Central Scanner
           </IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={onClose} style={{ color: '#ffffff' }}>
+              <IonIcon icon={closeOutline} />
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F8FAFC' }}>
+        {/* Banner */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.95), rgba(29, 93, 155, 0.9))',
+            borderRadius: '16px',
+            padding: '16px',
+            color: '#ffffff',
+            marginBottom: '12px',
+            boxShadow: '0 6px 20px rgba(15, 60, 92, 0.2)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8 }}>
+                ROLE: BLE CENTRAL SCANNER
+              </span>
+              <h3 style={{ margin: '2px 0 0 0', fontWeight: 800, fontSize: '16px' }}>GATT Service Reader</h3>
+            </div>
+            <IonBadge style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', fontSize: '10px', padding: '6px 10px' }}>
+              UUID: 0000ffd0...
+            </IonBadge>
+          </div>
+        </div>
+
+        {/* PERMISSION STATUS INDICATOR */}
+        <div
