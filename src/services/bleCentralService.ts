@@ -173,3 +173,38 @@ class BLECentralService {
       bluetoothEnabled: true,
       locationEnabled: true,
       canScan: true,
+    };
+
+    const nav = navigator as any;
+
+    // 1. Check Web Bluetooth API availability
+    if (!nav.bluetooth) {
+      status.bluetoothScanGranted = false;
+      status.bluetoothConnectGranted = false;
+      status.bluetoothEnabled = false;
+      status.canScan = false;
+      status.errorMsg = 'Web Bluetooth API is not supported in this browser environment.';
+      return status;
+    }
+
+    // 2. Check & Request Location Permissions via Capacitor Geolocation
+    try {
+      const geoStatus = await Geolocation.checkPermissions();
+      if (geoStatus.location !== 'granted') {
+        const requested = await Geolocation.requestPermissions();
+        if (requested.location !== 'granted') {
+          status.locationGranted = false;
+          status.canScan = false;
+          status.errorMsg = 'Location permission (ACCESS_FINE_LOCATION) was denied. Location Services are required for Android BLE scanning.';
+        }
+      }
+    } catch (geoErr) {
+      console.warn('Capacitor Geolocation permission check notice:', geoErr);
+    }
+
+    // 3. Check hardware Bluetooth availability
+    try {
+      if (nav.bluetooth.getAvailability) {
+        const available = await nav.bluetooth.getAvailability();
+        status.bluetoothEnabled = available;
+        if (!available) {
