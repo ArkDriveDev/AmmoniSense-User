@@ -130,8 +130,6 @@ export const registerSiteWithPhoto = async (
       }
 
       if (photoRecord?.id) {
-      // Update monitoring_sites with site_photo_id
-      if (photoRecord?.id) {
         await supabase
           .from('monitoring_sites')
           .update({ site_photo_id: photoRecord.id })
@@ -142,6 +140,8 @@ export const registerSiteWithPhoto = async (
     }
 
     return {
+      owner: createdOwner,
+      site: createdSite,
       owner: createdOwner,
       site: createdSite,
       location: createdLocation,
