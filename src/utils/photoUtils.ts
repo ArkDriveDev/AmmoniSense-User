@@ -278,3 +278,38 @@ export const step1_takeAndUploadPhoto = async (
 ): Promise<InspectionPhotoRecord> => {
   // 1. Get current GPS location
   let latitude = 14.5995;
+  let longitude = 120.9842;
+
+  try {
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 10000,
+    });
+    latitude = position.coords.latitude;
+    longitude = position.coords.longitude;
+  } catch (geoErr) {
+    console.warn('Could not fetch device GPS location, using fallback:', geoErr);
+  }
+
+  // 2. Capture photo via Capacitor Camera (with web/unimplemented fallback)
+  const capturedDataUrl = await captureImageWithCameraOrFallback();
+
+  const stampOptions: StampOptions = {
+    latitude,
+    longitude,
+    siteName,
+  };
+
+  // 3. Stamp visible canvas overlay
+  const stampedDataUrl = await addStampToImage(capturedDataUrl, stampOptions);
+
+  // 4. Embed EXIF GPS metadata
+  const finalDataUrl = embedExifData(stampedDataUrl, stampOptions);
+
+  // 5. Convert to Blob & Upload to Storage
+  const blob = dataURLtoBlob(finalDataUrl);
+  const publicUrl = await uploadPhotoToSupabase(blob, siteId || 'general');
+  const photoUrlToSave = publicUrl || finalDataUrl;
+
+  // 6. Insert record into `inspection_photos` table with is_used = false
+  const { data: userData } = await supabase.auth.getUser();
