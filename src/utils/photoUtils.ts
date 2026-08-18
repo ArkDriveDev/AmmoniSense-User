@@ -452,3 +452,38 @@ export const captureSitePhoto = async (
       longitude = 120.9842;
     }
   }
+
+  const stampOptions: StampOptions = {
+    latitude,
+    longitude,
+    siteName,
+  };
+
+  // 4. Stamp & Embed EXIF
+  const stampedDataUrl = await addStampToImage(capturedDataUrl, stampOptions);
+  const finalDataUrl = embedExifData(stampedDataUrl, stampOptions);
+
+  // 5. Upload photo to Supabase Storage
+  const blob = dataURLtoBlob(finalDataUrl);
+  const publicUrl = await uploadPhotoToSupabase(blob, 'site_registration');
+  const photoUrlToSave = publicUrl || finalDataUrl;
+
+  // 6. Insert into inspection_photos table with is_site_photo = true
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id || null;
+
+  const { data: inserted, error: dbError } = await supabase
+    .from('inspection_photos')
+    .insert([
+      {
+        photo_url: photoUrlToSave,
+        latitude,
+        longitude,
+        site_id: null,
+        is_used: true,
+        is_site_photo: true,
+        uploaded_by: userId,
+      },
+    ])
+    .select('*')
+    .single();
