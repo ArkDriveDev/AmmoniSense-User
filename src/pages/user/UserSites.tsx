@@ -68,3 +68,38 @@ export default function UserSites() {
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
+
+      if (userId) {
+        const { data: owners } = await supabase
+          .from('site_owners')
+          .select('id')
+          .eq('created_by', userId);
+
+        const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+
+        if (ownerId) {
+          const { data, error } = await supabase
+            .from('monitoring_sites')
+            .select('*')
+            .eq('owner_id', ownerId);
+
+          if (!error && data) {
+            onlineSitesList = data.map(l => ({
+              id: l.id,
+              site_name: l.site_name,
+              location: l.address,
+              site_code: l.site_code,
+              site_type: l.site_type || 'Agricultural',
+              isOffline: false,
+            }));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Network error or offline during fetchSites:', err);
+    }
+
+    // Load offline sites from IndexedDB
+    try {
+      const offlineRecords = await offlineStorage.getOfflineSites();
+      const offlineSitesList = offlineRecords.map((os) => ({
