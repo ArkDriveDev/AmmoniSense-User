@@ -33,3 +33,46 @@ Deno.serve(async (req: Request) => {
     }
 
     const fcmUrl = 'https://fcm.googleapis.com/fcm/send';
+    const results = [];
+
+    for (const { token } of tokens) {
+      const payload = {
+        to: token,
+        notification: {
+          title: notification.title,
+          body: notification.message,
+          sound: 'default',
+          badge: '1',
+        },
+        data: {
+          notification_id: notification_id.toString(),
+          type: notification.type || 'alert',
+          severity: notification.severity || 'info',
+        },
+        priority: 'high',
+      };
+
+      const response = await fetch(fcmUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `key=${fcmServerKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      results.push({ token, success: response.ok, result });
+    }
+
+    return new Response(JSON.stringify({ success: true, results }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+});
