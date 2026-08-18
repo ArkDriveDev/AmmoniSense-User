@@ -768,3 +768,38 @@ export default function UserMap() {
                     onClick={() => setShowPhotoModal(true)}
                   >
                     <IonIcon icon={eyeOutline} slot="start" /> View Inspection Photo
+                  </IonButton>
+                )}
+              </div>
+            )}
+
+            {/* PHOTO TAG DETAILS */}
+            {selectedPhotoTag && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Inspection Photo Tag (Step 1)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>
+                        📷 Inspection Tag #{selectedPhotoTag.id}
+                      </span>
+                      <IonBadge style={{ background: selectedPhotoTag.is_used ? '#6366f1' : '#8b5cf6', color: '#ffffff' }}>
+                        {selectedPhotoTag.is_used ? 'Step 1 Tag Submitted' : 'Step 1 Active Tag'}
+                      </IonBadge>
+                      {selectedPhotoTag.is_pending_sync && <PendingSyncBadge />}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedPhotoTag.photo_url && (
+                  <div style={{ width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
+                    <img src={selectedPhotoTag.photo_url} alt="Inspection Photo Tag" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>
+                  </div>
+                  <div>
