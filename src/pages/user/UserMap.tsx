@@ -334,18 +334,18 @@ export default function UserMap() {
       const queue = await offlineStorage.getQueue();
       const offlineReadings: ReadingMarkerData[] = queue
         .filter((q) => q.type === 'SENSOR_READING')
-    } catch (err) {
-      console.warn('Error fetching inspection photo tags:', err);
-    }
-
-    try {
-      const queue = await offlineStorage.getQueue();
-      const offlinePhotoTags: PhotoTagMarkerData[] = queue
-        .filter((q) => q.type === 'SENSOR_READING' && q.payload?.photo_url)
         .map((q) => ({
           id: q.id,
+          ammonia: q.payload.ammonia || 0,
+          temperature: q.payload.temperature,
+          humidity: q.payload.humidity,
+          battery: q.payload.battery,
           latitude: q.payload.latitude || 8.3683,
           longitude: q.payload.longitude || 124.8637,
+          grid_cell_id: q.payload.grid_cell_id,
+          device_uid: q.payload.device_uid || 'OFFLINE-NODE',
+          created_at: q.timestamp,
+          photo_url: q.payload.photo_url,
           photo_url: q.payload.photo_url,
           grid_cell_id: q.payload.grid_cell_id,
           site_id: q.payload.site_id || null,
