@@ -562,18 +562,18 @@ export default function UserMap() {
               setSelectedReading(reading);
             }}
             onSelectPhotoTag={(tag) => {
-              boxShadow: '0 -8px 30px rgba(15, 60, 92, 0.25)',
-              padding: '20px',
-              maxHeight: '75vh',
-              overflowY: 'auto',
+              closeBottomSheet();
+              setSelectedPhotoTag(tag);
             }}
-          >
-            {/* Drawer Header Handle & Close Button */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{ width: '40px', height: '4px', background: '#cbd5e1', borderRadius: '2px', margin: '0 auto' }}></div>
-              <IonButton fill="clear" size="small" onClick={closeBottomSheet} style={{ position: 'absolute', right: '12px', top: '12px', color: '#64748b' }}>
-                <IonIcon icon={closeOutline} style={{ fontSize: '24px' }} />
-              </IonButton>
+          />
+        )}
+
+        {/* Floating Right Control Action Buttons */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '32px',
+            right: '16px',
             </div>
 
             {/* SITE DETAILS */}
