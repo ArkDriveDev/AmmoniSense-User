@@ -658,18 +658,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 </IonItem>
               </IonCol>
               <IonCol size="4">
-            </div>
+                <IonItem lines="full">
+                  <IonLabel position="stacked">Battery (%)</IonLabel>
+                  <IonInput type="number" value={battery} onIonChange={e => setBattery(e.detail.value!)} />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            <IonButton expand="block" color="primary" onClick={() => setCurrentStep(3)} style={{ marginTop: '16px' }}>
+              Proceed to STEP 3: Submit All ➔
+            </IonButton>
           </IonCardContent>
         </IonCard>
-      )}
-
-      {/* STEP 3: ESP32 BLUETOOTH SENSOR READING */}
-      {currentStep === 3 && (
-        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-          <IonCardHeader>
-            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IonIcon icon={bluetoothOutline} color="tertiary" />
-              STEP 3: Read Sensor via Bluetooth (ESP32)
             </IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
