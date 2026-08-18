@@ -526,18 +526,18 @@ export default function UserMap() {
               onIonInput={(e) => setSearchText(e.detail.value!)}
               placeholder="Search site name, code, or address..."
               showClearButton="always"
-            zIndex: 1000,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-          }}
-        >
-          {/* Locate GPS Button */}
-          <IonButton
-            size="small"
-            shape="round"
-            onClick={handleLocateUser}
-            disabled={locating}
+              style={{ '--background': 'transparent', '--box-shadow': 'none', padding: 0 }}
+            />
+          </div>
+        </div>
+
+        {/* Map Canvas */}
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#F1F5F9' }}>
+            <IonSpinner name="crescent" color="primary" />
+            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Monitoring Sites...</p>
+          </div>
+        ) : (
             style={{
               '--background': 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)',
               '--color': '#ffffff',
