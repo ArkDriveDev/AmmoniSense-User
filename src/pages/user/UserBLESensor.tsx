@@ -103,3 +103,43 @@ export default function UserBLESensor() {
               <IonButton size="small" fill="outline" color="light" onClick={() => setShowScannerModal(true)} style={{ fontWeight: 700 }}>
                 <IonIcon icon={bluetoothOutline} slot="start" />
                 Scan Devices
+              </IonButton>
+            </div>
+          </div>
+
+          {/* Real-time Telemetry Display */}
+          <BLEReadingDisplay reading={reading} />
+
+          {/* Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <IonButton
+              expand="block"
+              color="success"
+              size="large"
+              onClick={handleAutoPopulateAndSubmit}
+              disabled={!reading}
+              style={{ fontWeight: 700 }}
+            >
+              <IonIcon icon={cloudUploadOutline} slot="start" />
+              Auto-Populate & Submit to Inspection Form
+            </IonButton>
+          </div>
+        </IonGrid>
+
+        <BLEScanner
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onSelectDevice={(device) => setActiveDevice(device)}
+        />
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMsg}
+          duration={3500}
+          position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
