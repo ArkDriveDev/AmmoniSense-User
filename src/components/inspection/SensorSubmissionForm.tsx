@@ -226,18 +226,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       if (data && data.length > 0) {
         setDevices(data);
         setSelectedDeviceUid(data[0].device_uid);
-        .from('sensor_data')
-        .select('id, latitude, longitude, ammonia, grid_cell_id, device_uid, created_at, photo_url')
-        .order('created_at', { ascending: false })
-        .limit(30);
-
-      if (uids.length > 0) {
-        query = query.in('device_uid', uids);
+      } else {
+        setDevices([]);
+        setSelectedDeviceUid('ESP32-AMMONIA-NODE-01');
       }
+    } catch (err) {
+      console.error('Error fetching devices:', err);
+    }
+  };
 
-      const { data } = await query;
-      if (data) {
-        const formatted: SensorReadingMarker[] = data
+  // =========================================================
+  // STEP 1: TAKE PHOTO
+  // =========================================================
           .filter(d => d.latitude && d.longitude)
           .map(d => ({
             id: d.id,
