@@ -698,3 +698,43 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               disabled={submitLoading}
               style={{ fontWeight: 'bold' }}
             >
+              {submitLoading ? (
+                <>
+                  <IonSpinner name="crescent" />
+                  &nbsp;Submitting Inspection Data...
+                </>
+              ) : (
+                <>
+                  <IonIcon icon={checkmarkDoneCircleOutline} slot="start" />
+                  CONFIRM & SUBMIT ALL DATA
+                </>
+              )}
+            </IonButton>
+          </IonCardContent>
+        </IonCard>
+      )}
+
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMsg}
+        duration={4500}
+        color={toastColor}
+        position="bottom"
+      />
+
+      <CreateSiteModal
+        isOpen={showCreateSiteModal}
+        onClose={() => setShowCreateSiteModal(false)}
+        onSiteCreated={(newSite) => {
+          fetchSites();
+          if (newSite?.id) {
+            setSelectedSiteId(newSite.id);
+          }
+        }}
+      />
+    </div>
+  );
+};
+
+export default SensorSubmissionForm;
