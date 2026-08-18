@@ -346,18 +346,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         .from('sensor_data')
         .insert([sensorPayload])
         .select('id')
-    }
-  };
+        .single();
 
-  // =========================================================
-  // STEP 4: SUBMIT ALL DATA
-  // =========================================================
-  const handleStep4_SubmitAll = async () => {
-    if (!ammonia) {
-      setToastMsg('Please enter an ammonia reading');
-      setToastColor('warning');
-      setShowToast(true);
-      return;
+      if (sensorError) {
+        throw new Error('Supabase insert sensor_data error: ' + sensorError.message);
+      }
+
+      const sensorDataId = insertedSensorData?.id;
+
+      if (photoRecord?.id && sensorDataId) {
+        await step4_markPhotoAsUsed(photoRecord.id, sensorDataId);
+      }
+
     }
 
     setSubmitLoading(true);
