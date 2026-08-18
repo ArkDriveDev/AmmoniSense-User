@@ -98,3 +98,23 @@ export default function UserBLESensor() {
                 </span>
                 <h3 style={{ margin: '2px 0 0 0', fontWeight: 800, fontSize: '18px' }}>
                   {activeDevice ? activeDevice.name : 'Ready for Scanning'}
+                </h3>
+              </div>
+              <IonButton size="small" fill="outline" color="light" onClick={() => setShowScannerModal(true)} style={{ fontWeight: 700 }}>
+                <IonIcon icon={bluetoothOutline} slot="start" />
+                Scan Devices
+              </IonButton>
+            </div>
+          </div>
+
+          {/* Real-time Telemetry Display */}
+          <BLEReadingDisplay reading={reading} />
+
+          {/* Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <IonButton
+              expand="block"
+              color="success"
+              size="large"
+              onClick={handleAutoPopulateAndSubmit}
+              disabled={!reading}
