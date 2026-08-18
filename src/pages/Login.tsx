@@ -68,3 +68,38 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  return (
+    <IonPage>
+      <IonContent 
+        className="ion-padding" 
+        style={{ 
+          '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 50%, #008B74 100%)',
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          minHeight: '100vh'
+        }}
+      >
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <IonGrid style={{ maxWidth: '420px', width: '100%' }}>
+            <IonRow>
+              <IonCol>
+                <IonCard className="premium-card" style={{ padding: '8px' }}>
+                  <IonCardContent>
+                    <div style={{ textAlign: 'center', marginBottom: '28px', marginTop: '12px' }}>
+                      <div style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '20px',
+                        background: 'linear-gradient(135deg, #1D5D9B 0%, #008B74 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
