@@ -33,3 +33,13 @@ Specify the exact module, feature area, or component affected:
 - `map`, `ble`, `sites`, `storage`, `sync`, `auth`, `ui`
 
 #### Examples:
+- `feat(map): add PolygonPreview component for live circular coverage`
+- `feat(sites): integrate area range slider into CreateSiteModal`
+- `fix(ble): auto-request location permissions before starting GATT scan`
+- `fix(storage): purge deleted offline sites from IndexedDB and localStorage`
+
+---
+
+## Mandatory Execution Protocol for AI Assistants
+1. **Commit Frequency**: Automatically commit changes after completing each task/update.
+2. **Atomic Commits**: Stage and commit changes file-by-file or in atomic units using precise Conventional Commit messages. Never issue a single bulk commit for multi-file tasks.
