@@ -138,3 +138,37 @@ export default function UserLayout({ children }: any) {
               button 
               onClick={() => navigate('/dashboard')}
               color={isActive('/dashboard') ? 'primary' : undefined}
+              style={isActive('/dashboard') ? { 
+                borderLeft: '4px solid var(--ion-color-primary)',
+                fontWeight: 'bold'
+              } : {}}
+            >
+              <IonIcon icon={homeOutline} slot="start" />
+              <IonLabel>Dashboard</IonLabel>
+            </IonItem>
+
+            <IonItem 
+              button 
+              onClick={() => navigate('/map')}
+              color={isActive('/map') || isActive('/spatial-map') ? 'primary' : undefined}
+              style={isActive('/map') || isActive('/spatial-map') ? { 
+                borderLeft: '4px solid var(--ion-color-primary)',
+                fontWeight: 'bold'
+              } : {}}
+            >
+              <IonIcon icon={mapOutline} slot="start" />
+              <IonLabel>Spatial Map</IonLabel>
+            </IonItem>
+
+            <IonItem 
+              button 
+              onClick={() => navigate('/monitoring-sites')}
+              color={isActive('/monitoring-sites') || isActive('/my-piggeries') ? 'primary' : undefined}
+              style={isActive('/monitoring-sites') || isActive('/my-piggeries') ? { 
+                borderLeft: '4px solid var(--ion-color-primary)',
+                fontWeight: 'bold'
+              } : {}}
+            >
+              <IonIcon icon={businessOutline} slot="start" />
+              <IonLabel>Monitoring Sites</IonLabel>
+            </IonItem>
