@@ -850,18 +850,18 @@ export default function UserMap() {
         >
           <div style={{ padding: '16px', minWidth: '220px' }}>
             <h4 style={{ margin: '0 0 12px 0', fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
-            <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
-              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
-                Step 1 Inspection Photo Tags
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: PHOTO_TAG_BRAND_COLOR }}></span>
-                  <b>Step 1 Photo Tag</b> (📷 Camera location tag from mobile inspection)
-                </div>
-              </div>
-            </IonCard>
+              Map Layers
+            </h4>
 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showSitesLayer}
+                  onChange={(e) => setShowSitesLayer(e.target.checked)}
+                />
+                <b>Monitoring Sites</b> (Pins)
+              </label>
             <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
                 Sensor Readings Ammonia Levels (PPM)
