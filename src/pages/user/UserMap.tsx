@@ -778,18 +778,18 @@ export default function UserMap() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                   <div>
-        >
-          <div style={{ padding: '16px', minWidth: '220px' }}>
-            <h4 style={{ margin: '0 0 12px 0', fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
-              Map Layers
-            </h4>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showSitesLayer}
-                  onChange={(e) => setShowSitesLayer(e.target.checked)}
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Inspection Photo Tag (Step 1)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>
+                        📷 Inspection Tag #{selectedPhotoTag.id}
+                      </span>
+                      <IonBadge style={{ background: selectedPhotoTag.is_used ? '#6366f1' : '#8b5cf6', color: '#ffffff' }}>
+                        {selectedPhotoTag.is_used ? 'Step 1 Tag Submitted' : 'Step 1 Active Tag'}
+                      </IonBadge>
+                      {selectedPhotoTag.is_pending_sync && <PendingSyncBadge />}
+                    </div>
+                  </div>
+                </div>
                 />
                 <b>Monitoring Sites</b> (Pins)
               </label>
