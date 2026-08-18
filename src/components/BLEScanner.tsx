@@ -67,3 +67,39 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
     if (isOpen) {
       checkPermissions();
     }
+
+    return () => {
+      unsubState();
+      unsubDevices();
+    };
+  }, [isOpen]);
+
+  const checkPermissions = async () => {
+    try {
+      const status = await bleCentralService.checkAndRequestPermissions();
+      setPermStatus(status);
+      if (!status.canScan && status.errorMsg) {
+        setPermissionError(status.errorMsg);
+      } else {
+        setPermissionError(null);
+      }
+    } catch (err: any) {
+      console.warn('Error checking permissions:', err);
+    }
+  };
+
+  const handleStartScan = async () => {
+    setScanning(true);
+    setPermissionError(null);
+    try {
+      const devs = await bleCentralService.scanForDevices();
+      setDevices(devs);
+    } catch (err: any) {
+      console.error('Scan error:', err);
+      const errMsg = err.message || 'Failed to start scan. Check Bluetooth & Location permissions.';
+      setPermissionError(errMsg);
+      setShowAlert(true);
+    } finally {
+      setScanning(false);
+      checkPermissions();
+    }
