@@ -646,18 +646,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
             <IonRow>
               <IonCol size="4">
-              onSelectCell={handleStep2_SelectCell}
-              readings={previousReadings}
-              height="380px"
-            />
-
-            <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                Selected Cell: <IonBadge color="primary" style={{ fontSize: '14px' }}>{selectedCellId}</IonBadge>
-              </div>
-              <IonButton color="secondary" onClick={() => setCurrentStep(3)}>
-                Proceed to STEP 3: Sensor Reading ➔
-              </IonButton>
+                <IonItem lines="full">
+                  <IonLabel position="stacked">Temp (°C)</IonLabel>
+                  <IonInput type="number" value={temperature} onIonChange={e => setTemperature(e.detail.value!)} />
+                </IonItem>
+              </IonCol>
+              <IonCol size="4">
+                <IonItem lines="full">
+                  <IonLabel position="stacked">Humidity (%)</IonLabel>
+                  <IonInput type="number" value={humidity} onIonChange={e => setHumidity(e.detail.value!)} />
+                </IonItem>
+              </IonCol>
+              <IonCol size="4">
             </div>
           </IonCardContent>
         </IonCard>
