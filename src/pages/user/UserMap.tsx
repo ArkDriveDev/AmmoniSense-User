@@ -250,18 +250,18 @@ export default function UserMap() {
             }
 
             lsOfflineFormatted = validLsArr.map((os: any) => {
-
-  const fetchReadings = async () => {
-    let serverReadings: ReadingMarkerData[] = [];
-    try {
-      const { data, error } = await supabase
-        .from('sensor_data')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (!error && data) {
-        serverReadings = data
+              const coords = resolveSiteCoords(
+                os.current_latitude ?? os.latitude,
+                os.current_longitude ?? os.longitude
+              );
+              return {
+                id: os.id || `ls_${Date.now()}`,
+                site_code: os.site_code || 'LS_OFFLINE',
+                site_name: os.site_name || 'Offline Site',
+                site_type: os.site_type || 'Agricultural',
+                address: os.address || os.site_name,
+                latitude: coords.latitude,
+                longitude: coords.longitude,
           .map((r: any) => ({
             id: r.id,
             ammonia: r.ammonia || 0,
