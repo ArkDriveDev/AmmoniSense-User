@@ -172,3 +172,38 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     readingsLayerGroupRef.current = L.layerGroup().addTo(map);
     photoTagsLayerGroupRef.current = L.layerGroup().addTo(map);
     userLocLayerGroupRef.current = L.layerGroup().addTo(map);
+
+    mapRef.current = map;
+    setMapInstance(map);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      setMapInstance(null);
+    };
+  }, []);
+
+  // Update Center
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.setView([centerLat, centerLng], zoom);
+    }
+  }, [centerLat, centerLng, zoom]);
+
+  // Render User GPS Marker if within bounds
+  useEffect(() => {
+    if (!mapRef.current || !userLocLayerGroupRef.current) return;
+    const userGroup = userLocLayerGroupRef.current;
+    userGroup.clearLayers();
+
+    if (userLocation) {
+      const userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
+        radius: 9,
+        fillColor: '#3b82f6',
+        color: '#ffffff',
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.9,
+      });
