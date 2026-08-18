@@ -98,3 +98,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
       console.error('Scan error:', err);
       const errMsg = err.message || 'Failed to start scan. Check Bluetooth & Location permissions.';
       setPermissionError(errMsg);
+      setShowAlert(true);
+    } finally {
+      setScanning(false);
+      checkPermissions();
+    }
+  };
+
+  const handleOpenSettings = async () => {
+    await bleCentralService.openSettings();
+  };
+
+  const handleConnectDevice = async (device: BLECentralDevice) => {
+    setActiveDeviceId(device.id);
+    try {
+      await bleCentralService.connectAndSubscribe(device);
+      if (onSelectDevice) {
+        onSelectDevice(device);
+      }
+      onClose();
+    } catch (err) {
