@@ -523,3 +523,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 textAlign: 'center'
               }}>
                 <IonIcon icon={cameraOutline} style={{ fontSize: '48px', color: '#d97706', marginBottom: '8px' }} />
+                <h4 style={{ margin: '0 0 6px 0', color: '#92400e', fontWeight: 'bold' }}>
+                  No Monitoring Site Selected
+                </h4>
+                <p style={{ margin: 0, color: '#b45309', fontSize: '13px', maxWidth: '400px', lineHeight: '1.4' }}>
+                  Please select a site using the <b>MONITORING SITE</b> dropdown above.
+                </p>
+              </div>
+            ) : (
+              <div style={{
+                height: '180px',
+                border: '2px dashed #cbd5e1',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#f8fafc',
+                margin: '16px 0'
+              }}>
+                <IonIcon icon={cameraOutline} style={{ fontSize: '48px', color: '#94a3b8', marginBottom: '8px' }} />
+                <IonButton color="primary" onClick={handleStep1_TakePhoto} disabled={step1Loading}>
+                  {step1Loading ? (
+                    <>
+                      <IonSpinner name="crescent" />
+                      &nbsp;Capturing & Uploading...
+                    </>
+                  ) : (
+                    '📷 Take Inspection Photo'
+                  )}
+                </IonButton>
+              </div>
+            )}
+
+            {photoRecord && (
+              <IonButton expand="block" color="primary" onClick={() => setCurrentStep(2)} style={{ marginTop: '16px' }}>
