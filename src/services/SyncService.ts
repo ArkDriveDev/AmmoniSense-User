@@ -103,3 +103,37 @@ class SyncService {
           this.notifyListeners('sync_progress', item, `Syncing ${item.type}...`);
 
           await this.processItem(item);
+
+          // Success: remove item from queue
+          await offlineStorage.removeQueueItem(item.id);
+
+          if (item.photoStoreId) {
+            await offlineStorage.removePhoto(item.photoStoreId);
+          }
+
+          successCount++;
+        } catch (err: any) {
+          console.error(`Error syncing queue item ${item.id}:`, err);
+          failedCount++;
+          const errorMsg = err.message || 'Sync failed';
+          await offlineStorage.updateQueueItemStatus(item.id, 'failed', errorMsg);
+          this.notifyListeners('sync_error', item, errorMsg);
+        }
+      }
+    } finally {
+      this.isSyncing = false;
+      this.notifyListeners('sync_complete');
+    }
+
+    return { success: successCount, failed: failedCount };
+  }
+
+  private async processItem(item: QueueItem): Promise<void> {
+    switch (item.type) {
+      case 'SENSOR_READING':
+        await this.syncSensorReading(item);
+        break;
+
+      case 'SITE_REGISTRATION':
+        await this.syncSiteRegistration(item);
+        break;
