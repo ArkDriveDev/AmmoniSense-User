@@ -68,3 +68,37 @@ class BLECentralService {
 
   private initBroadcastChannel() {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      this.broadcastChannel = new BroadcastChannel(BLECentralService.BROADCAST_CHANNEL_NAME);
+      this.broadcastChannel.onmessage = (event) => {
+        if (event.data && event.data.type === 'BLE_CENTRAL_TELEMETRY') {
+          const reading: BLECentralReading = event.data.payload;
+          this.setState('streaming');
+          this.notifyTelemetryListeners(reading);
+        }
+      };
+    }
+  }
+
+  public getState(): BLECentralState {
+    return this.currentState;
+  }
+
+  public getActiveDevice(): BLECentralDevice | null {
+    return this.activeDevice;
+  }
+
+  public getDiscoveredDevices(): BLECentralDevice[] {
+    return this.discoveredDevices;
+  }
+
+  public setState(state: BLECentralState) {
+    this.currentState = state;
+    this.stateListeners.forEach((fn) => fn(state));
+  }
+
+  public onTelemetry(listener: BLECentralTelemetryListener): () => void {
+    this.telemetryListeners.push(listener);
+    return () => {
+      this.telemetryListeners = this.telemetryListeners.filter((l) => l !== listener);
+    };
+  }
