@@ -243,3 +243,38 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
         <IonButton
           expand="block"
           color="primary"
+          onClick={handleStartScan}
+          disabled={scanning}
+          style={{ fontWeight: 700, marginBottom: '16px' }}
+        >
+          {scanning ? (
+            <>
+              <IonSpinner name="crescent" />
+              &nbsp;Scanning BLE Central Devices...
+            </>
+          ) : (
+            <>
+              <IonIcon icon={searchOutline} slot="start" />
+              Scan for BLE Sensor Devices
+            </>
+          )}
+        </IonButton>
+
+        {/* Device List */}
+        <div style={{ marginBottom: '8px' }}>
+          <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Discovered Sensor Nodes ({devices.length})
+          </label>
+        </div>
+
+        {devices.length === 0 ? (
+          <IonCard className="premium-card" style={{ margin: 0, padding: '24px', textAlign: 'center' }}>
+            <IonCardContent>
+              <IonIcon icon={bluetoothOutline} style={{ fontSize: '42px', color: '#94A3B8', marginBottom: '8px' }} />
+              <p style={{ margin: 0, color: '#64748B', fontWeight: 600, fontSize: '13px' }}>
+                No BLE devices found. Tap <b>Scan for BLE Sensor Devices</b> to discover nearby ESP32 nodes.
+              </p>
+            </IonCardContent>
+          </IonCard>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
