@@ -98,3 +98,23 @@ export default function AreaMapping() {
       console.warn('Error saving community polygon, saving locally:', err);
       const localComm = { ...comm, id: `local_${Date.now()}`, is_pending_sync: true };
       setCommunityPolygons((prev) => [localComm, ...prev]);
+      setToastMsg(`📶 Saved Community Polygon locally for auto-sync.`);
+      setToastColor('warning');
+      setShowToast(true);
+    }
+  };
+
+  return (
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>Spatial Polygon & Area Mapping</IonTitle>
+          <IonButton slot="end" fill="clear" onClick={loadData} style={{ color: '#ffffff' }}>
+            <IonIcon icon={refreshOutline} />
+          </IonButton>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent />
