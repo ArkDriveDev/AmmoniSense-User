@@ -33,3 +33,38 @@ export default function UserDevices() {
   }, [location]);
 
   const fetchDevices = async (siteId: string | null) => {
+    setLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: owners } = await supabase
+        .from('site_owners')
+        .select('id')
+        .eq('created_by', userId);
+
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+
+      let siteQuery = supabase
+        .from('monitoring_sites')
+        .select('id, site_name');
+
+      if (ownerId) {
+        siteQuery = siteQuery.eq('owner_id', ownerId);
+      }
+      if (siteId) {
+        siteQuery = siteQuery.eq('id', parseInt(siteId));
+      }
+
+      const { data: siteList } = await siteQuery;
+
+      if (siteId && siteList && siteList.length > 0) {
+        setSiteName(siteList[0].site_name);
+      }
+
+      const siteIds = siteList?.map(s => s.id) || [];
