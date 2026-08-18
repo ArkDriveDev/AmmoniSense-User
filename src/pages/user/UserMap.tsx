@@ -82,18 +82,18 @@ export default function UserMap() {
   const [selectedSite, setSelectedSite] = useState<SiteMarkerData | null>(null);
   const [selectedReading, setSelectedReading] = useState<ReadingMarkerData | null>(null);
   const [selectedPhotoTag, setSelectedPhotoTag] = useState<PhotoTagMarkerData | null>(null);
+
+  // Modals & UI Toggles
+  const [showLegend, setShowLegend] = useState<boolean>(false);
+  const [showLayerPopover, setShowLayerPopover] = useState<boolean>(false);
+  const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
+
   // Toasts
   const [toastMsg, setToastMsg] = useState<string>('');
   const [showToast, setShowToast] = useState<boolean>(false);
 
   useEffect(() => {
-    loadMapData();
-  }, []);
-
-  const loadMapData = async () => {
-    setLoading(true);
-    await Promise.all([fetchSites(), fetchReadings(), fetchPhotoTags()]);
-    setLoading(false);
   };
 
   const resolveSiteCoords = (latRaw?: any, lngRaw?: any) => {
