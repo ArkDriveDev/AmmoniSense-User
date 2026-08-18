@@ -239,23 +239,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
                 max={100}
                 step={1}
                 value={humidity}
-                onIonChange={(e) => setHumidity(e.detail.value as number)}
-              />
-            </div>
-
-            {/* Battery Slider */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: '#475569' }}>Sensor Node Battery</span>
-                <span style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>{battery} %</span>
-              </div>
-              <IonRange
-                min={10}
-                max={100}
-                step={1}
-                value={battery}
-                onIonChange={(e) => setBattery(e.detail.value as number)}
-              />
-            </div>
-          </IonCardContent>
-        </IonCard>
