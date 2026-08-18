@@ -106,18 +106,18 @@ export default function UserMap() {
     return () => {
       window.removeEventListener('site_deleted', handleSiteChanged);
       window.removeEventListener('site_synced', handleSiteChanged);
-  const fetchSites = async () => {
-    let onlineFormatted: SiteMarkerData[] = [];
-    try {
-      const { data: sitesData, error: sitesErr } = await supabase
-        .from('monitoring_sites')
-        .select('*');
+    };
+  }, []);
 
-      if (!sitesErr && sitesData) {
-        onlineFormatted = sitesData.map((s: any) => {
-          const coords = resolveSiteCoords(s.current_latitude, s.current_longitude);
-          return {
-            id: s.id,
+  const loadMapData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchSites(),
+      fetchReadings(),
+      fetchPhotoTags(),
+      loadPolygons()
+    ]);
+    setLoading(false);
             site_code: s.site_code,
             site_name: s.site_name,
             site_type: s.site_type || 'Agricultural',
