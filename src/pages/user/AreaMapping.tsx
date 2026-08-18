@@ -138,3 +138,23 @@ export default function AreaMapping() {
               <div>
                 <h3 style={{ margin: 0, fontWeight: 800, fontSize: '17px' }}>Polygon Area Mapping</h3>
                 <p style={{ margin: '2px 0 0 0', fontSize: '12px', opacity: 0.85 }}>
+                  Draw spatial boundaries for Odor Plume Dispersion Zones and Vulnerable Communities. No grid cells required.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Polygon Drawer */}
+          <PolygonDrawer
+            onSaveOdorZone={handleSaveOdorZone}
+            onSaveCommunity={handleSaveCommunity}
+            height="440px"
+          />
+
+          {/* Saved Spatial Polygons Summary List */}
+          <div style={{ marginTop: '24px' }}>
+            <h4 style={{ fontWeight: 800, color: '#0F172A', fontSize: '16px', marginBottom: '12px' }}>
+              Saved Spatial Polygons ({odorZones.length + communityPolygons.length})
+            </h4>
+
+            {loading ? (
