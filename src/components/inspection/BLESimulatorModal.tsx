@@ -98,24 +98,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
   };
 
   const severity = getAmmoniaSeverity(ammonia);
-
-  return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose}>
-      <IonHeader className="ion-no-border">
-        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700, fontSize: '16px' }}>
-            <IonIcon icon={bluetoothOutline} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-            ESP32 BLE Hardware Simulator
-          </IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onClose} style={{ color: '#ffffff' }}>
-              <IonIcon icon={closeOutline} />
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-
-      <IonContent className="ion-padding" style={{ '--background': '#F8FAFC' }}>
-        {/* Glassmorphism Header Banner */}
-        <div
-          style={{
