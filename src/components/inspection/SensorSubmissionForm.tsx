@@ -622,18 +622,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
               {btConnected && (
                 <div style={{ marginTop: '10px', fontSize: '12px', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            )}
-          </IonCardContent>
-        </IonCard>
-      )}
-
-      {/* STEP 2: SELECT GRID CELL CARD */}
-      {currentStep === 2 && (
-        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-          <IonCardHeader>
-            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IonIcon icon={locationOutline} color="secondary" />
-              STEP 2: Select Grid Cell on Leaflet Map
+                  <span>
+                    <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                    BLE Connected ({selectedDeviceUid})
+                  </span>
+                  {bleRssi && (
+                    <IonBadge color="success" style={{ fontSize: '10px' }}>
+                      RSSI: {bleRssi} dBm
+                    </IonBadge>
+                  )}
+                </div>
+              )}
+            </div>
             </IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
