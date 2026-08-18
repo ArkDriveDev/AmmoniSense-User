@@ -68,3 +68,38 @@ export default function UserDashboard() {
 
         <IonGrid>
           {/* Stats Cards Section */}
+          <IonRow>
+            <IonCol size="6" size-md="4">
+              <StatsCard
+                title="Monitoring Sites"
+                value={stats.siteCount}
+                icon="business-outline"
+                color="primary"
+              />
+            </IonCol>
+            <IonCol size="6" size-md="4">
+              <StatsCard
+                title="Devices"
+                value={stats.deviceCount}
+                icon="hardware-chip-outline"
+                color="secondary"
+              />
+            </IonCol>
+            <IonCol size="12" size-md="4">
+              <StatsCard
+                title="Active Telemetry"
+                value={stats.activeDevices}
+                icon="hardware-chip-outline"
+                color="success"
+                subtitle={`Of ${stats.deviceCount} total devices online`}
+              />
+            </IonCol>
+          </IonRow>
+
+          {/* Ammonia Trend Chart Card */}
+          <IonRow>
+            <IonCol size="12">
+              <IonCard className="premium-card">
+                <IonCardContent style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
