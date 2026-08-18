@@ -68,3 +68,38 @@ export default function UserDevices() {
       }
 
       const siteIds = siteList?.map(s => s.id) || [];
+
+      let deviceQuery = supabase.from('devices').select('*');
+      if (siteIds.length > 0) {
+        deviceQuery = deviceQuery.in('site_id', siteIds);
+      }
+
+      const { data, error } = await deviceQuery;
+
+      if (error) {
+        console.error('Error fetching devices:', error);
+        return;
+      }
+
+      setDevices(data || []);
+    } catch (err) {
+      console.error('Unexpected error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async (event: CustomEvent) => {
+    const params = new URLSearchParams(location.search);
+    await fetchDevices(params.get('site') || params.get('piggery'));
+    event.detail.complete();
+  };
+
+  return (
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>{siteName ? `${siteName} — Devices` : 'Environmental Devices'}</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => {
+              const params = new URLSearchParams(location.search);
