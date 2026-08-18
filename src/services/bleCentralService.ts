@@ -238,3 +238,23 @@ class BLECentralService {
    * Scan for actual hardware BLE devices advertising Service 0000ffd0-0000-1000-8000-00805f9b34fb
    * Automatically requests all permissions first.
    */
+  public async scanForDevices(): Promise<BLECentralDevice[]> {
+    const permStatus = await this.checkAndRequestPermissions();
+    if (!permStatus.canScan) {
+      console.warn('BLE scan prevented by permission/hardware check:', permStatus.errorMsg);
+      this.setState('disconnected');
+      throw new Error(permStatus.errorMsg || 'BLE permissions or hardware disabled.');
+    }
+
+    const nav = navigator as any;
+    this.setState('scanning');
+
+    try {
+      const device = await nav.bluetooth.requestDevice({
+        filters: [{ services: [BLECentralService.SERVICE_UUID] }],
+        optionalServices: [BLECentralService.SERVICE_UUID, 'generic_access'],
+      });
+
+      const centralDevice: BLECentralDevice = {
+        id: device.id || `BLE-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: device.name || 'ESP32 Ammonia Node',
