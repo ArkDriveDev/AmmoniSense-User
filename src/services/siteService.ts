@@ -154,8 +154,14 @@ export const registerSiteWithPhoto = async (
     }
 
     throw error;
-    }
-
-    throw error;
   }
 };
+
+/**
+ * Fetch all Odor Zones from Supabase
+ */
+export const fetchOdorZones = async (): Promise<OdorZone[]> => {
+  const { data, error } = await supabase
+    .from('odor_zones')
+    .select('*')
+    .order('created_at', { ascending: false });
