@@ -523,3 +523,38 @@ export default function UserMap() {
           >
             <IonSearchbar
               value={searchText}
+              onIonInput={(e) => setSearchText(e.detail.value!)}
+              placeholder="Search site name, code, or address..."
+              showClearButton="always"
+              style={{ '--background': 'transparent', '--box-shadow': 'none', padding: 0 }}
+            />
+          </div>
+        </div>
+
+        {/* Map Canvas */}
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#F1F5F9' }}>
+            <IonSpinner name="crescent" color="primary" />
+            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Monitoring Sites...</p>
+          </div>
+        ) : (
+          <FullMapView
+            sites={filteredSites}
+            readings={filteredReadings}
+            photoTags={filteredPhotoTags}
+            showSitesLayer={showSitesLayer}
+            showReadingsLayer={showReadingsLayer}
+            showPhotoTagsLayer={showPhotoTagsLayer}
+            showBoundaryLayer={showBoundaryLayer}
+            showOdorZonesLayer={showOdorZonesLayer}
+            odorZones={odorZones}
+            communityPolygons={communityPolygons}
+            centerLat={mapCenter.lat}
+            centerLng={mapCenter.lng}
+            zoom={mapCenter.zoom}
+            userLocation={userLocation}
+            onSelectSite={(site) => {
+              closeBottomSheet();
+              setSelectedSite(site);
+            }}
+            onSelectReading={(reading) => {
