@@ -103,3 +103,38 @@ export const registerSiteWithPhoto = async (
           .from('inspection_photos')
           .update({
             site_id: createdSite.id,
+            is_site_photo: true,
+            is_used: true,
+          })
+          .eq('id', payload.photo_record_id)
+          .select('*')
+          .single();
+        photoRecord = updatedPhoto;
+      } else if (payload.photo_url) {
+        const { data: newPhoto } = await supabase
+          .from('inspection_photos')
+          .insert([
+            {
+              photo_url: payload.photo_url,
+              latitude: payload.latitude,
+              longitude: payload.longitude,
+              site_id: createdSite.id,
+              is_site_photo: true,
+              is_used: true,
+              uploaded_by: user.id,
+            },
+          ])
+          .select('*')
+          .single();
+        photoRecord = newPhoto;
+      }
+
+      if (photoRecord?.id) {
+        await supabase
+          .from('monitoring_sites')
+          .update({ site_photo_id: photoRecord.id })
+          .eq('id', createdSite.id);
+
+        createdSite.site_photo_id = photoRecord.id;
+      }
+    }
