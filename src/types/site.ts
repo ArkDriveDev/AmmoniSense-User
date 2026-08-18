@@ -68,3 +68,12 @@ export interface CommunityPolygon {
   coordinates: [number, number][]; // Array of [lat, lng] boundary vertices
   created_at?: string;
   created_by?: string;
+  is_pending_sync?: boolean;
+}
+
+export interface SiteRegistrationResult {
+  owner: any;
+  site: any;
+  location: any;
+  photo?: any;
+}
