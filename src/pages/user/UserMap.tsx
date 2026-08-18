@@ -418,3 +418,38 @@ export default function UserMap() {
     return (
       tag.site_name?.toLowerCase().includes(query) ||
       tag.id.toString().includes(query)
+    );
+  });
+
+  // Filter sites by search query
+  const filteredSites = sites.filter((site) => {
+    if (!searchText.trim()) return true;
+    const query = searchText.toLowerCase();
+    return (
+      site.site_name.toLowerCase().includes(query) ||
+      site.site_code?.toLowerCase().includes(query) ||
+      site.address?.toLowerCase().includes(query) ||
+      site.owner_name?.toLowerCase().includes(query)
+    );
+  });
+
+  // Filter readings by search query
+  const filteredReadings = readings.filter((reading) => {
+    if (!searchText.trim()) return true;
+    const query = searchText.toLowerCase();
+    return (
+      reading.device_uid?.toLowerCase().includes(query) ||
+      reading.ammonia.toString().includes(query)
+    );
+  });
+
+  // Locate User GPS
+  const handleLocateUser = async () => {
+    setLocating(true);
+    try {
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      if (IS_IN_MANOLO_FORTICH(lat, lng)) {
+        setUserLocation({ lat, lng });
