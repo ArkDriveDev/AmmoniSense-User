@@ -138,3 +138,13 @@ export function useUserDashboardData() {
         labels: ['ACTIVE', 'INACTIVE', 'PENDING'],
         datasets: [{
           data: [active, inactive, pending],
+          backgroundColor: ['#2dd36f', '#eb445a', '#ffc409'],
+          borderColor: ['#2dd36f', '#eb445a', '#ffc409'],
+          borderWidth: 1,
+        }],
+      },
+    };
+  };
+
+  return { stats, chartData, loading, refresh: fetchDashboardData };
+}
