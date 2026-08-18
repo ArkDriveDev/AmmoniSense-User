@@ -208,3 +208,38 @@ export const fetchCommunityPolygons = async (): Promise<CommunityPolygon[]> => {
   const { data, error } = await supabase
     .from('community_polygons')
     .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Supabase fetch community_polygons notice:', error.message);
+    return [];
+  }
+  return data || [];
+};
+
+/**
+ * Save new Community Polygon to Supabase
+ */
+export const saveCommunityPolygon = async (poly: CommunityPolygon): Promise<CommunityPolygon> => {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id || null;
+
+  const payload = {
+    community_name: poly.community_name,
+    community_type: poly.community_type,
+    estimated_population: poly.estimated_population,
+    coordinates: poly.coordinates,
+    created_by: userId,
+  };
+
+  const { data, error } = await supabase
+    .from('community_polygons')
+    .insert([payload])
+    .select('*')
+    .single();
+
+  if (error) {
+    throw new Error('Supabase save community_polygons error: ' + error.message);
+  }
+  return data;
+};
