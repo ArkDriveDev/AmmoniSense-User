@@ -218,3 +218,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
 
         {/* PERMISSION ERROR ALERT CARD */}
         {permissionError && (
+          <IonCard className="premium-card" style={{ margin: '0 0 14px 0', borderLeft: '4px solid #ef4444', background: '#fff5f5' }}>
+            <IonCardContent style={{ padding: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <IonIcon icon={warningOutline} style={{ color: '#ef4444', fontSize: '24px', marginTop: '2px' }} />
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: '#991b1b' }}>
+                    Permissions or Hardware Action Required
+                  </h4>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#7f1d1d' }}>
+                    {permissionError}
+                  </p>
+                  <IonButton size="small" color="danger" onClick={handleOpenSettings} style={{ fontWeight: 700 }}>
+                    <IonIcon icon={settingsOutline} slot="start" />
+                    Open Settings / Grant Permissions
+                  </IonButton>
+                </div>
+              </div>
+            </IonCardContent>
+          </IonCard>
+        )}
