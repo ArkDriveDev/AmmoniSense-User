@@ -313,3 +313,37 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
               transform: rotate(45deg);
               color: #ffffff;
               font-size: 15px;
+              font-weight: bold;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">
+              ${pinEmoji}
+            </div>
+          </div>
+        `,
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -34],
+      });
+
+      if (isOffline) {
+        const pulseCircle = L.circle([lat, lng], {
+          radius: 120,
+          fillColor: '#ef4444',
+          fillOpacity: 0.25,
+          stroke: false,
+        });
+        sitesGroup.addLayer(pulseCircle);
+      }
+
+      const popupContent = `
+        <div style="font-family: sans-serif; padding: 4px; min-width: 140px;">
+          <strong style="font-size: 14px; color: #0f172a; display: block; margin-bottom: 2px;">${site.site_name}</strong>
+          ${isOffline 
+            ? '<div style="color: #ef4444; font-weight: bold; font-size: 12px; margin-bottom: 4px;">⏳ Pending Submission (Offline)</div>' 
+            : '<div style="color: #22c55e; font-weight: bold; font-size: 12px; margin-bottom: 4px;">✅ Synced Online Site</div>'
+          }
+          <div style="font-size: 12px; color: #475569;">${site.address || 'Manolo Fortich, Bukidnon'}</div>
+        </div>
+      `;
