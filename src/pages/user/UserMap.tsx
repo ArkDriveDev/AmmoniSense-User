@@ -558,3 +558,38 @@ export default function UserMap() {
               setSelectedSite(site);
             }}
             onSelectReading={(reading) => {
+              closeBottomSheet();
+              setSelectedReading(reading);
+            }}
+            onSelectPhotoTag={(tag) => {
+              closeBottomSheet();
+              setSelectedPhotoTag(tag);
+            }}
+          />
+        )}
+
+        {/* Floating Right Control Action Buttons */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '32px',
+            right: '16px',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
+          {/* Locate GPS Button */}
+          <IonButton
+            size="small"
+            shape="round"
+            onClick={handleLocateUser}
+            disabled={locating}
+            style={{
+              '--background': 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)',
+              '--color': '#ffffff',
+              '--box-shadow': '0 4px 14px rgba(0,0,0,0.25)',
+              width: '44px',
+              height: '44px',
+            }}
