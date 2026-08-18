@@ -138,3 +138,38 @@ class BLEService {
 
       this.setState('streaming');
       this.notifyReadingListeners(initialReading);
+      return initialReading;
+    } catch (err: any) {
+      console.warn('BLE scan cancelled or failed:', err);
+      this.setState('disconnected');
+      throw err;
+    }
+  }
+
+  public broadcastTelemetry(reading: BLEReading) {
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({
+        type: 'BLE_TELEMETRY',
+        payload: reading,
+      });
+    }
+  }
+
+  private parseBLEDataView(dataView: DataView, deviceUid: string): BLEReading | null {
+    try {
+      if (dataView.byteLength < 4) return null;
+      const ammoniaRaw = dataView.getUint16(0, true);
+      const tempRaw = dataView.getInt16(2, true);
+      const humRaw = dataView.byteLength >= 5 ? dataView.getUint8(4) : 60;
+      const battRaw = dataView.byteLength >= 6 ? dataView.getUint8(5) : 90;
+
+      return {
+        device_uid: deviceUid,
+        ammonia: parseFloat((ammoniaRaw / 10).toFixed(1)),
+        temperature: parseFloat((tempRaw / 10).toFixed(1)),
+        humidity: parseFloat(humRaw.toFixed(1)),
+        battery: parseFloat(battRaw.toFixed(1)),
+        rssi: -65,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (e) {
