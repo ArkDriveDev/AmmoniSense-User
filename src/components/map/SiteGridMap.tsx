@@ -157,23 +157,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
 
         const bounds = L.latLngBounds([
           [south, west],
-          [north, east],
-        ]);
-        const center = bounds.getCenter();
-
-        const isSelected = activeCellId === cellId;
-
-        // Polygon styling
-        const rectangle = L.rectangle(bounds, {
-          color: isSelected ? '#3880ff' : '#2dd36f',
-          weight: isSelected ? 3 : 1.5,
-          fillColor: isSelected ? '#3880ff' : '#2dd36f',
-          fillOpacity: isSelected ? 0.35 : 0.08,
-          dashArray: isSelected ? undefined : '4, 4',
-        });
-
-        // Label in the center of cell
-        const labelIcon = L.divIcon({
-          className: 'grid-cell-label',
-          html: `<div style="
-            font-weight: bold;
