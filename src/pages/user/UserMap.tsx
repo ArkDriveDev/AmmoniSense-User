@@ -610,18 +610,18 @@ export default function UserMap() {
               background: '#ffffff',
               borderTopLeftRadius: '24px',
               borderTopRightRadius: '24px',
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Municipality</span>
-                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedSite.latitude.toFixed(4)}°, {selectedSite.longitude.toFixed(4)}°</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Status</span>
-                    <strong style={{ color: '#10b981' }}>Active Site</strong>
-                  </div>
-                </div>
+              boxShadow: '0 -8px 30px rgba(15, 60, 92, 0.25)',
+              padding: '20px',
+              maxHeight: '75vh',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Drawer Header Handle & Close Button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ width: '40px', height: '4px', background: '#cbd5e1', borderRadius: '2px', margin: '0 auto' }}></div>
+              <IonButton fill="clear" size="small" onClick={closeBottomSheet} style={{ position: 'absolute', right: '12px', top: '12px', color: '#64748b' }}>
+                <IonIcon icon={closeOutline} style={{ fontSize: '24px' }} />
+              </IonButton>
 
                 <IonButton
                   expand="block"
