@@ -79,22 +79,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
       rssi,
       timestamp: new Date().toISOString()
     };
-
-    bleService.broadcastTelemetry(reading);
-    if (onSimulatedReading) {
-      onSimulatedReading(reading);
-    }
-
-    setTimeout(() => {
-      setIsBroadcasting(false);
-    }, 400);
-  };
-
-  const getAmmoniaSeverity = (nh3: number) => {
-    if (nh3 > 20) return { label: 'CRITICAL HAZARD', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' };
-    if (nh3 > 10) return { label: 'HIGH WARNING', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' };
-    if (nh3 > 5) return { label: 'MODERATE CAUTION', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' };
-    return { label: 'NORMAL / SAFE', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.15)' };
-  };
-
-  const severity = getAmmoniaSeverity(ammonia);
