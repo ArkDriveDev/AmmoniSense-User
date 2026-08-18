@@ -152,7 +152,7 @@ export default function UserMap() {
     try {
       const { data: sitesData, error: sitesErr } = await supabase
         .from('monitoring_sites')
-        .select('*');
+        .select('*, site_owners(owner_name)');
 
       if (!sitesErr && sitesData) {
         onlineFormatted = sitesData.map((s: any) => {
@@ -166,7 +166,7 @@ export default function UserMap() {
             latitude: coords.latitude,
             longitude: coords.longitude,
             grid_cell_id: s.current_grid_cell_id || 'A1',
-            owner_name: 'Inspector Owner',
+            owner_name: s.site_owners?.owner_name || s.owner_name || 'Inspector Owner',
             photo_url: s.site_photo_thumbnail || s.site_photo_url,
             isOffline: false,
             is_pending_sync: false,
