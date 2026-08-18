@@ -58,21 +58,21 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
     // 2. Render Vulnerable Community Polygons (🟩 Green)
     if (showCommunities) {
       communityPolygons.forEach((comm) => {
-              <strong style="color: #ea580c; font-size: 14px;">⚠️ High Odor Warning Zone</strong>
-              <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-                <b>Ammonia NH₃:</b> ${nh3} ppm<br/>
-                <b>Plume Radius:</b> 250 meters
-              </div>
-            </div>
-          `);
-          odorLayerGroup.addLayer(orangePlume);
-        } else if (nh3 > 5) {
-          // Moderate Caution Zone (5-10 ppm NH3) -> 150m Yellow Plume
-          const yellowPlume = L.circle(center, {
-            radius: 150,
-            fillColor: '#eab308',
-            fillOpacity: 0.25,
-            color: '#ca8a04',
+        if (!comm.coordinates || comm.coordinates.length < 3) return;
+
+        const poly = L.polygon(comm.coordinates, {
+          color: '#10b981',
+          weight: 2.5,
+          dashArray: '4, 4',
+          fillColor: '#2dd36f',
+          fillOpacity: 0.25,
+        });
+
+        const iconEmoji = comm.community_type === 'School' ? '🏫' : comm.community_type === 'Hospital' ? '🏥' : '🏡';
+
+        poly.bindPopup(`
+          <div style="font-family: sans-serif; padding: 4px;">
+            <strong style="color: #059669; font-size: 14px;">${iconEmoji} ${comm.community_name}</strong>
             weight: 1.5,
           }).bindPopup(`
             <div style="font-family: sans-serif; padding: 4px;">
