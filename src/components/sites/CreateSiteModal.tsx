@@ -313,3 +313,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
       <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>Register Monitoring Site</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={onClose} style={{ color: '#ffffff' }}>Cancel</IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
+        <IonGrid style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '16px' }}>
+            <IonCardContent className="ion-text-center">
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A', display: 'block', marginBottom: '10px' }}>
+                Facility / Site Entrance Photo (Auto-Extract GPS)
+              </span>
+
+              {photoPreview ? (
+                <div style={{ position: 'relative', display: 'inline-block', width: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
+                  <img
+                    src={photoPreview}
+                    alt="Captured Site"
+                    style={{ width: '100%', height: '190px', objectFit: 'cover' }}
+                  />
+                  <IonButton
+                    size="small"
+                    color="light"
+                    onClick={handleTakeSitePhoto}
+                    disabled={capturingPhoto}
+                    style={{ position: 'absolute', bottom: '10px', right: '10px', fontWeight: 700 }}
+                  >
+                    <IonIcon icon={cameraOutline} slot="start" />
+                    Retake Photo
+                  </IonButton>
+                </div>
+              ) : (
