@@ -488,3 +488,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
               <IonItem className="premium-input-item" lines="none">
                 <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Longitude</IonLabel>
                 <IonInput
+                  type="number"
+                  value={form.current_longitude}
+                  onIonChange={e => {
+                    setForm({ ...form, current_longitude: parseFloat(e.detail.value!) || 0 });
+                    setGpsSource('manual');
+                  }}
+                />
+              </IonItem>
+            </IonCol>
+          </IonRow>
+
+          <IonItem className="premium-input-item" lines="none" style={{ marginTop: '8px' }}>
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Inspector Notes</IonLabel>
+            <IonTextarea
+              rows={3}
+              value={form.notes}
+              onIonChange={e => setForm({ ...form, notes: e.detail.value! })}
+              placeholder="Facility access details or environmental observations..."
+            />
+          </IonItem>
+
+          <IonButton
+            className="btn-ammoni btn-primary"
+            expand="block"
+            onClick={handleCreateSite}
+            disabled={loading}
+            style={{ marginTop: '20px' }}
+          >
+            {loading ? (
+              <>
+                <IonSpinner name="crescent" />
+                &nbsp;Registering Site...
+              </>
+            ) : (
+              <>
