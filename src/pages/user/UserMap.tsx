@@ -598,18 +598,18 @@ export default function UserMap() {
           </IonButton>
         </div>
 
-                {selectedSite.photo_url && (
-                  <div style={{ width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
-                    <img src={selectedSite.photo_url} alt={selectedSite.site_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Owner / Operator</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedSite.owner_name}</strong>
-                  </div>
-                  <div>
+        {/* BOTTOM SHEET DETAIL DRAWER */}
+        {(selectedSite || selectedReading || selectedPhotoTag) && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1050,
+              background: '#ffffff',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Municipality</span>
                     <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
                   </div>
