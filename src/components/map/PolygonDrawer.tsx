@@ -78,3 +78,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     const map = L.map(mapContainerRef.current, {
       center: [centerLat, centerLng],
       zoom: zoom,
+      minZoom: 11,
+      maxZoom: 18,
+      maxBounds: MANOLO_FORTICH_BOUNDS,
+      zoomControl: false,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap | MENRO Polygon Drawer',
+      maxZoom: 20,
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
