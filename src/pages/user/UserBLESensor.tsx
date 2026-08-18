@@ -68,3 +68,38 @@ export default function UserBLESensor() {
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
           <IonTitle style={{ fontWeight: 700 }}>BLE Central Scanner & Reader</IonTitle>
           <IonButton slot="end" fill="clear" onClick={() => setShowScannerModal(true)} style={{ color: '#ffffff' }}>
+            <IonIcon icon={searchOutline} />
+          </IonButton>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent />
+        </IonRefresher>
+
+        <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: 0 }}>
+          {/* Header Card */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.95), rgba(29, 93, 155, 0.9))',
+              borderRadius: '16px',
+              padding: '16px',
+              color: '#ffffff',
+              marginBottom: '16px',
+              boxShadow: '0 6px 20px rgba(15, 60, 92, 0.2)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>
+                  CENTRAL ROLE (SCANNER / READER ONLY)
+                </span>
+                <h3 style={{ margin: '2px 0 0 0', fontWeight: 800, fontSize: '18px' }}>
+                  {activeDevice ? activeDevice.name : 'Ready for Scanning'}
+                </h3>
+              </div>
+              <IonButton size="small" fill="outline" color="light" onClick={() => setShowScannerModal(true)} style={{ fontWeight: 700 }}>
+                <IonIcon icon={bluetoothOutline} slot="start" />
+                Scan Devices
