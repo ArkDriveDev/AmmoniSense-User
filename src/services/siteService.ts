@@ -226,3 +226,14 @@ export const saveCommunityPolygon = async (poly: CommunityPolygon): Promise<Comm
 
   const payload = {
     community_name: poly.community_name,
+    community_type: poly.community_type,
+    estimated_population: poly.estimated_population,
+    coordinates: poly.coordinates,
+    created_by: userId,
+  };
+
+  const { data, error } = await supabase
+    .from('community_polygons')
+    .insert([payload])
+    .select('*')
+    .single();
