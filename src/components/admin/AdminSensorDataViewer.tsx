@@ -278,3 +278,38 @@ export const AdminSensorDataViewer: React.FC = () => {
                             <IonIcon icon={locationOutline} style={{ marginRight: '4px' }} />
                             <b>GPS:</b> {record.latitude.toFixed(5)}°, {record.longitude.toFixed(5)}°
                           </div>
+                        )}
+                        <div>
+                          <IonIcon icon={calendarOutline} style={{ marginRight: '4px' }} />
+                          <b>Date:</b> {new Date(record.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </IonCardContent>
+
+                    {record.photo_url && (
+                      <div style={{ padding: '0 16px 12px 16px' }}>
+                        <IonButton
+                          expand="block"
+                          fill="outline"
+                          size="small"
+                          onClick={() => {
+                            setSelectedPhotoRecord(record);
+                            setShowPhotoModal(true);
+                          }}
+                        >
+                          <IonIcon icon={eyeOutline} slot="start" /> View Photo & EXIF
+                        </IonButton>
+                      </div>
+                    )}
+                  </IonCard>
+                </IonCol>
+              );
+            })}
+          </IonRow>
+        </IonGrid>
+      )}
+
+      {/* Photo Modal with EXIF Data details */}
+      <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
+        <div style={{ padding: '20px', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>EXIF Stamped Inspection Photo</h2>
