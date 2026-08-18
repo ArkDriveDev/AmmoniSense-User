@@ -137,3 +137,24 @@ class BLECentralService {
         console.warn(`BLE DataView buffer length (${dataView.byteLength} bytes) is less than expected 12 bytes.`);
         return null;
       }
+
+      // Read IEEE 754 Float32 values in little-endian byte order
+      const ammonia = dataView.getFloat32(0, true);
+      const temperature = dataView.getFloat32(4, true);
+      const humidity = dataView.getFloat32(8, true);
+
+      return {
+        device_id: deviceId,
+        device_name: deviceName,
+        ammonia_ppm: parseFloat(ammonia.toFixed(2)),
+        temperature_c: parseFloat(temperature.toFixed(1)),
+        humidity_pct: parseFloat(humidity.toFixed(1)),
+        battery_pct: 100,
+        rssi: rssi || -60,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (err) {
+      console.error('Failed to parse 12-byte Float32 DataView:', err);
+      return null;
+    }
+  }
