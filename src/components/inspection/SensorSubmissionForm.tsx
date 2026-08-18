@@ -103,3 +103,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
     // Check for draft BLE Central reading from UserBLESensor page
     const draftBLE = offlineStorage.getDraft<BLECentralReading>('draft_ble_central_reading');
+    if (draftBLE) {
+      setAmmonia(draftBLE.ammonia_ppm.toString());
+      setTemperature(draftBLE.temperature_c.toString());
+      setHumidity(draftBLE.humidity_pct.toString());
+      if (draftBLE.device_name || draftBLE.device_id) {
+        setSelectedDeviceUid(draftBLE.device_name || draftBLE.device_id);
+      }
+      setBtConnected(true);
+      offlineStorage.clearDraft('draft_ble_central_reading');
+    }
+
+    // Subscribe to BLE Central 12-byte Float32 telemetry
+    const unsubCentral = bleCentralService.onTelemetry((telemetry: BLECentralReading) => {
+      setAmmonia(telemetry.ammonia_ppm.toString());
+      setTemperature(telemetry.temperature_c.toString());
+      setHumidity(telemetry.humidity_pct.toString());
+      if (telemetry.device_name || telemetry.device_id) {
+        setSelectedDeviceUid(telemetry.device_name || telemetry.device_id);
+      }
+      if (telemetry.rssi) setBleRssi(telemetry.rssi);
+      setBtConnected(true);
+
+      setToastMsg(`📡 BLE Central GATT Notification: NH₃ ${telemetry.ammonia_ppm} PPM`);
+      setToastColor('success');
+      setShowToast(true);
+    });
+
+    // Subscribe to real-time BLE telemetry fallback
+    const unsubscribe = bleService.onReading((reading: BLEReading) => {
+      setAmmonia(reading.ammonia.toString());
+      setTemperature(reading.temperature.toString());
+      setHumidity(reading.humidity.toString());
+      setBattery(reading.battery.toString());
+      setBtConnected(true);
+      if (reading.device_uid) {
