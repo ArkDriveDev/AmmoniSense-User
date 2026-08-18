@@ -243,3 +243,38 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         color: '#10b981',
         weight: 3,
         dashArray: '8, 6',
+        fillColor: '#2dd36f',
+        fillOpacity: 0.05,
+      });
+
+      const labelIcon = L.divIcon({
+        className: 'boundary-label-marker',
+        html: `<div style="
+          background: rgba(15, 60, 92, 0.92);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 14px;
+          font-weight: bold;
+          font-size: 11px;
+          letter-spacing: 0.5px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.2);
+          backdrop-filter: blur(4px);
+          white-space: nowrap;
+        ">🏛️ Manolo Fortich Municipality</div>`,
+        iconSize: [190, 26],
+        iconAnchor: [95, 13],
+      });
+
+      const labelMarker = L.marker([8.42, 124.86], { icon: labelIcon, interactive: false });
+
+      boundaryGroup.addLayer(maskPolygon);
+      boundaryGroup.addLayer(polygon);
+      boundaryGroup.addLayer(labelMarker);
+    }
+  }, [showBoundaryLayer]);
+
+  // Render Site Markers: 🔴 Red Pin for Unsubmitted/Offline, 🟢 Green Pin for Submitted/Online
+  useEffect(() => {
+    if (!mapRef.current || !sitesLayerGroupRef.current) return;
+    const sitesGroup = sitesLayerGroupRef.current;
