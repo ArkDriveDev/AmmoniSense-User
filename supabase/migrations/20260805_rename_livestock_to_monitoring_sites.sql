@@ -173,3 +173,20 @@ DROP POLICY IF EXISTS "MENRO Admin full access sensor_data" ON public.sensor_dat
 DROP POLICY IF EXISTS "Inspector can view all sensor_data" ON public.sensor_data;
 DROP POLICY IF EXISTS "Inspector can insert sensor_data" ON public.sensor_data;
 DROP POLICY IF EXISTS "Inspector can update own sensor_data" ON public.sensor_data;
+
+-- Create new policies on sensor_data
+CREATE POLICY "MENRO Admin full access sensor_data"
+  ON public.sensor_data FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+
+CREATE POLICY "Inspector can view all sensor_data"
+  ON public.sensor_data FOR SELECT
+  USING (true);
+
+CREATE POLICY "Inspector can insert sensor_data"
+  ON public.sensor_data FOR INSERT
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'environmental_inspector'));
+
+CREATE POLICY "Inspector can update own sensor_data"
+  ON public.sensor_data FOR UPDATE
+  USING (submitted_by = auth.uid());
