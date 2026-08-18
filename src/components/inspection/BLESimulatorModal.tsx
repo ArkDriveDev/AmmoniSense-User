@@ -159,23 +159,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
                   style={{ fontWeight: 600 }}
                 >
                   <IonIcon icon={checkmarkCircleOutline} slot="start" />
-                  Safe (3.2 ppm)
-                </IonButton>
-              </IonCol>
-              <IonCol size="4">
-                <IonButton
-                  expand="block"
-                  fill="outline"
-                  color="warning"
-                  size="small"
-                  onClick={() => applyPreset('moderate')}
-                  style={{ fontWeight: 600 }}
-                >
-                  <IonIcon icon={warningOutline} slot="start" />
-                  Warn (14.8)
-                </IonButton>
-              </IonCol>
-              <IonCol size="4">
-                <IonButton
-                  expand="block"
-                  fill="outline"
