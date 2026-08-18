@@ -208,3 +208,42 @@ class SyncService {
       window.dispatchEvent(new CustomEvent('site_deleted'));
     }
   }
+
+  private async syncDeviceTag(item: QueueItem): Promise<void> {
+    const { error } = await supabase.from('devices').insert([item.payload]);
+    if (error) {
+      throw new Error(`devices insert error: ${error.message}`);
+    }
+  }
+
+  private async uploadDataUrlToSupabase(dataUrl: string): Promise<string | null> {
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+
+      const fileName = `offline_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
+      const filePath = `user_submissions/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('inspection-photos')
+        .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) {
+        console.error('Supabase storage upload error:', uploadError);
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('inspection-photos')
+        .getPublicUrl(filePath);
+
+      return urlData?.publicUrl || null;
+    } catch (err) {
+      console.error('Error uploading photo blob to Supabase:', err);
+      return null;
+    }
+  }
+}
+
+export const syncService = new SyncService();
+export default syncService;
