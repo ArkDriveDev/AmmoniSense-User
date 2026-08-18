@@ -442,18 +442,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       {/* 3-STEP WIZARD PROGRESS HEADER (No Grid Cells) */}
       <IonGrid style={{ padding: 0, marginBottom: '16px' }}>
         <IonRow>
-
-      setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync when online!`);
-      setToastColor('warning');
-      setShowToast(true);
-
-      setPhotoRecord(null);
-      setCurrentStep(1);
-
-      if (selectedSiteId) fetchPreviousReadings(selectedSiteId);
-      if (onSuccess) onSuccess();
-    } finally {
-      setSubmitLoading(false);
+          {[
+            { num: 1, title: 'STEP 1: GPS Photo', icon: cameraOutline },
+            { num: 2, title: 'STEP 2: BLE Sensor', icon: bluetoothOutline },
+            { num: 3, title: 'STEP 3: Submit All', icon: cloudUploadOutline },
+          ].map(s => {
+            const isActive = currentStep === s.num;
+            const isDone = currentStep > s.num;
+            return (
+              <IonCol key={s.num} size="4">
+                <div
+                  onClick={() => {
+                    if (s.num <= currentStep || (s.num === 2 && photoRecord)) {
     }
   };
 
