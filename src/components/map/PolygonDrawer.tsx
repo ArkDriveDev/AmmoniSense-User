@@ -317,3 +317,24 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
           </IonButton>
         </div>
       </div>
+
+      {/* Polygon Meta Form Controls */}
+      <IonCard className="premium-card" style={{ margin: '12px 0 0 0', padding: '14px' }}>
+        <IonCardContent style={{ padding: '0' }}>
+          {drawingMode === 'odor_zone' ? (
+            <div>
+              <IonItem lines="full" style={{ marginBottom: '8px' }}>
+                <IonLabel position="stacked" style={{ fontWeight: 700 }}>Odor Zone Name</IonLabel>
+                <IonInput value={zoneName} onIonChange={(e) => setZoneName(e.detail.value!)} placeholder="e.g. Silang Odor Plume Zone 1" />
+              </IonItem>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <IonItem lines="full" style={{ flex: 1 }}>
+                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Severity Level</IonLabel>
+                  <IonSelect value={severityLevel} onIonChange={(e) => setSeverityLevel(e.detail.value)}>
+                    <IonSelectOption value="LOW">LOW CAUTION (0-5 ppm)</IonSelectOption>
+                    <IonSelectOption value="MODERATE">MODERATE (5-10 ppm)</IonSelectOption>
+                    <IonSelectOption value="HIGH">HIGH WARNING (10-20 ppm)</IonSelectOption>
+                    <IonSelectOption value="CRITICAL">CRITICAL HAZARD (&gt;20 ppm)</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
+                <IonItem lines="full" style={{ flex: 1 }}>
