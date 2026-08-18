@@ -208,3 +208,38 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
 
   const handleClear = () => {
     setVertices([]);
+    setSurfaceAreaHa(0);
+  };
+
+  const handleSaveShape = () => {
+    if (vertices.length < 3) {
+      alert('Please click on the map to place at least 3 vertices to form a polygon.');
+      return;
+    }
+
+    if (drawingMode === 'odor_zone') {
+      const zone: OdorZone = {
+        zone_name: zoneName || 'Odor Impact Zone',
+        severity_level: severityLevel,
+        ammonia_ppm: parseFloat(ammoniaPpm) || 0,
+        coordinates: vertices,
+      };
+      if (onSaveOdorZone) onSaveOdorZone(zone);
+    } else {
+      const comm: CommunityPolygon = {
+        community_name: communityName || 'Community Zone',
+        community_type: communityType,
+        estimated_population: parseInt(population, 10) || 0,
+        coordinates: vertices,
+      };
+      if (onSaveCommunity) onSaveCommunity(comm);
+    }
+
+    handleClear();
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* Drawer Mode Switcher & Tools */}
+      <IonCard className="premium-card" style={{ margin: '0 0 12px 0', padding: '12px' }}>
+        <IonCardContent style={{ padding: '4px' }}>
