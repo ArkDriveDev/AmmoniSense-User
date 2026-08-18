@@ -46,18 +46,18 @@ interface MonitoringSite {
   site_name: string;
   location?: string | null;
   owner_id: number;
-  site_name: string;
-  location?: string | null;
-  owner_id: number;
   created_at?: string;
   created_by?: string | null;
   current_latitude?: number | null;
   current_longitude?: number | null;
-  current_grid_cell_id?: string | null;
   address?: string | null;
   area_size_hectares?: number | null;
   site_type?: string | null;
   latitude?: number;
+  longitude?: number;
+}
+
+interface SensorSubmissionFormProps {
   longitude?: number;
 }
 
