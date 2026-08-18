@@ -1,0 +1,35 @@
+/**
+ * AmmoniSense Ionic & Global CSS Design System Variables
+ * Premium Frosted Glass & Field High-Contrast Aesthetic
+ */
+
+:root {
+  /* ==========================================================================
+     1. Ionic Core Color Tokens
+     ========================================================================== */
+
+  /* Primary: Professional Trust / Government Blue */
+  --ion-color-primary: #1D5D9B;
+  --ion-color-primary-rgb: 29, 93, 155;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #154777;
+  --ion-color-primary-tint: #3A7BD5;
+
+  /* Secondary: Nature / Eco Environment Green */
+  --ion-color-secondary: #008B74;
+  --ion-color-secondary-rgb: 0, 139, 116;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #006E5C;
+  --ion-color-secondary-tint: #10A88F;
+
+  /* Tertiary: Deep Navy Accent */
+  --ion-color-tertiary: #0F3C5C;
+  --ion-color-tertiary-rgb: 15, 60, 92;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #0B2C44;
+  --ion-color-tertiary-tint: #23547A;
+
+  /* Success: Safe Operational Level (< 25 ppm NH3) */
