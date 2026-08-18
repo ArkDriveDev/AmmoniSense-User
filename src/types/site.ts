@@ -33,3 +33,38 @@ export interface OfflineSite {
 
 export interface CreateSitePayload {
   site_code: string;
+  site_name: string;
+  site_type: string;
+  address?: string;
+  area_size_hectares: number;
+  latitude: number;
+  longitude: number;
+  notes?: string;
+  owner_name?: string;
+  owner_email?: string;
+  photo_record_id?: number;
+  photo_url?: string;
+  gps_source?: GpsSource;
+  temp_id?: string;
+}
+
+export interface OdorZone {
+  id?: number | string;
+  site_id?: number | null;
+  zone_name: string;
+  severity_level: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
+  ammonia_ppm: number;
+  coordinates: [number, number][]; // Array of [lat, lng] vertices
+  created_at?: string;
+  created_by?: string;
+  is_pending_sync?: boolean;
+}
+
+export interface CommunityPolygon {
+  id?: number | string;
+  community_name: string;
+  community_type: 'Residential' | 'School' | 'Hospital' | 'Commercial' | 'Agricultural';
+  estimated_population: number;
+  coordinates: [number, number][]; // Array of [lat, lng] boundary vertices
+  created_at?: string;
+  created_by?: string;
