@@ -173,3 +173,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
     const sitePayload = {
       temp_id: tempId,
+      site_code: form.site_code,
+      site_name: form.site_name,
+      site_type: form.site_type,
+      address: form.address || form.site_name,
+      area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+      latitude: form.current_latitude,
+      longitude: form.current_longitude,
+      notes: form.notes,
+      photo_record_id: photoRecord?.id,
+      photo_url: photoRecord?.photo_url || photoPreview || undefined,
+      gps_source: gpsSource,
+    };
+
+    if (editSite) {
+      try {
+        await offlineStorage.updateOfflineSite(editSite.id, {
+          site_code: form.site_code,
+          site_name: form.site_name,
+          site_type: form.site_type,
+          address: form.address || form.site_name,
+          area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+          current_latitude: form.current_latitude,
+          current_longitude: form.current_longitude,
+          site_photo_url: photoPreview || editSite.site_photo_url || '',
+          site_photo_thumbnail: photoPreview || editSite.site_photo_thumbnail || '',
+          notes: form.notes,
+          lastModified: new Date().toISOString(),
+        });
+
+        setToastMsg(`Offline site "${form.site_name}" updated locally.`);
+        setShowToast(true);
+
+        if (onSiteCreated) {
+          onSiteCreated({ ...editSite, ...sitePayload });
+        }
