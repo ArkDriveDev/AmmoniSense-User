@@ -628,3 +628,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   </span>
                   {bleRssi && (
                     <IonBadge color="success" style={{ fontSize: '10px' }}>
+                      RSSI: {bleRssi} dBm
+                    </IonBadge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <IonItem lines="full" style={{ marginBottom: '12px' }}>
+              <IonLabel position="stacked">Ammonia (NH₃) Reading (ppm)</IonLabel>
+              <IonInput
+                type="number"
+                value={ammonia}
+                onIonChange={e => setAmmonia(e.detail.value!)}
+              />
+            </IonItem>
+
+            <IonRow>
+              <IonCol size="4">
+                <IonItem lines="full">
+                  <IonLabel position="stacked">Temp (°C)</IonLabel>
+                  <IonInput type="number" value={temperature} onIonChange={e => setTemperature(e.detail.value!)} />
+                </IonItem>
+              </IonCol>
+              <IonCol size="4">
+                <IonItem lines="full">
+                  <IonLabel position="stacked">Humidity (%)</IonLabel>
+                  <IonInput type="number" value={humidity} onIonChange={e => setHumidity(e.detail.value!)} />
+                </IonItem>
+              </IonCol>
+              <IonCol size="4">
+                <IonItem lines="full">
+                  <IonLabel position="stacked">Battery (%)</IonLabel>
+                  <IonInput type="number" value={battery} onIonChange={e => setBattery(e.detail.value!)} />
+                </IonItem>
+              </IonCol>
