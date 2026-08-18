@@ -313,3 +313,38 @@ export const AdminSensorDataViewer: React.FC = () => {
       <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
         <div style={{ padding: '20px', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>EXIF Stamped Inspection Photo</h2>
+          {selectedPhotoRecord && (
+            <>
+              <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>
+                <img
+                  src={selectedPhotoRecord.photo_url}
+                  alt="Full Inspection Photo"
+                  style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }}
+                />
+              </div>
+
+              <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+                <IonCardContent>
+                  <h4 style={{ margin: '0 0 12px 0', fontWeight: 'bold' }}>Embedded EXIF Metadata</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px' }}>
+                    <div><b>Ammonia Level:</b> {selectedPhotoRecord.ammonia} ppm</div>
+                    <div><b>Latitude:</b> {selectedPhotoRecord.latitude?.toFixed(6) || 'N/A'}</div>
+                    <div><b>Longitude:</b> {selectedPhotoRecord.longitude?.toFixed(6) || 'N/A'}</div>
+                    <div><b>Timestamp:</b> {new Date(selectedPhotoRecord.created_at).toLocaleString()}</div>
+                    <div><b>Device UID:</b> {selectedPhotoRecord.device_uid}</div>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </>
+          )}
+
+          <IonButton expand="block" color="medium" onClick={() => setShowPhotoModal(false)}>
+            Close Photo Viewer
+          </IonButton>
+        </div>
+      </IonModal>
+    </div>
+  );
+};
+
+export default AdminSensorDataViewer;
