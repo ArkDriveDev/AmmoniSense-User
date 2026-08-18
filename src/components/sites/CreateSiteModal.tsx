@@ -68,3 +68,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     current_longitude: 124.8637,
     notes: '',
   });
+
+  const [toastMsg, setToastMsg] = useState('');
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editSite) {
+        setForm({
+          site_code: editSite.site_code || `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
+          site_name: editSite.site_name || '',
+          site_type: editSite.site_type || 'Piggery',
+          address: editSite.address || '',
+          area_size_hectares: (editSite.area_size_hectares || 1.0).toString(),
+          current_latitude: editSite.current_latitude || 8.3683,
+          current_longitude: editSite.current_longitude || 124.8637,
+          notes: editSite.notes || '',
+        });
+        if (editSite.site_photo_url) {
+          setPhotoPreview(editSite.site_photo_url);
+        }
+      } else {
+        const draft = offlineStorage.getDraft<typeof form>(SITE_DRAFT_KEY);
+        if (draft && draft.site_name) {
+          setForm(draft);
+        } else if (!photoPreview) {
+          fetchCurrentGps();
+        }
+      }
+    }
+  }, [isOpen, editSite]);
+
+  const updateForm = (fields: Partial<typeof form>) => {
+    setForm(prev => {
+      const updated = { ...prev, ...fields };
+      if (!editSite) {
