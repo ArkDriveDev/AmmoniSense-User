@@ -453,3 +453,31 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
           fillColor: '#8b5cf6',
           fillOpacity: 0.2,
           stroke: false,
+        });
+        photoGroup.addLayer(pulseCircle);
+      }
+
+      const marker = L.marker([tag.latitude, tag.longitude], { icon: photoIcon });
+
+      marker.on('click', () => {
+        if (onSelectPhotoTag) onSelectPhotoTag(tag);
+      });
+
+      photoGroup.addLayer(marker);
+    });
+  }, [photoTags, showPhotoTagsLayer, onSelectPhotoTag]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height, overflow: 'hidden' }}>
+      <div ref={mapContainerRef} style={{ width: '100%', height: '100%', zIndex: 1 }} />
+      <OdorZonePolygonLayer
+        map={mapInstance}
+        odorZones={odorZones}
+        communityPolygons={communityPolygons}
+        showOdorZones={showOdorZonesLayer}
+      />
+    </div>
+  );
+};
+
+export default FullMapView;
