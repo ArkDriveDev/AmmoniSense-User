@@ -18,3 +18,23 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
   fillColor = '#1D5D9B',
   height = '220px',
 }) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
+
+  const [lat, lng] = center;
+  const validLat = isNaN(lat) || lat === 0 ? 8.3683 : lat;
+  const validLng = isNaN(lng) || lng === 0 ? 124.8637 : lng;
+  const validArea = isNaN(areaHectares) || areaHectares <= 0 ? 1.0 : areaHectares;
+
+  // Initialize Map
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    const map = L.map(mapContainerRef.current, {
+      center: [validLat, validLng],
