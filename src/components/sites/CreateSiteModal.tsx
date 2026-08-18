@@ -138,3 +138,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           current_latitude: result.latitude,
           current_longitude: result.longitude,
         });
+      }
+
+      setGpsSource(result.gpsSource);
+
+      const sourceLabel =
+        result.gpsSource === 'photo_exif'
+          ? 'Photo EXIF GPS'
+          : result.gpsSource === 'device_gps'
+          ? 'Device Live GPS'
+          : 'Manual Default Coordinates';
+
+      setToastMsg(`Photo captured! Coordinates auto-filled from ${sourceLabel}.`);
+      setShowToast(true);
+    } catch (err: any) {
+      console.error('Error capturing site photo:', err);
+      setToastMsg(err.message || 'Camera permission denied or capture cancelled');
+      setShowToast(true);
+    } finally {
+      setCapturingPhoto(false);
+    }
+  };
+
+  const handleCreateSite = async () => {
+    if (!form.site_name) {
+      setToastMsg('Please enter a site name');
+      setShowToast(true);
+      return;
+    }
+
+    setLoading(true);
+
+    const tempId = editSite?.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const sitePayload = {
+      temp_id: tempId,
