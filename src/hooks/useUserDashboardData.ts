@@ -33,3 +33,38 @@ export function useUserDashboardData() {
         .from('site_owners')
         .select('id')
         .eq('created_by', userId);
+
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+
+      let sites: any[] = [];
+      if (ownerId) {
+        const { data: sitesData } = await supabase
+          .from('monitoring_sites')
+          .select('id, site_name, address, site_code')
+          .eq('owner_id', ownerId);
+
+        if (sitesData) {
+          sites = sitesData.map(s => ({
+            id: s.id,
+            site_name: s.site_name,
+            location: s.address,
+            site_code: s.site_code
+          }));
+        }
+      }
+
+      const siteIds = sites.map(s => s.id);
+
+      let deviceQuery = supabase.from('devices').select('*');
+      if (siteIds.length > 0) {
+        deviceQuery = deviceQuery.in('site_id', siteIds);
+      }
+
+      const { data: devices } = await deviceQuery;
+
+      const deviceUids = devices?.map(d => d.device_uid) || [];
+      let sensorData: any[] = [];
+      if (deviceUids.length > 0) {
+        const { data } = await supabase
+          .from('sensor_data')
+          .select('*')
