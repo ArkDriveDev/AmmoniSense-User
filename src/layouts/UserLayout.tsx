@@ -33,3 +33,38 @@ import {
   mapOutline
 } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
+
+export default function UserLayout({ children }: any) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [userName, setUserName] = useState('User');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const cached = offlineStorage.getSession();
+      if (cached?.profile?.email) {
+        setUserEmail(cached.profile.email);
+        if (cached.profile.full_name) setUserName(cached.profile.full_name);
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+
+      if (!userId) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single();
+
+      if (data?.full_name) {
+        setUserName(data.full_name);
+      }
+      
+      if (userData.user?.email) {
