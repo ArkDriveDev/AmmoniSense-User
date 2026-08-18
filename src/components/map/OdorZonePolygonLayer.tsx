@@ -67,3 +67,30 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
           fillColor: '#2dd36f',
           fillOpacity: 0.25,
         });
+
+        const iconEmoji = comm.community_type === 'School' ? '🏫' : comm.community_type === 'Hospital' ? '🏥' : '🏡';
+
+        poly.bindPopup(`
+          <div style="font-family: sans-serif; padding: 4px;">
+            <strong style="color: #059669; font-size: 14px;">${iconEmoji} ${comm.community_name}</strong>
+            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
+              <b>Type:</b> ${comm.community_type} Zone<br/>
+              <b>Est. Population:</b> ${(comm.estimated_population || 0).toLocaleString()} Residents
+            </div>
+          </div>
+        `);
+
+        commGroup.addLayer(poly);
+      });
+    }
+
+    return () => {
+      map.removeLayer(odorGroup);
+      map.removeLayer(commGroup);
+    };
+  }, [map, odorZones, communityPolygons, showOdorZones, showCommunities]);
+
+  return null;
+};
+
+export default OdorZonePolygonLayer;
