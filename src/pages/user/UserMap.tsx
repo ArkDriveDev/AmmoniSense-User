@@ -742,18 +742,18 @@ export default function UserMap() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
                   <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Device UID</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedReading.device_uid || 'N/A'}</strong>
                   </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <IonButton
-                    expand="block"
-                    fill="outline"
-                    style={{ flex: 1 }}
-                    onClick={() => {
-                      setShowPhotoModal(true);
-                    }}
-                  >
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Location</span>
+                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Temperature / Humidity</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {selectedReading.temperature ? `${selectedReading.temperature}°C` : 'N/A'} / {selectedReading.humidity ? `${selectedReading.humidity}%` : 'N/A'}
+                    </strong>
                     <IonIcon icon={eyeOutline} slot="start" /> Full Photo View
                   </IonButton>
                   <IonButton
