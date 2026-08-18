@@ -58,3 +58,23 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
       }
     };
   }, []);
+
+  // Update Geometry & Bounds on Props Change
+  useEffect(() => {
+    if (!mapRef.current || !layerGroupRef.current) return;
+
+    const map = mapRef.current;
+    const layerGroup = layerGroupRef.current;
+    layerGroup.clearLayers();
+
+    // 1 Ha = 10,000 m² -> Radius = sqrt(Area / PI)
+    const areaSqMeters = validArea * 10000;
+    const radiusMeters = Math.sqrt(areaSqMeters / Math.PI);
+
+    // Dashed semi-transparent preview polygon / circle
+    const circle = L.circle([validLat, validLng], {
+      radius: radiusMeters,
+      color: color,
+      fillColor: fillColor,
+      fillOpacity: 0.25,
+      weight: 2.5,
