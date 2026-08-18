@@ -118,3 +118,28 @@ export default function UserBLESensor() {
               size="large"
               onClick={handleAutoPopulateAndSubmit}
               disabled={!reading}
+              style={{ fontWeight: 700 }}
+            >
+              <IonIcon icon={cloudUploadOutline} slot="start" />
+              Auto-Populate & Submit to Inspection Form
+            </IonButton>
+          </div>
+        </IonGrid>
+
+        <BLEScanner
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onSelectDevice={(device) => setActiveDevice(device)}
+        />
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMsg}
+          duration={3500}
+          position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
