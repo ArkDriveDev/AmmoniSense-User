@@ -96,16 +96,20 @@ export default function UserMap() {
   useEffect(() => {
     loadMapData();
 
-    const handleSiteChanged = () => {
-      fetchSites();
+    const handleSyncOrDelete = () => {
+      loadMapData();
     };
 
-    window.addEventListener('site_deleted', handleSiteChanged);
-    window.addEventListener('site_synced', handleSiteChanged);
+    window.addEventListener('site_deleted', handleSyncOrDelete);
+    window.addEventListener('site_synced', handleSyncOrDelete);
+    window.addEventListener('sensor_synced', handleSyncOrDelete);
+    window.addEventListener('offline_sync_completed', handleSyncOrDelete);
 
     return () => {
-      window.removeEventListener('site_deleted', handleSiteChanged);
-      window.removeEventListener('site_synced', handleSiteChanged);
+      window.removeEventListener('site_deleted', handleSyncOrDelete);
+      window.removeEventListener('site_synced', handleSyncOrDelete);
+      window.removeEventListener('sensor_synced', handleSyncOrDelete);
+      window.removeEventListener('offline_sync_completed', handleSyncOrDelete);
     };
   }, []);
 
