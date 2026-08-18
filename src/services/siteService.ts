@@ -202,3 +202,15 @@ export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
 };
 
 /**
+ * Fetch all Community Polygons from Supabase
+ */
+export const fetchCommunityPolygons = async (): Promise<CommunityPolygon[]> => {
+  const { data, error } = await supabase
+    .from('community_polygons')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Supabase fetch community_polygons notice:', error.message);
+    return [];
+  }
