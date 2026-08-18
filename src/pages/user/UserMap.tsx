@@ -682,18 +682,18 @@ export default function UserMap() {
                     }}
                   >
                     <IonIcon icon={hardwareChipOutline} slot="start" />
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Recorded At</span>
-                    <strong style={{ color: '#0f172a' }}>{new Date(selectedReading.created_at).toLocaleString()}</strong>
-                  </div>
-                </div>
+                    View Site Devices
+                  </IonButton>
 
-                {selectedReading.photo_url && (
                   <IonButton
                     expand="block"
+                    color="danger"
                     fill="outline"
-                    onClick={() => setShowPhotoModal(true)}
-                  >
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete monitoring site "${selectedSite.site_name}"?`)) {
+                        try {
+                          await deleteSite(selectedSite.id);
+                          closeBottomSheet();
                     <IonIcon icon={eyeOutline} slot="start" /> View Inspection Photo
                   </IonButton>
                 )}
