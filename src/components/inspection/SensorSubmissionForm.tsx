@@ -550,18 +550,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                       &nbsp;Capturing & Uploading...
                     </>
                   ) : (
-          </IonCardHeader>
-          <IonCardContent>
-            <p style={{ fontSize: '14px', color: '#64748b', marginTop: 0 }}>
-              Take an inspection photo. GPS coordinates will be captured, the photo will be uploaded to Supabase Storage, and recorded into <code>inspection_photos</code> with <code>is_used = false</code>.
-            </p>
+                    '📷 Take Inspection Photo'
+                  )}
+                </IonButton>
+              </div>
+            )}
 
-            {photoRecord ? (
-              <div style={{ textAlign: 'center', margin: '16px 0' }}>
-                <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', borderRadius: '8px', overflow: 'hidden', border: '2px solid #2dd36f' }}>
-                  <img src={photoRecord.dataUrl || photoRecord.photo_url} alt="Captured" style={{ width: '100%', maxHeight: '240px', objectFit: 'cover' }} />
-                  <IonChip color="warning" style={{ position: 'absolute', top: '8px', right: '8px' }}>
-                    is_used = false
+            {photoRecord && (
+              <IonButton expand="block" color="primary" onClick={() => setCurrentStep(2)} style={{ marginTop: '16px' }}>
+                Proceed to STEP 2: BLE Sensor ➔
+              </IonButton>
+            )}
+          </IonCardContent>
                   </IonChip>
                 </div>
                 <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>
