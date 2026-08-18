@@ -98,3 +98,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       }
     };
   }, []);
+
+  // Update map click handler to capture polygon vertices
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    const handleMapClick = (e: L.LeafletMouseEvent) => {
+      const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
+      setVertices((prev) => [...prev, newPoint]);
+    };
+
+    map.on('click', handleMapClick);
+
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, []);
+
+  // Render vertices, preview polyline, and polygon on map
+  useEffect(() => {
