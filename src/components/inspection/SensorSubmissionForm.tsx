@@ -130,18 +130,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setShowToast(true);
     });
 
-
-  useEffect(() => {
-    if (selectedSiteId) {
-      const site = sites.find(s => s.id === selectedSiteId) || null;
-      setSelectedSite(site);
-      const siteLat = site?.current_latitude ?? site?.latitude;
-      const siteLng = site?.current_longitude ?? site?.longitude;
-      if (siteLat && siteLng && !photoRecord) {
-        setCellLat(siteLat);
-        setCellLng(siteLng);
+    // Subscribe to real-time BLE telemetry fallback
+    const unsubscribe = bleService.onReading((reading: BLEReading) => {
+      setAmmonia(reading.ammonia.toString());
+      setTemperature(reading.temperature.toString());
+      setHumidity(reading.humidity.toString());
+      setBattery(reading.battery.toString());
+      setBtConnected(true);
+      if (reading.device_uid) {
+        setSelectedDeviceUid(reading.device_uid);
       }
-      if (site?.current_grid_cell_id) {
+      if (reading.rssi !== undefined) {
+        setBleRssi(reading.rssi);
         setSelectedCellId(site.current_grid_cell_id);
       }
       fetchDevicesForSite(selectedSiteId);
