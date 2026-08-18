@@ -943,3 +943,38 @@ export default function UserMap() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#eab308' }}></span>
                   <b>5 - 10 PPM:</b> Warning Threshold (Yellow)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f97316' }}></span>
+                  <b>10 - 20 PPM:</b> High Concentration (Orange)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
+                  <b>&gt; 20 PPM:</b> Critical Alert (Red)
+                </div>
+              </div>
+            </IonCard>
+
+            <IonButton expand="block" className="btn-ammoni btn-primary" onClick={() => setShowLegend(false)}>
+              Close Legend
+            </IonButton>
+          </div>
+        </IonModal>
+
+        {/* PHOTO MODAL */}
+        <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
+          <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+            <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>Inspection Photo</h2>
+            {(selectedReading?.photo_url || selectedPhotoTag?.photo_url) && (
+              <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>
+                <img src={selectedReading?.photo_url || selectedPhotoTag?.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
+              </div>
+            )}
+            <IonButton expand="block" color="medium" onClick={() => setShowPhotoModal(false)}>
+              Close Photo Viewer
+            </IonButton>
+          </div>
+        </IonModal>
+
+        <IonToast
+          isOpen={showToast}
