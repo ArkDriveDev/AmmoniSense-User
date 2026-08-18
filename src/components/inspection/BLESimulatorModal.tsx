@@ -179,23 +179,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
                 <IonButton
                   expand="block"
                   fill="outline"
-                  color="danger"
-                  size="small"
-                  onClick={() => applyPreset('hazard')}
-                  style={{ fontWeight: 600 }}
-                >
-                  <IonIcon icon={alertCircleOutline} slot="start" />
-                  Hazard (54.2)
-                </IonButton>
-              </IonCol>
-            </IonRow>
-          </IonGrid>
-        </div>
-
-        {/* Live Telemetry Sliders */}
-        <IonCard className="premium-card" style={{ margin: '0 0 20px 0' }}>
-          <IonCardContent style={{ padding: '16px' }}>
-            {/* Ammonia Slider */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontWeight: 700, fontSize: '14px', color: '#0F172A' }}>Ammonia Concentration (NH₃)</span>
