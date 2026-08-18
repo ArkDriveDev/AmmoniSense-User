@@ -358,18 +358,18 @@ export default function UserMap() {
   };
 
   const fetchPhotoTags = async () => {
-      console.error('Error reading offline photo tags queue:', e);
-      setPhotoTags(serverPhotoTags);
-    }
-  };
+    let serverPhotoTags: PhotoTagMarkerData[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('inspection_photos')
+        .select('*')
+        .order('uploaded_at', { ascending: false })
+        .limit(200);
 
-  // Filter photo tags by search query
-  const filteredPhotoTags = photoTags.filter((tag) => {
-    if (!searchText.trim()) return true;
-    const query = searchText.toLowerCase();
-    return (
-      tag.grid_cell_id?.toLowerCase().includes(query) ||
-      tag.site_name?.toLowerCase().includes(query) ||
+      if (!error && data) {
+        serverPhotoTags = data
+          .map((p: any) => ({
+            id: p.id,
       tag.id.toString().includes(query)
     );
   });
