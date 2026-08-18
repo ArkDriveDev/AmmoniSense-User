@@ -138,3 +138,38 @@ export default function UserSites() {
   const handleDeleteSite = async (e: React.MouseEvent, siteId: string | number, siteName: string) => {
     e.stopPropagation();
     if (window.confirm(`Are you sure you want to delete monitoring site "${siteName}"?`)) {
+      try {
+        await deleteSite(siteId);
+        await fetchSites();
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete site.');
+      }
+    }
+  };
+
+  const handleEditOfflineSite = (e: React.MouseEvent, site: OfflineSite) => {
+    e.stopPropagation();
+    setEditingOfflineSite(site);
+    setShowCreateModal(true);
+  };
+
+  const handleRefresh = async (event: CustomEvent) => {
+    await fetchSites();
+    event.detail.complete();
+  };
+
+  return (
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>Monitoring Sites</IonTitle>
+          <IonButtons slot="end">
+            <IonButton 
+              onClick={() => setShowCreateModal(true)}
+              style={{
+                '--background': 'linear-gradient(135deg, #008B74 0%, #10A88F 100%)',
+                '--color': '#ffffff',
+                '--border-radius': '10px',
+                fontWeight: 700,
+                marginRight: '8px'
+              }}
