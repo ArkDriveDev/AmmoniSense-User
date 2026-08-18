@@ -718,18 +718,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         isOpen={showToast}
         onDidDismiss={() => setShowToast(false)}
         message={toastMsg}
-                  📡 Launch BLE Simulator
-                </IonButton>
-              </div>
+        duration={4500}
+        color={toastColor}
+        position="bottom"
+      />
 
-              {btConnected && (
-                <div style={{ marginTop: '10px', fontSize: '12px', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <span>
-                    <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                    BLE Connected ({selectedDeviceUid})
-                  </span>
-                  {bleRssi && (
-                    <IonBadge color="success" style={{ fontSize: '10px' }}>
+      <CreateSiteModal
+        isOpen={showCreateSiteModal}
+        onClose={() => setShowCreateSiteModal(false)}
+        onSiteCreated={(newSite) => {
+          fetchSites();
+          if (newSite?.id) {
+            setSelectedSiteId(newSite.id);
                       RSSI: {bleRssi} dBm
                     </IonBadge>
                   )}
