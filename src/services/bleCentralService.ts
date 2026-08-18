@@ -198,3 +198,23 @@ class BLECentralService {
           status.errorMsg = 'Location permission (ACCESS_FINE_LOCATION) was denied. Location Services are required for Android BLE scanning.';
         }
       }
+    } catch (geoErr) {
+      console.warn('Capacitor Geolocation permission check notice:', geoErr);
+    }
+
+    // 3. Check hardware Bluetooth availability
+    try {
+      if (nav.bluetooth.getAvailability) {
+        const available = await nav.bluetooth.getAvailability();
+        status.bluetoothEnabled = available;
+        if (!available) {
+          status.canScan = false;
+          status.errorMsg = 'Bluetooth hardware is turned off or unavailable. Please enable Bluetooth on your device.';
+        }
+      }
+    } catch (btErr) {
+      console.warn('Bluetooth availability check notice:', btErr);
+    }
+
+    return status;
+  }
