@@ -262,18 +262,18 @@ export default function UserMap() {
                 address: os.address || os.site_name,
                 latitude: coords.latitude,
                 longitude: coords.longitude,
-          .map((r: any) => ({
-            id: r.id,
-            ammonia: r.ammonia || 0,
-            temperature: r.temperature,
-            humidity: r.humidity,
-            battery: r.battery,
-            latitude: r.latitude || 8.3683,
-            longitude: r.longitude || 124.8637,
-            grid_cell_id: r.grid_cell_id,
-            device_uid: r.device_uid,
-            created_at: r.created_at,
-            photo_url: r.photo_url,
+                grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
+                owner_name: os.owner?.owner_name || 'Inspector Owner',
+                photo_url: os.site_photo_thumbnail || os.site_photo_url,
+                isOffline: true,
+                is_pending_sync: true,
+              };
+            });
+          }
+        }
+      } catch (lsErr) {
+        console.warn('Error reading localStorage offline_sites:', lsErr);
+      }
             is_pending_sync: false,
           }))
           .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
