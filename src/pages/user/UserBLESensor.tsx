@@ -77,3 +77,24 @@ export default function UserBLESensor() {
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
           <IonRefresherContent />
         </IonRefresher>
+
+        <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: 0 }}>
+          {/* Header Card */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.95), rgba(29, 93, 155, 0.9))',
+              borderRadius: '16px',
+              padding: '16px',
+              color: '#ffffff',
+              marginBottom: '16px',
+              boxShadow: '0 6px 20px rgba(15, 60, 92, 0.2)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>
+                  CENTRAL ROLE (SCANNER / READER ONLY)
+                </span>
+                <h3 style={{ margin: '2px 0 0 0', fontWeight: 800, fontSize: '18px' }}>
+                  {activeDevice ? activeDevice.name : 'Ready for Scanning'}
