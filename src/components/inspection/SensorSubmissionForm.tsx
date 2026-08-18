@@ -34,18 +34,18 @@ import offlineStorage, { SENSOR_DRAFT_KEY } from '../../services/OfflineStorageS
 import syncService from '../../services/SyncService';
 import {
   InspectionPhotoRecord,
-import {
-  InspectionPhotoRecord,
   step1_takeAndUploadPhoto,
-  step2_updatePhotoGridCell,
   step4_markPhotoAsUsed
 } from '../../utils/photoUtils';
 import bleService, { BLEReading } from '../../services/bleService';
-import BLESimulatorModal from './BLESimulatorModal';
+import bleCentralService, { BLECentralReading } from '../../services/bleCentralService';
 
 interface MonitoringSite {
   id: number;
   site_code: string;
+  site_name: string;
+  location?: string | null;
+  owner_id: number;
   site_name: string;
   location?: string | null;
   owner_id: number;
