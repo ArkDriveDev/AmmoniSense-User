@@ -118,7 +118,6 @@ export const registerSiteWithPhoto = async (
               photo_url: payload.photo_url,
               latitude: payload.latitude,
               longitude: payload.longitude,
-              longitude: payload.longitude,
               site_id: createdSite.id,
               is_site_photo: true,
               is_used: true,
@@ -130,6 +129,7 @@ export const registerSiteWithPhoto = async (
         photoRecord = newPhoto;
       }
 
+      if (photoRecord?.id) {
       // Update monitoring_sites with site_photo_id
       if (photoRecord?.id) {
         await supabase
