@@ -1,0 +1,7 @@
+{
+  "name": "Ammonisense-User",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
