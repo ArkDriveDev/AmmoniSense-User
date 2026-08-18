@@ -103,3 +103,38 @@ export default function UserSites() {
     try {
       const offlineRecords = await offlineStorage.getOfflineSites();
       const offlineSitesList = offlineRecords.map((os) => ({
+        id: os.id,
+        site_name: os.site_name,
+        location: os.address,
+        site_code: os.site_code,
+        site_type: os.site_type || 'Agricultural',
+        isOffline: true,
+        is_pending_sync: true,
+        offlineRecord: os,
+      }));
+
+      const combinedSites = [...offlineSitesList, ...onlineSitesList];
+      setSites(combinedSites);
+
+      const counts: Record<string | number, number> = {};
+      for (const item of onlineSitesList) {
+        try {
+          const { count } = await supabase
+            .from('devices')
+            .select('id', { count: 'exact', head: true })
+            .eq('site_id', item.id);
+          counts[item.id] = count || 0;
+        } catch {}
+      }
+      setDeviceCounts(counts);
+    } catch (err) {
+      console.error('Unexpected error loading offline sites:', err);
+      setSites(onlineSitesList);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteSite = async (e: React.MouseEvent, siteId: string | number, siteName: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete monitoring site "${siteName}"?`)) {
