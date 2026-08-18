@@ -82,18 +82,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [ammonia, setAmmonia] = useState<string>('24.5');
   const [temperature, setTemperature] = useState<string>('28.5');
   const [humidity, setHumidity] = useState<string>('68.0');
-  const [cellLat, setCellLat] = useState<number>(14.5995);
-  const [cellLng, setCellLng] = useState<number>(120.9842);
-  const [previousReadings, setPreviousReadings] = useState<SensorReadingMarker[]>([]);
-
-  // STEP 3 State: Sensor Bluetooth Readings
-  const [ammonia, setAmmonia] = useState<string>('24.5');
-  const [temperature, setTemperature] = useState<string>('28.5');
-  const [humidity, setHumidity] = useState<string>('68.0');
   const [battery, setBattery] = useState<string>('92.0');
   const [btConnecting, setBtConnecting] = useState<boolean>(false);
   const [btConnected, setBtConnected] = useState<boolean>(false);
   const [bleRssi, setBleRssi] = useState<number | null>(null);
+  const [showBLESimulatorModal, setShowBLESimulatorModal] = useState<boolean>(false);
+
+  // STEP 3 State: Submission Loading
+  const [submitLoading, setSubmitLoading] = useState<boolean>(false);
+
+  // Toast State
+  const [toastMsg, setToastMsg] = useState<string>('');
+  const [showToast, setShowToast] = useState<boolean>(false);
   const [showBLESimulatorModal, setShowBLESimulatorModal] = useState<boolean>(false);
 
   // STEP 4 State: Submission Loading
