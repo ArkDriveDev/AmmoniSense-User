@@ -208,3 +208,28 @@ export default function UserLayout({ children }: any) {
               <IonLabel color="danger">Logout</IonLabel>
             </IonItem>
           </IonList>
+        </IonContent>
+      </IonMenu>
+
+      {/* MAIN CONTENT */}
+      <IonPage id="user-main">
+        <IonHeader>
+          <IonToolbar>
+            <IonButtons slot="start">
+              <IonMenuButton>
+                <IonIcon icon={menuOutline} />
+              </IonMenuButton>
+            </IonButtons>
+            <IonTitle>Ammonisense Monitor</IonTitle>
+            <IonButtons slot="end" style={{ paddingRight: '12px' }}>
+              <SyncStatusBanner />
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          {children}
+        </IonContent>
+      </IonPage>
+    </IonSplitPane>
+  );
+}
