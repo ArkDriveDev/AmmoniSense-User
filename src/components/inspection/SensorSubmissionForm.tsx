@@ -22,18 +22,18 @@ import {
 import {
   cameraOutline,
   bluetoothOutline,
-  bluetoothOutline,
   checkmarkCircleOutline,
   cloudUploadOutline,
   checkmarkDoneCircleOutline,
-  refreshOutline,
-  addOutline
+  addOutline,
+  shapesOutline
 } from 'ionicons/icons';
 import { supabase } from '../../services/supabase';
-import SiteGridMap, { SensorReadingMarker } from '../map/SiteGridMap';
 import CreateSiteModal from '../sites/CreateSiteModal';
 import offlineStorage, { SENSOR_DRAFT_KEY } from '../../services/OfflineStorageService';
 import syncService from '../../services/SyncService';
+import {
+  InspectionPhotoRecord,
 import {
   InspectionPhotoRecord,
   step1_takeAndUploadPhoto,
