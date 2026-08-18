@@ -94,18 +94,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   // Toast State
   const [toastMsg, setToastMsg] = useState<string>('');
   const [showToast, setShowToast] = useState<boolean>(false);
-  const [showBLESimulatorModal, setShowBLESimulatorModal] = useState<boolean>(false);
-
-  // STEP 4 State: Submission Loading
-  const [submitLoading, setSubmitLoading] = useState<boolean>(false);
-
-  // Toast State
-  const [toastMsg, setToastMsg] = useState<string>('');
-  const [showToast, setShowToast] = useState<boolean>(false);
   const [toastColor, setToastColor] = useState<string>('success');
+
+  const [showCreateSiteModal, setShowCreateSiteModal] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSites();
+
+    // Check for draft BLE Central reading from UserBLESensor page
+    const draftBLE = offlineStorage.getDraft<BLECentralReading>('draft_ble_central_reading');
+    if (draftBLE) {
+      setAmmonia(draftBLE.ammonia_ppm.toString());
+      setTemperature(draftBLE.temperature_c.toString());
 
     // Subscribe to real-time BLE telemetry (Hardware BLE or Simulator stream)
     const unsubscribe = bleService.onReading((reading: BLEReading) => {
