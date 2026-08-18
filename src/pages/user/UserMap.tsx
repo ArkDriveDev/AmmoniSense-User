@@ -238,18 +238,18 @@ export default function UserMap() {
       }
 
       // 3. Check localStorage fallback for 'offline_sites', purging synced/deleted
+      let lsOfflineFormatted: SiteMarkerData[] = [];
+      try {
+        const lsStr = localStorage.getItem('offline_sites');
+        if (lsStr) {
+          const lsArr = JSON.parse(lsStr);
+          if (Array.isArray(lsArr)) {
+            const validLsArr = lsArr.filter((os: any) => !os.isDeleted && !onlineCodes.has(os.site_code));
+            if (validLsArr.length !== lsArr.length) {
+              localStorage.setItem('offline_sites', JSON.stringify(validLsArr));
+            }
 
-    // Combine offline sites and online sites, avoiding duplicates if online has synced an offline site ID
-    const combinedMap = new Map<string | number, SiteMarkerData>();
-    // First add offline sites (unsubmitted / pending sync)
-    offlineFormatted.forEach((s) => combinedMap.set(s.id, s));
-    // Then add online sites
-    onlineFormatted.forEach((s) => combinedMap.set(s.id, s));
-
-    const finalSites = Array.from(combinedMap.values());
-    console.log('📍 Total sites loaded for map display:', finalSites.length, finalSites);
-    setSites(finalSites);
-  };
+            lsOfflineFormatted = validLsArr.map((os: any) => {
 
   const fetchReadings = async () => {
     let serverReadings: ReadingMarkerData[] = [];
