@@ -138,3 +138,38 @@ CREATE TRIGGER update_livestock_current_location_trigger
 AFTER INSERT ON public.livestock_locations
 FOR EACH ROW
 EXECUTE FUNCTION update_livestock_current_location();
+
+-- RLS POLICIES
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.livestock_owners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.livestock ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.livestock_locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sensor_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+
+-- PROFILES
+DROP POLICY IF EXISTS "MENRO Admin full access profiles" ON public.profiles;
+CREATE POLICY "MENRO Admin full access profiles" ON public.profiles FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+DROP POLICY IF EXISTS "Inspector can view profiles" ON public.profiles;
+CREATE POLICY "Inspector can view profiles" ON public.profiles FOR SELECT USING (true);
+
+-- LIVESTOCK_OWNERS
+DROP POLICY IF EXISTS "MENRO Admin full access livestock_owners" ON public.livestock_owners;
+CREATE POLICY "MENRO Admin full access livestock_owners" ON public.livestock_owners FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+DROP POLICY IF EXISTS "Inspector can view livestock_owners" ON public.livestock_owners;
+CREATE POLICY "Inspector can view livestock_owners" ON public.livestock_owners FOR SELECT USING (true);
+
+-- LIVESTOCK
+DROP POLICY IF EXISTS "MENRO Admin full access livestock" ON public.livestock;
+CREATE POLICY "MENRO Admin full access livestock" ON public.livestock FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+DROP POLICY IF EXISTS "Inspector can view livestock" ON public.livestock;
+CREATE POLICY "Inspector can view livestock" ON public.livestock FOR SELECT USING (true);
+
+-- LIVESTOCK_LOCATIONS
+DROP POLICY IF EXISTS "MENRO Admin full access livestock_locations" ON public.livestock_locations;
+CREATE POLICY "MENRO Admin full access livestock_locations" ON public.livestock_locations FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+DROP POLICY IF EXISTS "Inspector can view livestock_locations" ON public.livestock_locations;
+CREATE POLICY "Inspector can view livestock_locations" ON public.livestock_locations FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Inspector can insert livestock_locations" ON public.livestock_locations;
+CREATE POLICY "Inspector can insert livestock_locations" ON public.livestock_locations FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'environmental_inspector'));
