@@ -103,3 +103,38 @@ class OfflineStorageService {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(PROFILE_KEY);
     } catch (e) {
+      console.error('Error clearing session from localStorage', e);
+    }
+  }
+
+  saveDraft(key: string, data: any): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+      console.error(`Error saving draft ${key}`, e);
+    }
+  }
+
+  getDraft<T>(key: string): T | null {
+    try {
+      const draftStr = localStorage.getItem(key);
+      return draftStr ? JSON.parse(draftStr) : null;
+    } catch (e) {
+      console.error(`Error reading draft ${key}`, e);
+      return null;
+    }
+  }
+
+  clearDraft(key: string): void {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.error(`Error clearing draft ${key}`, e);
+    }
+  }
+
+  // ==========================================
+  // INDEXEDDB QUEUE HELPERS
+  // ==========================================
+
+  async enqueueItem(
