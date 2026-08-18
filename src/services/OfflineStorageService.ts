@@ -313,3 +313,38 @@ class OfflineStorageService {
   }
 
   async deleteOfflineSite(id: string): Promise<void> {
+    // 1. Delete from IndexedDB OFFLINE_SITES_STORE
+    try {
+      const db = await this.initDB();
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
+      store.delete(id);
+    } catch (e) {
+      console.warn('IndexedDB deleteOfflineSite notice:', e);
+    }
+
+    // 2. Purge queued SITE_REGISTRATION items matching this ID from IndexedDB QUEUE_STORE
+    try {
+      const queue = await this.getQueue();
+      for (const item of queue) {
+        if (
+          item.type === 'SITE_REGISTRATION' &&
+          (item.payload?.temp_id === id || item.payload?.id === id || item.id === id)
+        ) {
+          await this.removeQueueItem(item.id);
+        }
+      }
+    } catch (qErr) {
+      console.warn('Error purging site from offline queue:', qErr);
+    }
+
+    // 3. Purge site from localStorage 'offline_sites' key
+    this.removeSiteFromLocalStorage(id);
+  }
+
+  public removeSiteFromLocalStorage(id: string): void {
+    try {
+      const lsStr = localStorage.getItem('offline_sites');
+      if (lsStr) {
+        const lsArr = JSON.parse(lsStr);
+        if (Array.isArray(lsArr)) {
