@@ -453,3 +453,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             <PolygonPreview
               center={[form.current_latitude, form.current_longitude]}
               areaHectares={parseFloat(form.area_size_hectares) || 1.0}
+              height="200px"
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>
+                GPS Telemetry
+              </span>
+              {renderGpsBadge()}
+            </div>
+            <IonButton fill="clear" size="small" onClick={fetchCurrentGps} disabled={locating} style={{ fontWeight: 700 }}>
+              <IonIcon icon={locateOutline} slot="start" />
+              {locating ? 'Acquiring...' : 'Refetch GPS'}
+            </IonButton>
+          </div>
+
+          <IonRow>
+            <IonCol size="6">
+              <IonItem className="premium-input-item" lines="none">
+                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Latitude</IonLabel>
+                <IonInput
+                  type="number"
+                  value={form.current_latitude}
+                  onIonChange={e => {
+                    setForm({ ...form, current_latitude: parseFloat(e.detail.value!) || 0 });
+                    setGpsSource('manual');
+                  }}
+                />
+              </IonItem>
+            </IonCol>
+            <IonCol size="6">
+              <IonItem className="premium-input-item" lines="none">
+                <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Longitude</IonLabel>
+                <IonInput
