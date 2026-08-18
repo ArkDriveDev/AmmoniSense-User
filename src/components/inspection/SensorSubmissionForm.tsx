@@ -384,16 +384,16 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
         latitude: cellLat,
         longitude: cellLng,
-        submitted_by: userId,
         photo_url: photoRecord?.photo_url || null,
-        inspection_photo_id: photoRecord?.id || null,
-      };
+      }, photoStoreId);
 
-      if (!syncService.isOnline()) {
-        throw new Error('OFFLINE_MODE');
-      }
+      offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
 
-      // Online submission path
+      setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync when online!`);
+      setToastColor('warning');
+      setShowToast(true);
+
+      setPhotoRecord(null);
       const { data: insertedSensorData, error: sensorError } = await supabase
         .from('sensor_data')
         .insert([sensorPayload])
