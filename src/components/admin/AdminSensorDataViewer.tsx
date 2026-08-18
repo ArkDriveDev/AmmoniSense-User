@@ -68,3 +68,38 @@ export const AdminSensorDataViewer: React.FC = () => {
   };
 
   const fetchSensorData = async () => {
+    setLoading(true);
+    let serverRecords: SensorRecord[] = [];
+    try {
+      const query = supabase
+        .from('sensor_data')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      const { data, error } = await query;
+      if (!error && data) {
+        serverRecords = data;
+      }
+    } catch (err) {
+      console.warn('Error or offline during fetchSensorData:', err);
+    }
+
+    try {
+      const queue = await offlineStorage.getQueue();
+      const pendingReadings = queue
+        .filter(q => q.type === 'SENSOR_READING')
+        .map(q => ({
+          id: q.id,
+          device_uid: q.payload.device_uid || 'ESP32-AMMONIA-NODE-01',
+          ammonia: q.payload.ammonia || 0,
+          temperature: q.payload.temperature,
+          humidity: q.payload.humidity,
+          battery: q.payload.battery,
+          status: q.payload.status || 'LOW',
+          latitude: q.payload.latitude,
+          longitude: q.payload.longitude,
+          created_at: q.timestamp,
+          photo_url: q.payload.photo_url,
+          is_pending_sync: true,
+        }));
