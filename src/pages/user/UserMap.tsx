@@ -946,3 +946,15 @@ export default function UserMap() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f97316' }}></span>
+                  <b>10 - 20 PPM:</b> High Concentration (Orange)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
+                  <b>&gt; 20 PPM:</b> Critical Alert (Red)
+                </div>
+              </div>
+            </IonCard>
+
+            <IonButton expand="block" className="btn-ammoni btn-primary" onClick={() => setShowLegend(false)}>
+              Close Legend
+            </IonButton>
