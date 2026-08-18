@@ -37,3 +37,24 @@ export default function UserBLESensor() {
     const unsubTelemetry = bleCentralService.onTelemetry((telemetry) => {
       setReading(telemetry);
     });
+
+    setActiveDevice(bleCentralService.getActiveDevice());
+
+    return () => {
+      unsubTelemetry();
+    };
+  }, []);
+
+  const handleRefresh = async (event: CustomEvent) => {
+    await bleCentralService.scanForDevices();
+    event.detail.complete();
+  };
+
+  const handleAutoPopulateAndSubmit = () => {
+    if (!reading) {
+      setToastMsg('No active BLE reading available. Connect to a BLE node first.');
+      setShowToast(true);
+      return;
+    }
+
+    // Save reading to offline draft / localStorage so SensorSubmissionForm loads it
