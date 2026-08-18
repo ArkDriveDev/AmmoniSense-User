@@ -383,3 +383,38 @@ export const extractGpsFromExif = (dataUrl: string): { latitude: number; longitu
 
     const latRaw = gps[piexif.GPSIFD.GPSLatitude];
     const latRef = gps[piexif.GPSIFD.GPSLatitudeRef];
+    const lngRaw = gps[piexif.GPSIFD.GPSLongitude];
+    const lngRef = gps[piexif.GPSIFD.GPSLongitudeRef];
+
+    if (!latRaw || !lngRaw || !latRef || !lngRef) return null;
+
+    const convertRationalToDeg = (rational: [[number, number], [number, number], [number, number]]): number => {
+      const deg = rational[0][0] / (rational[0][1] || 1);
+      const min = rational[1][0] / (rational[1][1] || 1);
+      const sec = rational[2][0] / (rational[2][1] || 1);
+      return deg + min / 60 + sec / 3600;
+    };
+
+    let latitude = convertRationalToDeg(latRaw);
+    if (latRef === 'S') latitude = -latitude;
+
+    let longitude = convertRationalToDeg(lngRaw);
+    if (lngRef === 'W') longitude = -longitude;
+
+    if (isNaN(latitude) || isNaN(longitude) || (latitude === 0 && longitude === 0)) {
+      return null;
+    }
+
+    return { latitude, longitude };
+  } catch (err) {
+    console.warn('Could not parse EXIF GPS from photo data URL:', err);
+    return null;
+  }
+};
+
+export interface CaptureSitePhotoResult {
+  photoRecord: InspectionPhotoRecord;
+  dataUrl: string;
+  latitude: number;
+  longitude: number;
+  gpsSource: GpsSource;
