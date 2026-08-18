@@ -57,3 +57,24 @@ class BLECentralService {
   private telemetryListeners: BLECentralTelemetryListener[] = [];
   private deviceListeners: BLECentralDeviceListener[] = [];
   private stateListeners: BLECentralStateListener[] = [];
+
+  private gattServer: any = null;
+  private bluetoothDevice: any = null;
+  private broadcastChannel: BroadcastChannel | null = null;
+
+  constructor() {
+    this.initBroadcastChannel();
+  }
+
+  private initBroadcastChannel() {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      this.broadcastChannel = new BroadcastChannel(BLECentralService.BROADCAST_CHANNEL_NAME);
+      this.broadcastChannel.onmessage = (event) => {
+        if (event.data && event.data.type === 'BLE_CENTRAL_TELEMETRY') {
+          const reading: BLECentralReading = event.data.payload;
+          this.setState('streaming');
+          this.notifyTelemetryListeners(reading);
+        }
+      };
+    }
+  }
