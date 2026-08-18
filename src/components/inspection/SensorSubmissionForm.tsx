@@ -173,3 +173,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
+      if (!userId) return;
+
+      const { data: owners } = await supabase
+        .from('site_owners')
+        .select('id')
+        .eq('created_by', userId);
+
+      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
+
+      let query = supabase.from('monitoring_sites').select('*');
+      if (ownerId) {
+        query = query.eq('owner_id', ownerId);
+      }
+
+      let onlineSites: any[] = [];
+      const { data, error } = await query;
+      if (!error && data) {
+        onlineSites = data;
+      }
+
+      let offlineSitesList: any[] = [];
+      try {
+        const offlineRecords = await offlineStorage.getOfflineSites();
+        offlineSitesList = offlineRecords.map(os => ({
+          id: os.id,
+          site_name: `${os.site_name} (🔴 Offline)`,
+          address: os.address,
+          current_latitude: os.current_latitude,
+          current_longitude: os.current_longitude,
+          isOffline: true,
+        }));
+      } catch (e) {}
+
+      const allSites = [...offlineSitesList, ...onlineSites];
+      if (allSites.length > 0) {
