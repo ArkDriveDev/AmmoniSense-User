@@ -243,3 +243,38 @@ ion-button.btn-ammoni,
 .status-badge.warning {
   background-color: var(--ammoni-warning-bg);
   border-color: var(--ammoni-warning-border);
+  color: var(--ammoni-warning-text);
+}
+
+.status-badge.danger {
+  background-color: var(--ammoni-danger-bg);
+  border-color: var(--ammoni-danger-border);
+  color: var(--ammoni-danger-text);
+}
+
+.status-badge.offline {
+  background-color: var(--ammoni-offline-bg);
+  border-color: var(--ammoni-offline-border);
+  color: var(--ammoni-offline-text);
+}
+
+/* Pulse Dot Animation */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-badge.safe .pulse-dot {
+  background-color: #10B981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-green 2s infinite;
+}
+
+.status-badge.danger .pulse-dot {
+  background-color: #EF4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: pulse-red 1.2s infinite;
+}
+
+@keyframes pulse-green {
