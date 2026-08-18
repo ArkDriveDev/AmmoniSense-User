@@ -237,3 +237,24 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
 
     handleClear();
   };
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* Drawer Mode Switcher & Tools */}
+      <IonCard className="premium-card" style={{ margin: '0 0 12px 0', padding: '12px' }}>
+        <IonCardContent style={{ padding: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <IonChip
+                color={drawingMode === 'odor_zone' ? 'warning' : 'medium'}
+                outline={drawingMode !== 'odor_zone'}
+                onClick={() => {
+                  setDrawingMode('odor_zone');
+                  handleClear();
+                }}
+                style={{ fontWeight: 700, cursor: 'pointer' }}
+              >
+                🟧 Odor Zone Polygon
+              </IonChip>
+              <IonChip
+                color={drawingMode === 'community' ? 'success' : 'medium'}
