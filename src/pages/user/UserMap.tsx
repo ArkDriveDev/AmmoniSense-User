@@ -190,18 +190,18 @@ export default function UserMap() {
           );
 
           return {
-            };
-          });
-      } catch (qErr) {
-        console.warn('Error fetching queued site registrations:', qErr);
-      }
-
-      // 3. Check localStorage fallback for 'offline_sites'
-      let lsOfflineFormatted: SiteMarkerData[] = [];
-      try {
-        const lsStr = localStorage.getItem('offline_sites');
-        if (lsStr) {
-          const lsArr = JSON.parse(lsStr);
+            id: os.id,
+            site_code: os.site_code || 'OFFLINE',
+            site_name: os.site_name || 'Offline Site',
+            site_type: os.site_type || 'Agricultural',
+            address: os.address || os.site_name,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
+            owner_name: os.owner?.owner_name || 'Inspector Owner',
+            photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
+            isOffline: true,
+            is_pending_sync: true,
           if (Array.isArray(lsArr)) {
             lsOfflineFormatted = lsArr.map((os: any) => {
               const coords = resolveSiteCoords(
