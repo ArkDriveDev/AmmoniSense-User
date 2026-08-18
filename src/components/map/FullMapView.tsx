@@ -138,3 +138,37 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
 
   const boundaryLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const sitesLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const readingsLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const photoTagsLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const userLocLayerGroupRef = useRef<L.LayerGroup | null>(null);
+
+  // Initialize Map Instance with Strict Bounds
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    const map = L.map(mapContainerRef.current, {
+      center: [centerLat, centerLng],
+      zoom: zoom,
+      minZoom: 11,
+      maxZoom: 18,
+      maxBounds: MANOLO_FORTICH_BOUNDS,
+      maxBoundsViscosity: 1.0, // Strictly prevent panning outside bounds
+      zoomControl: false,
+    });
+
+    // Tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | MENRO Manolo Fortich',
+      maxZoom: 20,
+    }).addTo(map);
+
+    boundaryLayerGroupRef.current = L.layerGroup().addTo(map);
+    sitesLayerGroupRef.current = L.layerGroup().addTo(map);
+    readingsLayerGroupRef.current = L.layerGroup().addTo(map);
+    photoTagsLayerGroupRef.current = L.layerGroup().addTo(map);
+    userLocLayerGroupRef.current = L.layerGroup().addTo(map);
