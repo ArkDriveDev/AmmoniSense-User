@@ -68,3 +68,16 @@ USING (true);
 
 CREATE POLICY "Enable insert for authenticated users on community_polygons"
 ON public.community_polygons FOR INSERT
+TO authenticated
+WITH CHECK (created_by = auth.uid());
+
+CREATE POLICY "Enable update for creators on community_polygons"
+ON public.community_polygons FOR UPDATE
+TO authenticated
+USING (created_by = auth.uid())
+WITH CHECK (created_by = auth.uid());
+
+CREATE POLICY "Enable delete for creators on community_polygons"
+ON public.community_polygons FOR DELETE
+TO authenticated
+USING (created_by = auth.uid());
