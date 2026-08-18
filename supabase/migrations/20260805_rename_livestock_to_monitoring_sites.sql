@@ -103,3 +103,37 @@ EXECUTE FUNCTION update_site_current_location();
 -- ============================================
 
 -- Drop old policies on site_owners
+DROP POLICY IF EXISTS "MHO Admin full access livestock_owners" ON public.site_owners;
+DROP POLICY IF EXISTS "MENRO Admin full access livestock_owners" ON public.site_owners;
+DROP POLICY IF EXISTS "Inspector can view livestock_owners" ON public.site_owners;
+
+-- Create new policies on site_owners
+CREATE POLICY "MENRO Admin full access site_owners"
+  ON public.site_owners FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+
+CREATE POLICY "Inspector can view site_owners"
+  ON public.site_owners FOR SELECT
+  USING (true);
+
+
+-- Drop old policies on monitoring_sites
+DROP POLICY IF EXISTS "MHO Admin full access livestock" ON public.monitoring_sites;
+DROP POLICY IF EXISTS "MENRO Admin full access livestock" ON public.monitoring_sites;
+DROP POLICY IF EXISTS "Inspector can view livestock" ON public.monitoring_sites;
+
+-- Create new policies on monitoring_sites
+CREATE POLICY "MENRO Admin full access monitoring_sites"
+  ON public.monitoring_sites FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+
+CREATE POLICY "Inspector can view monitoring_sites"
+  ON public.monitoring_sites FOR SELECT
+  USING (true);
+
+
+-- Drop old policies on site_locations
+DROP POLICY IF EXISTS "MHO Admin full access livestock_locations" ON public.site_locations;
+DROP POLICY IF EXISTS "MENRO Admin full access livestock_locations" ON public.site_locations;
+DROP POLICY IF EXISTS "Inspector can view livestock_locations" ON public.site_locations;
+DROP POLICY IF EXISTS "Inspector can insert livestock_locations" ON public.site_locations;
