@@ -138,3 +138,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setBattery(reading.battery.toString());
       setBtConnected(true);
       if (reading.device_uid) {
+        setSelectedDeviceUid(reading.device_uid);
+      }
+      if (reading.rssi !== undefined) {
+        setBleRssi(reading.rssi);
+      }
+
+      setToastMsg(`📡 BLE Telemetry Auto-Populated from ${reading.device_uid} (${reading.ammonia} ppm NH₃)`);
+      setToastColor('success');
+      setShowToast(true);
+    });
+
+    return () => {
+      unsubCentral();
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedSiteId) {
+      const site = sites.find(s => s.id === selectedSiteId) || null;
+      setSelectedSite(site);
+      const siteLat = site?.current_latitude ?? site?.latitude;
+      const siteLng = site?.current_longitude ?? site?.longitude;
+      if (siteLat && siteLng && !photoRecord) {
+        setCellLat(siteLat);
+        setCellLng(siteLng);
+      }
+      fetchDevicesForSite(selectedSiteId);
+    }
+  }, [selectedSiteId]);
+
+  const fetchSites = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
