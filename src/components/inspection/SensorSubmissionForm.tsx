@@ -730,15 +730,15 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
           fetchSites();
           if (newSite?.id) {
             setSelectedSiteId(newSite.id);
-                      RSSI: {bleRssi} dBm
-                    </IonBadge>
-                  )}
-                </div>
-              )}
-            </div>
+          }
+        }}
+      />
+    </div>
+  );
+};
 
-            <IonItem lines="full" style={{ marginBottom: '12px' }}>
-              <IonLabel position="stacked">Ammonia (NH₃) Reading (ppm)</IonLabel>
+export default SensorSubmissionForm;
+
               <IonInput
                 type="number"
                 value={ammonia}
