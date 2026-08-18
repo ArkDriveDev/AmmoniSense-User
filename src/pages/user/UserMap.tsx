@@ -898,18 +898,18 @@ export default function UserMap() {
           <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
-                <img src={selectedReading?.photo_url || selectedPhotoTag?.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
-              </div>
-            )}
-            <IonButton expand="block" color="medium" onClick={() => setShowPhotoModal(false)}>
-              Close Photo Viewer
-            </IonButton>
-          </div>
-        </IonModal>
+              <IonButton fill="clear" onClick={() => setShowLegend(false)}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </div>
 
-        <IonToast
-          isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
+            <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
+                Monitoring Site Pins
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
           message={toastMsg}
           duration={3500}
           position="bottom"
