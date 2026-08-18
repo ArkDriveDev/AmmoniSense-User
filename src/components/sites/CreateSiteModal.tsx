@@ -103,3 +103,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     setForm(prev => {
       const updated = { ...prev, ...fields };
       if (!editSite) {
+        offlineStorage.saveDraft(SITE_DRAFT_KEY, updated);
+      }
+      return updated;
+    });
+  };
+
+  const fetchCurrentGps = async () => {
+    setLocating(true);
+    try {
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      updateForm({
+        current_latitude: pos.coords.latitude,
+        current_longitude: pos.coords.longitude,
+      });
+      setGpsSource('device_gps');
+    } catch (err) {
+      console.warn('GPS location fetch error:', err);
+      setGpsSource('manual');
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const handleTakeSitePhoto = async () => {
+    setCapturingPhoto(true);
+    try {
+      const result = await captureSitePhoto(form.site_name || 'New Site');
+      setPhotoRecord(result.photoRecord);
+      setPhotoPreview(result.dataUrl || result.photoRecord.photo_url);
+
+      if (result.latitude && result.longitude) {
+        updateForm({
+          current_latitude: result.latitude,
+          current_longitude: result.longitude,
+        });
