@@ -346,18 +346,18 @@ export default function UserMap() {
           device_uid: q.payload.device_uid || 'OFFLINE-NODE',
           created_at: q.timestamp,
           photo_url: q.payload.photo_url,
-          photo_url: q.payload.photo_url,
-          grid_cell_id: q.payload.grid_cell_id,
-          site_id: q.payload.site_id || null,
-          site_name: 'Offline Inspection Tag',
-          is_used: false,
-          uploaded_at: q.timestamp,
           is_pending_sync: true,
         }))
-        .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
+        .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
 
-      setPhotoTags([...offlinePhotoTags, ...serverPhotoTags]);
+      setReadings([...offlineReadings, ...serverReadings]);
     } catch (e) {
+      console.error('Error reading offline queue:', e);
+      setReadings(serverReadings);
+    }
+  };
+
+  const fetchPhotoTags = async () => {
       console.error('Error reading offline photo tags queue:', e);
       setPhotoTags(serverPhotoTags);
     }
