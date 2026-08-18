@@ -88,12 +88,12 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
       map.removeLayer(odorGroup);
       map.removeLayer(commGroup);
     };
-    return () => {
-      map.removeLayer(odorLayerGroup);
-    };
-  }, [map, readings, sites, showOdorZones]);
+  }, [map, odorZones, communityPolygons, showOdorZones, showCommunities]);
 
   return null;
 };
+
+export default OdorZonePolygonLayer;
+
 
 export default OdorZonePolygonLayer;
