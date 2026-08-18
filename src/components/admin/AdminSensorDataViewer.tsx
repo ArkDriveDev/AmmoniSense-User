@@ -138,3 +138,38 @@ export const AdminSensorDataViewer: React.FC = () => {
         </IonCardHeader>
         <IonCardContent>
           <IonGrid style={{ padding: 0 }}>
+            <IonRow>
+              <IonCol size="12">
+                <IonItem lines="full">
+                  <IonLabel position="stacked">Filter by Monitoring Site</IonLabel>
+                  <IonSelect
+                    value={selectedSiteId}
+                    placeholder="All Sites"
+                    onIonChange={e => setSelectedSiteId(e.detail.value)}
+                  >
+                    <IonSelectOption value="all">All Sites</IonSelectOption>
+                    {sites.map(s => (
+                      <IonSelectOption key={s.id} value={s.id}>
+                        {s.site_name}
+                      </IonSelectOption>
+                    ))}
+                  </IonSelect>
+                </IonItem>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
+        </IonCardContent>
+      </IonCard>
+
+      {/* Leaflet Map Overview */}
+      {!loading && sites.length === 0 && records.length === 0 ? (
+        <IonCard style={{ margin: '0 0 24px 0', borderRadius: '12px', textAlign: 'center', padding: '36px 20px' }}>
+          <IonCardContent>
+            <IonIcon icon={mapOutline} style={{ fontSize: '52px', color: '#94a3b8', marginBottom: '12px' }} />
+            <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontWeight: 'bold', fontSize: '18px' }}>
+              No Spatial Map Data Available
+            </h3>
+            <p style={{ margin: '0 auto', color: '#64748b', fontSize: '14px', maxWidth: '460px', lineHeight: '1.5' }}>
+              No monitoring sites or sensor readings have been added yet. Add a monitoring site or submit inspection readings to display the interactive spatial map.
+            </p>
+          </IonCardContent>
