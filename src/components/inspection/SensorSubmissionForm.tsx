@@ -453,3 +453,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               <IonCol key={s.num} size="4">
                 <div
                   onClick={() => {
+                    if (s.num <= currentStep || (s.num === 2 && photoRecord)) {
+                      setCurrentStep(s.num as any);
+                    }
+                  }}
+                  style={{
+                    backgroundColor: isActive ? '#3880ff' : isDone ? '#2dd36f' : '#f1f5f9',
+                    color: isActive || isDone ? '#ffffff' : '#64748b',
+                    padding: '10px 8px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    boxShadow: isActive ? '0 3px 8px rgba(56, 128, 255, 0.3)' : 'none',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <IonIcon icon={isDone ? checkmarkCircleOutline : s.icon} style={{ fontSize: '18px' }} />
+                  <span>{s.title}</span>
+                </div>
+              </IonCol>
+            );
+          })}
+        </IonRow>
+      </IonGrid>
+
+      {/* STEP 1: TAKE PHOTO CARD */}
+      {currentStep === 1 && (
+        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+          <IonCardHeader>
+            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
