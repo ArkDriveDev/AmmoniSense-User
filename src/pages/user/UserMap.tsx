@@ -958,3 +958,15 @@ export default function UserMap() {
             <IonButton expand="block" className="btn-ammoni btn-primary" onClick={() => setShowLegend(false)}>
               Close Legend
             </IonButton>
+          </div>
+        </IonModal>
+
+        {/* PHOTO MODAL */}
+        <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
+          <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+            <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>Inspection Photo</h2>
+            {(selectedReading?.photo_url || selectedPhotoTag?.photo_url) && (
+              <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>
+                <img src={selectedReading?.photo_url || selectedPhotoTag?.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
+              </div>
+            )}
