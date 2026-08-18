@@ -154,18 +154,18 @@ export default function UserMap() {
         onlineFormatted = sitesData.map((s: any) => {
           const coords = resolveSiteCoords(s.current_latitude, s.current_longitude);
           return {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
-          owner_name: os.owner?.owner_name || 'Inspector Owner',
-          photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
-          isOffline: true,
-          is_pending_sync: true,
-        };
-      });
-
-      // 2. Fetch from IndexedDB offline queue ('SITE_REGISTRATION')
-      let queuedOfflineFormatted: SiteMarkerData[] = [];
+            id: s.id,
+            site_code: s.site_code,
+            site_name: s.site_name,
+            site_type: s.site_type || 'Agricultural',
+            address: s.address,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            grid_cell_id: s.current_grid_cell_id || 'A1',
+            owner_name: 'Inspector Owner',
+            photo_url: s.site_photo_thumbnail || s.site_photo_url,
+            isOffline: false,
+            is_pending_sync: false,
       try {
         const queue = await offlineStorage.getQueue();
         queuedOfflineFormatted = queue
