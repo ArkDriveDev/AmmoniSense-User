@@ -418,18 +418,18 @@ export default function UserMap() {
     return (
       tag.site_name?.toLowerCase().includes(query) ||
       tag.id.toString().includes(query)
-    } finally {
-      setLocating(false);
-    }
-  };
+    );
+  });
 
-  const closeBottomSheet = () => {
-    setSelectedSite(null);
-    setSelectedReading(null);
-    setSelectedPhotoTag(null);
-  };
-
-  return (
+  // Filter sites by search query
+  const filteredSites = sites.filter((site) => {
+    if (!searchText.trim()) return true;
+    const query = searchText.toLowerCase();
+    return (
+      site.site_name.toLowerCase().includes(query) ||
+      site.site_code?.toLowerCase().includes(query) ||
+      site.address?.toLowerCase().includes(query) ||
+      site.owner_name?.toLowerCase().includes(query)
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
