@@ -663,3 +663,38 @@ export default function UserMap() {
                   </div>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedSite.latitude.toFixed(4)}°, {selectedSite.longitude.toFixed(4)}°</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Status</span>
+                    <strong style={{ color: '#10b981' }}>Active Site</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <IonButton
+                    expand="block"
+                    className="btn-ammoni btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      closeBottomSheet();
+                      navigate(`/devices?site=${selectedSite.id}`);
+                    }}
+                  >
+                    <IonIcon icon={hardwareChipOutline} slot="start" />
+                    View Site Devices
+                  </IonButton>
+
+                  <IonButton
+                    expand="block"
+                    color="danger"
+                    fill="outline"
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete monitoring site "${selectedSite.site_name}"?`)) {
+                        try {
+                          await deleteSite(selectedSite.id);
+                          closeBottomSheet();
+                          setToastMsg(`Monitoring site "${selectedSite.site_name}" deleted successfully.`);
+                          setShowToast(true);
+                          fetchSites();
+                        } catch (err: any) {
