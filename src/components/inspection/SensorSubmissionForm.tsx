@@ -670,18 +670,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
             </IonButton>
           </IonCardContent>
         </IonCard>
+      )}
+
+      {/* STEP 3: SUBMIT ALL DATA CARD */}
+      {currentStep === 3 && (
+        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+          <IonCardHeader>
+            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonIcon icon={cloudUploadOutline} color="success" />
+              STEP 3: Review & Submit All Inspection Data
             </IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <IonItem lines="full" style={{ marginBottom: '12px' }}>
-              <IonLabel position="stacked">Target Device</IonLabel>
-              <IonSelect
-                value={selectedDeviceUid}
-                placeholder="Select Device"
-                onIonChange={e => setSelectedDeviceUid(e.detail.value)}
-              >
-                {devices.length > 0 ? (
-                  devices.map(d => (
                     <IonSelectOption key={d.device_uid} value={d.device_uid}>
                       {d.device_uid}
                     </IonSelectOption>
