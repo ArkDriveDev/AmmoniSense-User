@@ -68,3 +68,38 @@ export const SyncStatusBanner: React.FC = () => {
           !isOnline
             ? cloudOfflineOutline
             : syncing
+            ? syncOutline
+            : pendingCount > 0
+            ? cloudDoneOutline
+            : wifiOutline
+        }
+        style={{
+          fontSize: '15px',
+          animation: syncing ? 'spin 1.5s linear infinite' : 'none',
+        }}
+      />
+
+      <span>
+        {!isOnline
+          ? `Offline Mode ${pendingCount > 0 ? `(${pendingCount} pending)` : ''}`
+          : syncing
+          ? statusMsg || 'Syncing...'
+          : pendingCount > 0
+          ? `${pendingCount} item${pendingCount > 1 ? 's' : ''} queued`
+          : 'Online'}
+      </span>
+
+      {isOnline && pendingCount > 0 && !syncing && (
+        <IonButton
+          fill="clear"
+          size="small"
+          onClick={handleManualSync}
+          style={{
+            height: '20px',
+            fontSize: '10px',
+            margin: 0,
+            padding: 0,
+            '--color': '#854d0e',
+            fontWeight: 'bold',
+          }}
+        >
