@@ -138,3 +138,38 @@ export default function UserDevices() {
                   <IonIcon icon={hardwareChipOutline} style={{ fontSize: '32px', color: '#1D5D9B' }} />
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>No Devices Found</h3>
+                <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>
+                  Devices will automatically appear here once paired and deployed at monitoring sites.
+                </p>
+              </IonCardContent>
+            </IonCard>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {devices.map((d) => {
+              const isOnline = d.last_seen && (new Date().getTime() - new Date(d.last_seen).getTime() < 60000);
+              return (
+                <IonCard key={d.id} className="premium-card" style={{ margin: 0 }}>
+                  <IonCardContent style={{ padding: '18px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                          <div style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '12px',
+                            background: isOnline ? 'rgba(5, 150, 105, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <IonIcon icon={hardwareChipOutline} style={{ color: isOnline ? '#059669' : '#64748B', fontSize: '20px' }} />
+                          </div>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>
+                              {d.device_uid}
+                            </h3>
+                            <span style={{ fontSize: '12px', color: '#64748B' }}>
+                              Firmware v{d.firmware_version || '1.0.0'}
+                            </span>
+                          </div>
