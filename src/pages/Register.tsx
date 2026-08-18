@@ -138,3 +138,38 @@ const Register: React.FC = () => {
         .from('site_owners')
         .upsert({
           owner_name: form.full_name,
+          email: form.email,
+          contact_number: form.phone || null,
+          created_by: user.id
+        }, {
+          onConflict: 'email'
+        });
+
+      if (ownerError) {
+        console.warn('site_owners update notice:', ownerError.message);
+      }
+
+      setShowSuccessModal(true);
+
+    } catch (err) {
+      console.error('Registration error:', err);
+      if (err instanceof Error) {
+        setToastMessage(err.message);
+      } else {
+        setToastMessage('An unknown error occurred. Please try again.');
+      }
+      setToastColor('danger');
+      setShowToast(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <IonPage>
+      <IonContent className="ion-padding">
+        <IonGrid style={{ maxWidth: '500px', margin: '0 auto', marginTop: '40px' }}>
+          <IonRow>
+            <IonCol>
+              <IonCard>
+                <IonCardContent>
