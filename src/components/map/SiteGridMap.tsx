@@ -177,23 +177,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
           className: 'grid-cell-label',
           html: `<div style="
             font-weight: bold;
-            font-size: 11px;
-            color: ${isSelected ? '#ffffff' : '#1e293b'};
-            background: ${isSelected ? '#3880ff' : 'rgba(255, 255, 255, 0.85)'};
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid ${isSelected ? '#1d4ed8' : '#cbd5e1'};
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-            text-align: center;
-            white-space: nowrap;
-          ">${cellId}</div>`,
-          iconSize: [36, 20],
-          iconAnchor: [18, 10],
-        });
-
-        const labelMarker = L.marker(center, { icon: labelIcon, interactive: false });
-
-        // Click event on cell
-        rectangle.on('click', () => {
-          setActiveCellId(cellId);
-          if (onSelectCell) {
