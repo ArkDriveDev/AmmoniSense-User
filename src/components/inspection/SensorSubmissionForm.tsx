@@ -216,16 +216,16 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     }
   };
 
-  const fetchPreviousReadings = async (siteId: number) => {
+  const fetchDevicesForSite = async (siteId: number) => {
     try {
-      const { data: siteDevices } = await supabase
+      const { data } = await supabase
         .from('devices')
-        .select('device_uid')
+        .select('id, device_uid')
         .eq('site_id', siteId);
 
-      const uids = siteDevices?.map(d => d.device_uid) || [];
-
-      let query = supabase
+      if (data && data.length > 0) {
+        setDevices(data);
+        setSelectedDeviceUid(data[0].device_uid);
         .from('sensor_data')
         .select('id, latitude, longitude, ammonia, grid_cell_id, device_uid, created_at, photo_url')
         .order('created_at', { ascending: false })
