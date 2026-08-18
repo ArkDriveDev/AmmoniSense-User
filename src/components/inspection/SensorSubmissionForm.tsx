@@ -558,3 +558,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
             {photoRecord && (
               <IonButton expand="block" color="primary" onClick={() => setCurrentStep(2)} style={{ marginTop: '16px' }}>
+                Proceed to STEP 2: BLE Sensor ➔
+              </IonButton>
+            )}
+          </IonCardContent>
+        </IonCard>
+      )}
+
+      {/* STEP 2: ESP32 BLUETOOTH SENSOR READING */}
+      {currentStep === 2 && (
+        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+          <IonCardHeader>
+            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonIcon icon={bluetoothOutline} color="tertiary" />
+              STEP 2: Read Sensor via Bluetooth (ESP32)
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonItem lines="full" style={{ marginBottom: '12px' }}>
+              <IonLabel position="stacked">Target Device</IonLabel>
+              <IonSelect
+                value={selectedDeviceUid}
+                placeholder="Select Device"
+                onIonChange={e => setSelectedDeviceUid(e.detail.value)}
+              >
+                {devices.length > 0 ? (
+                  devices.map(d => (
+                    <IonSelectOption key={d.device_uid} value={d.device_uid}>
+                      {d.device_uid}
+                    </IonSelectOption>
+                  ))
+                ) : (
+                  <IonSelectOption value="ESP32-AMMONIA-NODE-01">
+                    ESP32-AMMONIA-NODE-01
+                  </IonSelectOption>
+                )}
