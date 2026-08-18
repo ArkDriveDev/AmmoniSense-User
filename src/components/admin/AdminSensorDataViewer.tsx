@@ -103,3 +103,38 @@ export const AdminSensorDataViewer: React.FC = () => {
           photo_url: q.payload.photo_url,
           is_pending_sync: true,
         }));
+
+      setRecords([...pendingReadings, ...serverRecords]);
+    } catch (e) {
+      console.error('Error fetching offline queue:', e);
+      setRecords(serverRecords);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapMarkers: ReadingMarkerData[] = records
+    .filter(r => r.latitude && r.longitude)
+    .map(r => ({
+      id: r.id,
+      latitude: r.latitude!,
+      longitude: r.longitude!,
+      ammonia: r.ammonia || 0,
+      device_uid: r.device_uid,
+      created_at: r.created_at,
+      photo_url: r.photo_url || undefined,
+    }));
+
+  const activeSiteObj = sites.find(s => s.id === selectedSiteId);
+
+  return (
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '16px' }}>
+      {/* Filters Card */}
+      <IonCard style={{ margin: '0 0 20px 0', borderRadius: '12px' }}>
+        <IonCardHeader>
+          <IonCardTitle style={{ fontSize: '20px', fontWeight: 'bold' }}>
+            MENRO Environmental Inspection Dashboard
+          </IonCardTitle>
+        </IonCardHeader>
+        <IonCardContent>
+          <IonGrid style={{ padding: 0 }}>
