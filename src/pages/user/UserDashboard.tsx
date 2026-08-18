@@ -173,3 +173,38 @@ export default function UserDashboard() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      padding: '12px 14px',
+                      background: 'rgba(248, 250, 252, 0.8)',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0'
+                    }}>
+                      <span style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>Average Ammonia Level</span>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
+                        {stats.averageAmmonia.toFixed(1)} ppm
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 14px',
+                      background: 'rgba(248, 250, 252, 0.8)',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0'
+                    }}>
+                      <span style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>Active Online Rate</span>
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#059669' }}>
+                        {stats.activeDevices} / {stats.deviceCount} Active
+                      </span>
+                    </div>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
+      </IonContent>
+    </IonPage>
+  );
+}
