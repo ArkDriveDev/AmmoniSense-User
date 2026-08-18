@@ -250,3 +250,15 @@ export const saveCommunityPolygon = async (poly: CommunityPolygon): Promise<Comm
  */
 export const deleteSite = async (siteId: string | number): Promise<void> => {
   const strId = String(siteId);
+
+  // 1. Always purge local offline site records (IndexedDB + queue + localStorage)
+  try {
+    await offlineStorage.deleteOfflineSite(strId);
+    offlineStorage.removeSiteFromLocalStorage(strId);
+  } catch (e) {
+    console.warn('Error purging local site record:', e);
+  }
+
+  // 2. If it's a online Supabase site (non-temp ID), delete from Supabase tables
+  if (!strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_')) {
+    try {
