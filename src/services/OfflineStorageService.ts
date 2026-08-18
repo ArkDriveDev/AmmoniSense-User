@@ -68,3 +68,38 @@ class OfflineStorageService {
 
   // ==========================================
   // LOCAL STORAGE HELPERS (Session & Drafts)
+  // ==========================================
+
+  saveSession(session: any, profile?: any): void {
+    try {
+      if (session) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      }
+      if (profile) {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      }
+    } catch (e) {
+      console.error('Error saving session to localStorage', e);
+    }
+  }
+
+  getSession(): { session: any; profile: any } | null {
+    try {
+      const sessionStr = localStorage.getItem(SESSION_KEY);
+      const profileStr = localStorage.getItem(PROFILE_KEY);
+      if (!sessionStr) return null;
+      return {
+        session: JSON.parse(sessionStr),
+        profile: profileStr ? JSON.parse(profileStr) : null,
+      };
+    } catch (e) {
+      console.error('Error reading session from localStorage', e);
+      return null;
+    }
+  }
+
+  clearSession(): void {
+    try {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(PROFILE_KEY);
+    } catch (e) {
