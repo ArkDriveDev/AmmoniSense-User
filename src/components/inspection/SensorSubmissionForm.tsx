@@ -190,18 +190,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       let onlineSites: any[] = [];
       const { data, error } = await query;
       if (!error && data) {
-        setSelectedSiteId(allSites[0].id);
+        onlineSites = data;
       }
-    } catch (err) {
-      console.error('Error fetching sites:', err);
-    }
-  };
 
-  const fetchDevicesForSite = async (siteId: number) => {
-    try {
-      const { data } = await supabase
-        .from('devices')
-        .select('id, device_uid')
+      let offlineSitesList: any[] = [];
+      try {
+        const offlineRecords = await offlineStorage.getOfflineSites();
+        offlineSitesList = offlineRecords.map(os => ({
+          id: os.id,
+          site_name: `${os.site_name} (🔴 Offline)`,
+          address: os.address,
+          current_latitude: os.current_latitude,
+          current_longitude: os.current_longitude,
         .eq('site_id', siteId);
 
       if (data && data.length > 0) {
