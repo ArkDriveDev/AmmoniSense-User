@@ -138,3 +138,38 @@ export default function UserMap() {
     let lng = typeof lngRaw === 'number' ? lngRaw : parseFloat(lngRaw);
 
     if (isNaN(lat) || isNaN(lng) || !IS_IN_MANOLO_FORTICH(lat, lng)) {
+      return { latitude: 8.3683, longitude: 124.8637 };
+    }
+    return { latitude: lat, longitude: lng };
+  };
+
+  const fetchSites = async () => {
+    let onlineFormatted: SiteMarkerData[] = [];
+    try {
+      const { data: sitesData, error: sitesErr } = await supabase
+        .from('monitoring_sites')
+        .select('*');
+
+      if (!sitesErr && sitesData) {
+        onlineFormatted = sitesData.map((s: any) => {
+          const coords = resolveSiteCoords(s.current_latitude, s.current_longitude);
+          return {
+            id: s.id,
+            site_code: s.site_code,
+            site_name: s.site_name,
+            site_type: s.site_type || 'Agricultural',
+            address: s.address,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            grid_cell_id: s.current_grid_cell_id || 'A1',
+            owner_name: 'Inspector Owner',
+            photo_url: s.site_photo_thumbnail || s.site_photo_url,
+            isOffline: false,
+            is_pending_sync: false,
+          };
+        });
+      } else if (sitesErr) {
+        console.warn('Supabase fetch sites error:', sitesErr.message);
+      }
+    } catch (err) {
+      console.warn('Network error or offline mode while fetching monitoring sites from Supabase:', err);
