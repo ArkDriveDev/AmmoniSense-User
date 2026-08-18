@@ -158,3 +158,23 @@ class BLECentralService {
       return null;
     }
   }
+
+  /**
+   * Auto-request ALL permissions required for BLE scanning:
+   * - BLE permissions (BLUETOOTH_SCAN, BLUETOOTH_CONNECT)
+   * - Location permissions (ACCESS_FINE_LOCATION)
+   * - Check if Bluetooth & Location services are enabled
+   */
+  public async checkAndRequestPermissions(): Promise<BLEPermissionStatus> {
+    const status: BLEPermissionStatus = {
+      bluetoothScanGranted: true,
+      bluetoothConnectGranted: true,
+      locationGranted: true,
+      bluetoothEnabled: true,
+      locationEnabled: true,
+      canScan: true,
+    };
+
+    const nav = navigator as any;
+
+    // 1. Check Web Bluetooth API availability
