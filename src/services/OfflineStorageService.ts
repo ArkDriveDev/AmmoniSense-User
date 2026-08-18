@@ -278,3 +278,38 @@ class OfflineStorageService {
   async getOfflineSites(): Promise<OfflineSite[]> {
     const db = await this.initDB();
     return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readonly');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async updateOfflineSite(id: string, updates: Partial<OfflineSite>): Promise<void> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
+      const getReq = store.get(id);
+
+      getReq.onsuccess = () => {
+        const item: OfflineSite = getReq.result;
+        if (item) {
+          const updatedItem = {
+            ...item,
+            ...updates,
+            lastModified: new Date().toISOString(),
+          };
+          const putReq = store.put(updatedItem);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        } else {
+          resolve();
+        }
+      };
+      getReq.onerror = () => reject(getReq.error);
+    });
+  }
+
+  async deleteOfflineSite(id: string): Promise<void> {
