@@ -970,3 +970,15 @@ export default function UserMap() {
                 <img src={selectedReading?.photo_url || selectedPhotoTag?.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
               </div>
             )}
+            <IonButton expand="block" color="medium" onClick={() => setShowPhotoModal(false)}>
+              Close Photo Viewer
+            </IonButton>
+          </div>
+        </IonModal>
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMsg}
+          duration={3500}
+          position="bottom"
