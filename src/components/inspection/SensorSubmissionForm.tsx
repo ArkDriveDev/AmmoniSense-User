@@ -514,18 +514,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 padding: '24px',
                 border: '2px dashed #fcd34d',
                 borderRadius: '12px',
-                    }
-                  }}
-                  style={{
-                    backgroundColor: isActive ? '#3880ff' : isDone ? '#2dd36f' : '#f1f5f9',
-                    color: isActive || isDone ? '#ffffff' : '#64748b',
-                    padding: '10px 8px',
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    boxShadow: isActive ? '0 3px 8px rgba(56, 128, 255, 0.3)' : 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fffbeb',
+                margin: '16px 0',
+                textAlign: 'center'
+              }}>
+                <IonIcon icon={cameraOutline} style={{ fontSize: '48px', color: '#d97706', marginBottom: '8px' }} />
+                <h4 style={{ margin: '0 0 6px 0', color: '#92400e', fontWeight: 'bold' }}>
+                  No Monitoring Site Selected
+                </h4>
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     flexDirection: 'column',
