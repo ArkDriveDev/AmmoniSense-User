@@ -694,18 +694,18 @@ export default function UserMap() {
                         try {
                           await deleteSite(selectedSite.id);
                           closeBottomSheet();
-                    <IonIcon icon={eyeOutline} slot="start" /> View Inspection Photo
+                          setToastMsg(`Monitoring site "${selectedSite.site_name}" deleted successfully.`);
+                          setShowToast(true);
+                          fetchSites();
+                        } catch (err: any) {
+                          setToastMsg(err.message || 'Failed to delete site.');
+                          setShowToast(true);
+                        }
+                      }
+                    }}
+                  >
+                    <IonIcon icon={trashOutline} slot="icon-only" />
                   </IonButton>
-                )}
-              </div>
-            )}
-
-            {/* PHOTO TAG DETAILS */}
-            {selectedPhotoTag && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                  <div>
-                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Inspection Photo Tag (Step 1)</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                       <span style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>
                         📷 Grid Cell: {selectedPhotoTag.grid_cell_id || 'Captured Tag'}
