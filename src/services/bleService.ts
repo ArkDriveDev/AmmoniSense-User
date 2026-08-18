@@ -173,3 +173,20 @@ class BLEService {
         timestamp: new Date().toISOString(),
       };
     } catch (e) {
+      console.error('Failed to parse BLE DataView:', e);
+      return null;
+    }
+  }
+
+  public disconnect() {
+    if (this.gattServer && this.gattServer.connected) {
+      this.gattServer.disconnect();
+    }
+    this.gattServer = null;
+    this.bluetoothDevice = null;
+    this.setState('disconnected');
+  }
+}
+
+export const bleService = new BLEService();
+export default bleService;
