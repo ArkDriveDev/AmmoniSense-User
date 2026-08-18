@@ -322,18 +322,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       let status = 'LOW';
       if (ammoniaNum > 70) status = 'HIGH';
-      } catch (scanErr: any) {
-        console.info('Scanning fallback to simulator connection');
-        reading = await bleService.simulateConnection('moderate');
-      }
+      else if (ammoniaNum > 40) status = 'MODERATE';
 
-      if (reading) {
-        setAmmonia(reading.ammonia.toString());
-        setTemperature(reading.temperature.toString());
-        setHumidity(reading.humidity.toString());
-        setBattery(reading.battery.toString());
-        setBtConnected(true);
-        if (reading.device_uid) setSelectedDeviceUid(reading.device_uid);
+      const sensorPayload: any = {
+        device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
+        ammonia: ammoniaNum,
+        temperature: isNaN(tempNum) ? null : tempNum,
+        humidity: isNaN(humNum) ? null : humNum,
+        battery: isNaN(battNum) ? 100 : battNum,
+        status,
+        latitude: cellLat,
+        longitude: cellLng,
+        submitted_by: userId,
         if (reading.rssi !== undefined) setBleRssi(reading.rssi);
 
         setToastMsg(`Step 3 Complete! Received BLE telemetry from ${reading.device_uid}.`);
