@@ -217,23 +217,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
         weight: 2,
         opacity: 1,
         fillOpacity: 0.9,
-      });
-
-      const popupContent = `
-        <div style="font-family: sans-serif; min-width: 160px; padding: 4px;">
-          <h4 style="margin: 0 0 4px 0; font-size: 14px; color: ${color}; font-weight: bold;">
-            NH₃: ${reading.ammonia.toFixed(1)} ppm
-          </h4>
-          <div style="font-size: 12px; color: #475569; margin-bottom: 2px;">
-            <b>Grid Cell:</b> ${reading.grid_cell_id || 'N/A'}
-          </div>
-          <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">
-            <b>Device:</b> ${reading.device_uid || 'Manual'}
-          </div>
-          <div style="font-size: 10px; color: #94a3b8; margin-bottom: 6px;">
-            ${new Date(reading.created_at).toLocaleString()}
-          </div>
-          ${
-            reading.photo_url
-              ? `<img src="${reading.photo_url}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 4px;" alt="Sensor photo" />`
-              : ''
