@@ -826,18 +826,18 @@ export default function UserMap() {
                     <IonIcon icon={eyeOutline} slot="start" /> Full Photo View
                   </IonButton>
                   <IonButton
-          <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
-              <IonButton fill="clear" onClick={() => setShowLegend(false)}>
-                <IonIcon icon={closeOutline} />
-              </IonButton>
-            </div>
-
-            <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
-              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
-                Monitoring Site Pins
-              </h4>
+                    expand="block"
+                    className="btn-ammoni btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      closeBottomSheet();
+                      navigate('/my-sensor-data');
+                    }}
+                  >
+                    Complete Inspection ➔
+                  </IonButton>
+                </div>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
