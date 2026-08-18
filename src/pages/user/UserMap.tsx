@@ -382,18 +382,18 @@ export default function UserMap() {
           }))
           .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
       }
-      site.owner_name?.toLowerCase().includes(query)
-    );
-  });
+    } catch (err) {
+      console.warn('Error fetching inspection photo tags:', err);
+    }
 
-  // Filter readings by search query
-  const filteredReadings = readings.filter((reading) => {
-    if (!searchText.trim()) return true;
-    const query = searchText.toLowerCase();
-    return (
-      reading.device_uid?.toLowerCase().includes(query) ||
-      reading.grid_cell_id?.toLowerCase().includes(query) ||
-      reading.ammonia.toString().includes(query)
+    try {
+      const queue = await offlineStorage.getQueue();
+      const offlinePhotoTags: PhotoTagMarkerData[] = queue
+        .filter((q) => q.type === 'SENSOR_READING' && q.payload?.photo_url)
+        .map((q) => ({
+          id: q.id,
+          latitude: q.payload.latitude || 8.3683,
+          longitude: q.payload.longitude || 124.8637,
     );
   });
 
