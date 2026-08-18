@@ -173,3 +173,38 @@ class SyncService {
     }
 
     // 3. Mark photo as used in inspection_photos table if payload has photo_url
+    if (payload.photo_url && inserted?.id) {
+      try {
+        await supabase
+          .from('inspection_photos')
+          .update({ sensor_data_id: inserted.id, is_used: true })
+          .eq('photo_url', payload.photo_url);
+      } catch (e) {
+        console.warn('Could not update inspection_photos table:', e);
+      }
+    }
+  }
+
+  private async syncSiteRegistration(item: QueueItem): Promise<void> {
+    const { error } = await supabase.from('monitoring_sites').insert([item.payload]);
+    if (error) {
+      throw new Error(`monitoring_sites insert error: ${error.message}`);
+    }
+    // Delete local OfflineSite record from IndexedDB & localStorage once synced to Supabase
+    if (item.payload?.temp_id || item.payload?.id) {
+      const tempId = item.payload.temp_id || item.payload.id;
+      try {
+        await offlineStorage.deleteOfflineSite(tempId);
+        offlineStorage.removeSiteFromLocalStorage(tempId);
+        if (item.payload.site_code) {
+          offlineStorage.removeSiteFromLocalStorage(item.payload.site_code);
+        }
+      } catch (e) {
+        console.warn('Could not remove local offline site record:', e);
+      }
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('site_synced'));
+      window.dispatchEvent(new CustomEvent('site_deleted'));
+    }
+  }
