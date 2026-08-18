@@ -262,18 +262,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       setCurrentStep(2);
     } catch (err: any) {
-      setToastColor('warning');
+      console.error('Step 1 Error:', err);
+      setToastMsg('Step 1 Photo Capture Failed: ' + (err.message || 'Error'));
+      setToastColor('danger');
       setShowToast(true);
-      return;
+    } finally {
+      setStep1Loading(false);
     }
-    setStep1Loading(true);
-    try {
-      const record = await step1_takeAndUploadPhoto(
-        selectedSiteId || undefined,
-        selectedSite?.site_name || 'MENRO Site'
-      );
+  };
 
-      setPhotoRecord(record);
+  // =========================================================
+  // STEP 2: CONNECT ESP32 BLUETOOTH / READ SENSOR
+  // =========================================================
       setCellLat(record.latitude);
       setCellLng(record.longitude);
 
