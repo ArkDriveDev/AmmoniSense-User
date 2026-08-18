@@ -634,18 +634,18 @@ export default function UserMap() {
                   <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
                     {selectedSite.site_code}
                   </span>
-              </div>
-            )}
+                  {selectedSite.isOffline && <PendingSyncBadge />}
+                </div>
 
-            {/* SENSOR READING DETAILS */}
-            {selectedReading && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                  <div>
-                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Sensor Reading Detail</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                      <span
-                        style={{
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedSite.site_name}
+                </h2>
+
+                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <IonIcon icon={locationOutline} style={{ color: '#1d5d9b' }} />
+                  {selectedSite.address || 'Manolo Fortich, Bukidnon'}
+                </p>
+
                           fontSize: '22px',
                           fontWeight: 800,
                           color: getAmmoniaColor(selectedReading.ammonia),
