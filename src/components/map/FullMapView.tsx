@@ -347,3 +347,39 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
           <div style="font-size: 12px; color: #475569;">${site.address || 'Manolo Fortich, Bukidnon'}</div>
         </div>
       `;
+
+      const marker = L.marker([lat, lng], { icon: customIcon });
+      marker.bindPopup(popupContent);
+
+      marker.on('click', () => {
+        if (onSelectSite) onSelectSite(site);
+      });
+
+      sitesGroup.addLayer(marker);
+    });
+  }, [sites, showSitesLayer, onSelectSite]);
+
+  // Render Sensor Reading Dots (Layer 2)
+  useEffect(() => {
+    if (!mapRef.current || !readingsLayerGroupRef.current) return;
+    const readingsGroup = readingsLayerGroupRef.current;
+    readingsGroup.clearLayers();
+
+    if (!showReadingsLayer) return;
+
+    readings.forEach((reading) => {
+      if (!reading.latitude || !reading.longitude) return;
+
+      const color = getAmmoniaColor(reading.ammonia);
+
+      const circleMarker = L.circleMarker([reading.latitude, reading.longitude], {
+        radius: 10,
+        fillColor: color,
+        color: '#ffffff',
+        weight: 2.5,
+        opacity: 1,
+        fillOpacity: 0.85,
+      });
+
+      if (reading.ammonia > 20) {
+        const pulse = L.circle([reading.latitude, reading.longitude], {
