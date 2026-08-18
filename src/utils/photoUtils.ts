@@ -138,3 +138,38 @@ export const addStampToImage = (
 
       const nowStr = new Date().toLocaleString();
       const latStr = options.latitude.toFixed(6);
+      const lngStr = options.longitude.toFixed(6);
+
+      // Line 1: Site Name
+      const line1 = `SITE: ${options.siteName || 'MENRO Site'}`;
+      ctx.fillText(line1, padding, img.height - bannerHeight + padding + fontSizeLarge * 0.8);
+
+      // Line 2: GPS Coordinates & Ammonia (if provided)
+      ctx.font = `${fontSizeSmall}px monospace`;
+      ctx.fillStyle = '#cbd5e1';
+
+      let line2 = `GPS: ${latStr}°, ${lngStr}°  •  TIME: ${nowStr}`;
+      if (options.ammoniaPpm !== undefined) {
+        line2 += `  •  NH3: ${options.ammoniaPpm.toFixed(1)} ppm`;
+      }
+      ctx.fillText(line2, padding, img.height - bannerHeight + padding + fontSizeLarge + fontSizeSmall * 1.2);
+
+      // MENRO Watermark Tag top-right
+      ctx.fillStyle = 'rgba(56, 128, 255, 0.85)';
+      const tagWidth = 140 * scale;
+      const tagHeight = 28 * scale;
+      ctx.fillRect(img.width - tagWidth - padding, padding, tagWidth, tagHeight);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${12 * scale}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('MENRO AMMONISENSE', img.width - tagWidth / 2 - padding, padding + 18 * scale);
+
+      // Return stamped image data URL
+      const stampedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      resolve(stampedDataUrl);
+    };
+
+    img.onerror = (err) => reject(err);
+    img.src = imageDataUrl;
+  });
