@@ -103,3 +103,35 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({ reading })
           <IonCol size="6">
             <IonCard className="premium-card" style={{ margin: 0, padding: '14px' }}>
               <IonCardContent style={{ padding: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <IonIcon icon={thermometerOutline} style={{ color: '#F97316', fontSize: '18px' }} />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B' }}>TEMPERATURE</span>
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
+                  {reading.temperature_c.toFixed(1)} <span style={{ fontSize: '14px' }}>°C</span>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          </IonCol>
+
+          {/* Humidity */}
+          <IonCol size="6">
+            <IonCard className="premium-card" style={{ margin: 0, padding: '14px' }}>
+              <IonCardContent style={{ padding: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <IonIcon icon={waterOutline} style={{ color: '#3B82F6', fontSize: '18px' }} />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B' }}>HUMIDITY</span>
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
+                  {reading.humidity_pct.toFixed(1)} <span style={{ fontSize: '14px' }}>%</span>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          </IonCol>
+        </IonRow>
+      </IonGrid>
+    </div>
+  );
+};
+
+export default BLEReadingDisplay;
