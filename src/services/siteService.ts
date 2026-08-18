@@ -34,6 +34,7 @@ export const registerSiteWithPhoto = async (
         .from('site_owners')
         .insert([
           {
+            owner_name: ownerName,
             email: ownerEmail,
             created_by: user.id,
           },
@@ -45,7 +46,6 @@ export const registerSiteWithPhoto = async (
         throw new Error('Failed to create site owner record: ' + (ownerErr?.message || 'Error'));
       }
       createdOwner = newOwner;
-    }
 
     // 2. Insert into monitoring_sites
     const sitePayload = {
