@@ -430,18 +430,18 @@ export default function UserMap() {
       site.site_code?.toLowerCase().includes(query) ||
       site.address?.toLowerCase().includes(query) ||
       site.owner_name?.toLowerCase().includes(query)
-    <IonPage>
-      <IonHeader className="ion-no-border">
-        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Monitoring Sites Map</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={() => setShowLegend(true)} style={{ color: '#ffffff' }}>
-              <IonIcon icon={informationCircleOutline} slot="icon-only" />
-            </IonButton>
-            <IonButton
-              onClick={(e) => {
-                setPopoverEvent(e.nativeEvent);
-                setShowLayerPopover(true);
+    );
+  });
+
+  // Filter readings by search query
+  const filteredReadings = readings.filter((reading) => {
+    if (!searchText.trim()) return true;
+    const query = searchText.toLowerCase();
+    return (
+      reading.device_uid?.toLowerCase().includes(query) ||
+      reading.ammonia.toString().includes(query)
+    );
+  });
               }}
               style={{ color: '#ffffff' }}
             >
