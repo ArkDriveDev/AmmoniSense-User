@@ -33,3 +33,41 @@ export default function StatsCard({ title, value, icon, color = 'primary', subti
   };
 
   const bgGradient = colorGradients[color] || colorGradients.primary;
+
+  return (
+    <IonCard className="stats-card">
+      <IonCardContent style={{ padding: '16px', textAlign: 'center' }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '14px',
+          background: bgGradient,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '10px',
+          boxShadow: '0 4px 12px rgba(26, 54, 93, 0.15)'
+        }}>
+          <IonIcon 
+            icon={iconName} 
+            style={{ 
+              fontSize: '24px', 
+              color: '#FFFFFF' 
+            }} 
+          />
+        </div>
+        <h2 style={{ margin: '0', fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.02em' }}>
+          {value}
+        </h2>
+        <p style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: '600', color: '#64748B' }}>
+          {title}
+        </p>
+        {subtitle && (
+          <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: '500' }}>
+            {subtitle}
+          </p>
+        )}
+      </IonCardContent>
+    </IonCard>
+  );
+}
