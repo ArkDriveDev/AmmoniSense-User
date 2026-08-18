@@ -348,3 +348,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
                   </IonButton>
                 </div>
               ) : (
+                <div style={{ padding: '20px 0' }}>
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '16px',
+                    background: 'rgba(29, 93, 155, 0.1)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '10px'
+                  }}>
+                    <IonIcon icon={imageOutline} style={{ fontSize: '32px', color: '#1D5D9B' }} />
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 16px 0' }}>
+                    Capture entrance photo to embed EXIF GPS coordinates directly
+                  </p>
+                  <IonButton className="btn-ammoni btn-secondary" onClick={handleTakeSitePhoto} disabled={capturingPhoto}>
+                    {capturingPhoto ? (
+                      <>
+                        <IonSpinner name="crescent" />
+                        &nbsp;Opening Camera...
+                      </>
+                    ) : (
+                      <>
+                        <IonIcon icon={cameraOutline} slot="start" />
+                        Capture Photo & Extract GPS
+                      </>
+                    )}
+                  </IonButton>
+                </div>
+              )}
+            </IonCardContent>
+          </IonCard>
+
+          <IonItem className="premium-input-item" lines="none">
