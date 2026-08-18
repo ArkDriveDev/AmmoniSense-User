@@ -38,3 +38,22 @@ export interface BLECentralReading {
   rssi?: number;
   timestamp: string;
 }
+
+export type BLECentralState = 'disconnected' | 'scanning' | 'connecting' | 'connected' | 'subscribing' | 'streaming';
+
+export type BLECentralTelemetryListener = (reading: BLECentralReading) => void;
+export type BLECentralDeviceListener = (devices: BLECentralDevice[]) => void;
+export type BLECentralStateListener = (state: BLECentralState) => void;
+
+class BLECentralService {
+  public static SERVICE_UUID = '0000ffd0-0000-1000-8000-00805f9b34fb';
+  public static CHARACTERISTIC_UUID = '0000ffd1-0000-1000-8000-00805f9b34fb';
+  public static BROADCAST_CHANNEL_NAME = 'ammonisense_ble_central_stream';
+
+  private currentState: BLECentralState = 'disconnected';
+  private discoveredDevices: BLECentralDevice[] = [];
+  private activeDevice: BLECentralDevice | null = null;
+
+  private telemetryListeners: BLECentralTelemetryListener[] = [];
+  private deviceListeners: BLECentralDeviceListener[] = [];
+  private stateListeners: BLECentralStateListener[] = [];
