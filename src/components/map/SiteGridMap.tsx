@@ -57,23 +57,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
   onSelectCell,
   gridSize = 6,
   cellSizeMeters = 50,
-  height = '420px',
-}) => {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const gridLayerGroupRef = useRef<L.LayerGroup | null>(null);
-  const markersLayerGroupRef = useRef<L.LayerGroup | null>(null);
-
-  const [activeCellId, setActiveCellId] = useState<string>(selectedCellId);
-  const [currentZoom, setCurrentZoom] = useState<number>(zoom);
-
-  useEffect(() => {
-    setActiveCellId(selectedCellId);
-  }, [selectedCellId]);
-
-  // Initialize Leaflet Map
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
-
-    // Clean up existing map instance if re-mounting
-    if (mapRef.current) {
