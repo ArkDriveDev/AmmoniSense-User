@@ -348,3 +348,38 @@ export default function UserMap() {
           photo_url: q.payload.photo_url,
           is_pending_sync: true,
         }))
+        .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
+
+      setReadings([...offlineReadings, ...serverReadings]);
+    } catch (e) {
+      console.error('Error reading offline queue:', e);
+      setReadings(serverReadings);
+    }
+  };
+
+  const fetchPhotoTags = async () => {
+    let serverPhotoTags: PhotoTagMarkerData[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('inspection_photos')
+        .select('*')
+        .order('uploaded_at', { ascending: false })
+        .limit(200);
+
+      if (!error && data) {
+        serverPhotoTags = data
+          .map((p: any) => ({
+            id: p.id,
+            latitude: p.latitude || 8.3683,
+            longitude: p.longitude || 124.8637,
+            photo_url: p.photo_url,
+            grid_cell_id: p.grid_cell_id,
+            site_id: p.site_id,
+            site_name: 'Inspection Site',
+            is_used: p.is_used,
+            uploaded_at: p.uploaded_at,
+            is_pending_sync: false,
+          }))
+          .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
+      }
+    } catch (err) {
