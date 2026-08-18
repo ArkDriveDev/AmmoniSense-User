@@ -502,18 +502,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', borderRadius: '8px', overflow: 'hidden', border: '2px solid #2dd36f' }}>
                   <img src={photoRecord.dataUrl || photoRecord.photo_url} alt="Captured" style={{ width: '100%', maxHeight: '240px', objectFit: 'cover' }} />
                 </div>
-            { num: 3, title: 'STEP 3: ESP32 Bluetooth', icon: bluetoothOutline },
-            { num: 4, title: 'STEP 4: Submit All', icon: cloudUploadOutline },
-          ].map(s => {
-            const isActive = currentStep === s.num;
-            const isDone = currentStep > s.num;
-            return (
-              <IonCol key={s.num} size="6" size-md="3">
-                <div
-                  onClick={() => {
-                    // Allow navigating to completed or active steps
-                    if (s.num <= currentStep || (s.num === 2 && photoRecord)) {
-                      setCurrentStep(s.num as any);
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>
+                  <b>GPS:</b> {photoRecord.latitude.toFixed(5)}°, {photoRecord.longitude.toFixed(5)}° | <b>Photo ID:</b> #{photoRecord.id}
+                </div>
+                <IonButton fill="clear" color="medium" size="small" onClick={handleStep1_TakePhoto} style={{ marginTop: '4px' }}>
+                  Retake Photo
+                </IonButton>
+              </div>
+            ) : !selectedSiteId ? (
+              <div style={{
+                padding: '24px',
+                border: '2px dashed #fcd34d',
+                borderRadius: '12px',
                     }
                   }}
                   style={{
