@@ -173,3 +173,17 @@ export default function Login() {
               </IonCol>
             </IonRow>
           </IonGrid>
+        </div>
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMessage}
+          duration={5000}
+          color="danger"
+          position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
