@@ -370,18 +370,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     } catch (err: any) {
       console.warn('Network error or offline mode during inspection submit, queueing item:', err);
 
-      let status = 'LOW';
-      if (ammoniaNum > 70) status = 'HIGH';
-      else if (ammoniaNum > 40) status = 'MODERATE';
+      let photoStoreId: string | undefined = undefined;
+      if (photoRecord?.dataUrl) {
+        photoStoreId = await offlineStorage.savePhoto(photoRecord.dataUrl);
+      }
 
-      const sensorPayload: any = {
+      await offlineStorage.enqueueItem('SENSOR_READING', {
         device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
-        ammonia: ammoniaNum,
-        temperature: isNaN(tempNum) ? null : tempNum,
-        humidity: isNaN(humNum) ? null : humNum,
-        battery: isNaN(battNum) ? 100 : battNum,
-        status,
-        grid_cell_id: selectedCellId,
+        ammonia: parseFloat(ammonia) || 0,
+        temperature: parseFloat(temperature) || 0,
+        humidity: parseFloat(humidity) || 0,
+        battery: parseFloat(battery) || 100,
+        status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
         latitude: cellLat,
         longitude: cellLng,
         submitted_by: userId,
