@@ -313,3 +313,38 @@ const Register: React.FC = () => {
                 )}
               </IonCardHeader>
               <IonCardContent>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <IonButton fill="clear" onClick={() => setShowVerificationModal(false)}>Cancel</IonButton>
+                  <IonButton color="primary" onClick={doRegister} disabled={loading}>
+                    {loading ? (
+                      <>
+                        <IonSpinner name="crescent" />
+                        &nbsp;Creating...
+                      </>
+                    ) : (
+                      'Confirm'
+                    )}
+                  </IonButton>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          </IonContent>
+        </IonModal>
+
+        {/* SUCCESS MODAL */}
+        <IonModal isOpen={showSuccessModal} onDidDismiss={() => setShowSuccessModal(false)}>
+          <IonContent className="ion-padding" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', textAlign: 'center' }}>
+            <IonTitle style={{ fontSize: '28px', marginBottom: '16px' }}>Registration Successful 🎉</IonTitle>
+            <IonText>
+              <p style={{ fontSize: '18px' }}>Your account has been created successfully.</p>
+              <p style={{ fontSize: '16px', color: 'gray' }}>Please check your email to verify your account.</p>
+            </IonText>
+            <IonButton 
+              color="primary" 
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate('/login');
+              }}
+              style={{ marginTop: '24px' }}
+            >
+              Go to Login
