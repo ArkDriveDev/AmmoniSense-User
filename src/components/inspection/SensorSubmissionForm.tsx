@@ -347,3 +347,39 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         .insert([sensorPayload])
         .select('id')
         .single();
+
+      if (sensorError) {
+        throw new Error('Supabase insert sensor_data error: ' + sensorError.message);
+      }
+
+      const sensorDataId = insertedSensorData?.id;
+
+      if (photoRecord?.id && sensorDataId) {
+        await step4_markPhotoAsUsed(photoRecord.id, sensorDataId);
+      }
+
+      setToastMsg(`🎉 Inspection Success! Sensor reading & photo fully submitted & linked!`);
+      setToastColor('success');
+      setShowToast(true);
+      offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
+
+      setPhotoRecord(null);
+      setCurrentStep(1);
+
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      console.warn('Network error or offline mode during inspection submit, queueing item:', err);
+
+      let photoStoreId: string | undefined = undefined;
+      if (photoRecord?.dataUrl) {
+        photoStoreId = await offlineStorage.savePhoto(photoRecord.dataUrl);
+      }
+
+      await offlineStorage.enqueueItem('SENSOR_READING', {
+        device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
+        ammonia: parseFloat(ammonia) || 0,
+        temperature: parseFloat(temperature) || 0,
+        humidity: parseFloat(humidity) || 0,
+        battery: parseFloat(battery) || 100,
+        status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
+        latitude: cellLat,
