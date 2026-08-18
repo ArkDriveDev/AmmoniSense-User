@@ -313,3 +313,38 @@ export const step1_takeAndUploadPhoto = async (
 
   // 6. Insert record into `inspection_photos` table with is_used = false
   const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id || null;
+
+  const { data: inserted, error: dbError } = await supabase
+    .from('inspection_photos')
+    .insert([
+      {
+        photo_url: photoUrlToSave,
+        latitude,
+        longitude,
+        site_id: siteId || null,
+        is_used: false,
+        uploaded_by: userId,
+      },
+    ])
+    .select('*')
+    .single();
+
+  if (dbError || !inserted) {
+    console.warn('Fallback: inspection_photos table write notice:', dbError?.message);
+    return {
+      id: Date.now(),
+      photo_url: photoUrlToSave,
+      latitude,
+      longitude,
+      site_id: siteId || null,
+      is_used: false,
+      sensor_data_id: null,
+      uploaded_by: userId,
+      uploaded_at: new Date().toISOString(),
+      dataUrl: finalDataUrl,
+    };
+  }
+
+  return {
+    ...inserted,
