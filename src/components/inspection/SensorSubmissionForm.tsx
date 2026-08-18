@@ -286,18 +286,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         setToastColor('success');
         setShowToast(true);
       } else {
-      setToastColor('danger');
+        setToastMsg('No BLE Central hardware devices found. Ensure device is advertising Service 0000ffd0...');
+        setToastColor('warning');
+        setShowToast(true);
+      }
+    } catch (err: any) {
+      setToastMsg('BLE Bluetooth connection failed: ' + (err.message || 'Error'));
+      setToastColor('warning');
       setShowToast(true);
     } finally {
-      setStep1Loading(false);
+      setBtConnecting(false);
     }
   };
-
-  // =========================================================
-  // STEP 2: SELECT GRID CELL
-  // =========================================================
-  const handleStep2_SelectCell = async (cellId: string, lat: number, lng: number) => {
-    setSelectedCellId(cellId);
     setCellLat(lat);
     setCellLng(lng);
 
