@@ -514,18 +514,18 @@ export default function UserMap() {
           <div
             style={{
               background: 'rgba(255, 255, 255, 0.95)',
-              closeBottomSheet();
-              setSelectedPhotoTag(tag);
+              backdropFilter: 'blur(8px)',
+              borderRadius: '16px',
+              boxShadow: '0 4px 20px rgba(15, 60, 92, 0.18)',
+              padding: '2px 8px',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
             }}
-          />
-        )}
-
-        {/* Floating Right Control Action Buttons */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '32px',
-            right: '16px',
+          >
+            <IonSearchbar
+              value={searchText}
+              onIonInput={(e) => setSearchText(e.detail.value!)}
+              placeholder="Search site name, code, or address..."
+              showClearButton="always"
             zIndex: 1000,
             display: 'flex',
             flexDirection: 'column',
