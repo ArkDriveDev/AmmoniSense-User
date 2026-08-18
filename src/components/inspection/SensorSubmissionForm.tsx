@@ -538,18 +538,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-          })}
-        </IonRow>
-      </IonGrid>
-
-      {/* STEP 1: TAKE PHOTO CARD */}
-      {currentStep === 1 && (
-        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-          <IonCardHeader>
-            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IonIcon icon={cameraOutline} color="primary" />
-              STEP 1: Capture Photo & GPS
-            </IonCardTitle>
+                justifyContent: 'center',
+                backgroundColor: '#f8fafc',
+                margin: '16px 0'
+              }}>
+                <IonIcon icon={cameraOutline} style={{ fontSize: '48px', color: '#94a3b8', marginBottom: '8px' }} />
+                <IonButton color="primary" onClick={handleStep1_TakePhoto} disabled={step1Loading}>
+                  {step1Loading ? (
+                    <>
+                      <IonSpinner name="crescent" />
+                      &nbsp;Capturing & Uploading...
+                    </>
+                  ) : (
           </IonCardHeader>
           <IonCardContent>
             <p style={{ fontSize: '14px', color: '#64748b', marginTop: 0 }}>
