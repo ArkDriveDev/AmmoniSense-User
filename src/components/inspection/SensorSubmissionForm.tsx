@@ -243,3 +243,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setToastMsg('Please select or create a monitoring site first before taking an inspection photo.');
       setToastColor('warning');
       setShowToast(true);
+      return;
+    }
+    setStep1Loading(true);
+    try {
+      const record = await step1_takeAndUploadPhoto(
+        selectedSiteId || undefined,
+        selectedSite?.site_name || 'MENRO Site'
+      );
+
+      setPhotoRecord(record);
+      setCellLat(record.latitude);
+      setCellLng(record.longitude);
+
+      setToastMsg(`Step 1 Complete! Inspection photo uploaded & GPS captured.`);
+      setToastColor('success');
+      setShowToast(true);
+
+      setCurrentStep(2);
+    } catch (err: any) {
+      console.error('Step 1 Error:', err);
+      setToastMsg('Step 1 Photo Capture Failed: ' + (err.message || 'Error'));
+      setToastColor('danger');
+      setShowToast(true);
+    } finally {
+      setStep1Loading(false);
+    }
+  };
+
+  // =========================================================
+  // STEP 2: CONNECT ESP32 BLUETOOTH / READ SENSOR
+  // =========================================================
+  const handleStep2_ConnectBluetooth = async () => {
+    setBtConnecting(true);
+    try {
+      const devices = await bleCentralService.scanForDevices();
