@@ -138,3 +138,37 @@ class OfflineStorageService {
   // ==========================================
 
   async enqueueItem(
+    type: QueueItem['type'],
+    payload: any,
+    photoStoreId?: string
+  ): Promise<QueueItem> {
+    const db = await this.initDB();
+    const item: QueueItem = {
+      id: `queue_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      type,
+      payload,
+      photoStoreId,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+      retryCount: 0,
+    };
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+      const store = tx.objectStore(QUEUE_STORE);
+      const req = store.add(item);
+      req.onsuccess = () => resolve(item);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getQueue(): Promise<QueueItem[]> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readonly');
+      const store = tx.objectStore(QUEUE_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
