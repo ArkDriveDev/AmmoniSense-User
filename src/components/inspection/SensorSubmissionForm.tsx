@@ -757,33 +757,3 @@ export default SensorSubmissionForm;
                 <IonItem lines="full">
                   <IonLabel position="stacked">Humidity (%)</IonLabel>
                   <IonInput type="number" value={humidity} onIonChange={e => setHumidity(e.detail.value!)} />
-                </IonItem>
-              </IonCol>
-              <IonCol size="4">
-                <IonItem lines="full">
-                  <IonLabel position="stacked">Battery (%)</IonLabel>
-                  <IonInput type="number" value={battery} onIonChange={e => setBattery(e.detail.value!)} />
-                </IonItem>
-              </IonCol>
-            </IonRow>
-
-            <IonButton expand="block" color="primary" onClick={() => setCurrentStep(4)} style={{ marginTop: '16px' }}>
-              Proceed to STEP 4: Submit All ➔
-            </IonButton>
-          </IonCardContent>
-        </IonCard>
-      )}
-
-      {/* STEP 4: SUBMIT ALL DATA CARD */}
-      {currentStep === 4 && (
-        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-          <IonCardHeader>
-            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IonIcon icon={cloudUploadOutline} color="success" />
-              STEP 4: Review & Submit All Inspection Data
-            </IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <div><b>Site:</b> {selectedSite?.site_name || 'N/A'}</div>
-              <div><b>Grid Cell:</b> <IonBadge color="primary">{selectedCellId}</IonBadge></div>
