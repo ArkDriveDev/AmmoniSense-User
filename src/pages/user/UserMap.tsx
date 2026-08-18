@@ -754,18 +754,18 @@ export default function UserMap() {
                     <strong style={{ color: '#0f172a' }}>
                       {selectedReading.temperature ? `${selectedReading.temperature}°C` : 'N/A'} / {selectedReading.humidity ? `${selectedReading.humidity}%` : 'N/A'}
                     </strong>
-                    <IonIcon icon={eyeOutline} slot="start" /> Full Photo View
-                  </IonButton>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Recorded At</span>
+                    <strong style={{ color: '#0f172a' }}>{new Date(selectedReading.created_at).toLocaleString()}</strong>
+                  </div>
+                </div>
+
+                {selectedReading.photo_url && (
                   <IonButton
                     expand="block"
-                    className="btn-ammoni btn-primary"
-                    style={{ flex: 1 }}
-                    onClick={() => {
-                      closeBottomSheet();
-                      navigate('/my-sensor-data');
-                    }}
-                  >
-                    Complete Inspection ➔
+                    fill="outline"
+                    onClick={() => setShowPhotoModal(true)}
                   </IonButton>
                 </div>
               </div>
