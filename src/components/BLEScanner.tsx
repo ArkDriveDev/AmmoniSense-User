@@ -178,3 +178,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
             borderRadius: '12px',
             padding: '12px 14px',
             marginBottom: '14px',
+            border: '1px solid rgba(226, 232, 240, 0.9)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          }}
+        >
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+            Permission Telemetry & Status
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <IonBadge
+              style={{
+                background: permStatus?.bluetoothEnabled ? '#ecfdf5' : '#fef2f2',
+                color: permStatus?.bluetoothEnabled ? '#047857' : '#b91c1c',
+                padding: '6px 10px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '11px',
+              }}
+            >
+              <IonIcon icon={bluetoothOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+              BLE Hardware: {permStatus?.bluetoothEnabled ? 'Enabled' : 'Disabled / Restricted'}
