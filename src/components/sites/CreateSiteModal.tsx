@@ -33,3 +33,38 @@ import {
   warningOutline,
   navigateOutline
 } from 'ionicons/icons';
+import { Geolocation } from '@capacitor/geolocation';
+import { captureSitePhoto, InspectionPhotoRecord } from '../../utils/photoUtils';
+import { registerSiteWithPhoto } from '../../services/siteService';
+import { supabase } from '../../services/supabase';
+import offlineStorage, { SITE_DRAFT_KEY } from '../../services/OfflineStorageService';
+import syncService from '../../services/SyncService';
+import { GpsSource, OfflineSite } from '../../types/site';
+import PolygonPreview from '../map/PolygonPreview';
+
+export interface CreateSiteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSiteCreated?: (newSite: any) => void;
+  editSite?: OfflineSite | null;
+}
+
+export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClose, onSiteCreated, editSite }) => {
+  const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [capturingPhoto, setCapturingPhoto] = useState(false);
+
+  const [photoRecord, setPhotoRecord] = useState<InspectionPhotoRecord | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [gpsSource, setGpsSource] = useState<GpsSource>('device_gps');
+
+  const [form, setForm] = useState({
+    site_code: `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
+    site_name: '',
+    site_type: 'Piggery',
+    address: '',
+    area_size_hectares: '1.0',
+    current_latitude: 8.3683,
+    current_longitude: 124.8637,
+    notes: '',
+  });
