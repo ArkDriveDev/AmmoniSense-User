@@ -138,3 +138,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     const color = drawingMode === 'odor_zone' ? '#f97316' : '#22c55e'; // Orange for Odor Zone, Green for Community
 
     // Render vertex markers
+    vertices.forEach((pt, index) => {
+      const marker = L.circleMarker(pt, {
+        radius: 6,
+        fillColor: color,
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 1,
+      }).bindTooltip(`Vertex #${index + 1}`);
+
+      marker.addTo(map);
+      markersRef.current.push(marker as any);
+    });
+
+    // Render connecting polyline / closed polygon preview
+    if (vertices.length >= 3) {
+      const poly = L.polygon(vertices, {
+        color: color,
+        weight: 2.5,
+        fillColor: color,
+        fillOpacity: 0.25,
