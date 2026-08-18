@@ -68,3 +68,40 @@ export default function AppRouter() {
 
       <Route path="/my-piggeries" element={<Navigate to="/monitoring-sites" replace />} />
       <Route
+        path="/monitoring-sites"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <UserSites />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="/my-devices" element={<Navigate to="/devices" replace />} />
+      <Route
+        path="/devices"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <UserDevices />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/my-sensor-data"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <UserSensorData />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/sensor-data" element={<Navigate to="/my-sensor-data" replace />} />
+      <Route path="/my-alerts" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
+}
