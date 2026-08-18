@@ -370,18 +370,18 @@ export default function UserMap() {
         serverPhotoTags = data
           .map((p: any) => ({
             id: p.id,
-      tag.id.toString().includes(query)
-    );
-  });
-
-  // Filter sites by search query
-  const filteredSites = sites.filter((site) => {
-    if (!searchText.trim()) return true;
-    const query = searchText.toLowerCase();
-    return (
-      site.site_name.toLowerCase().includes(query) ||
-      site.site_code?.toLowerCase().includes(query) ||
-      site.address?.toLowerCase().includes(query) ||
+            latitude: p.latitude || 8.3683,
+            longitude: p.longitude || 124.8637,
+            photo_url: p.photo_url,
+            grid_cell_id: p.grid_cell_id,
+            site_id: p.site_id,
+            site_name: 'Inspection Site',
+            is_used: p.is_used,
+            uploaded_at: p.uploaded_at,
+            is_pending_sync: false,
+          }))
+          .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
+      }
       site.owner_name?.toLowerCase().includes(query)
     );
   });
