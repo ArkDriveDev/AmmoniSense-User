@@ -102,3 +102,39 @@ export default function UserMap() {
 
     window.addEventListener('site_deleted', handleSiteChanged);
     window.addEventListener('site_synced', handleSiteChanged);
+
+    return () => {
+      window.removeEventListener('site_deleted', handleSiteChanged);
+      window.removeEventListener('site_synced', handleSiteChanged);
+    };
+  }, []);
+
+  const loadMapData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchSites(),
+      fetchReadings(),
+      fetchPhotoTags(),
+      loadPolygons()
+    ]);
+    setLoading(false);
+  };
+
+  const loadPolygons = async () => {
+    try {
+      const [zones, comms] = await Promise.all([
+        fetchOdorZones(),
+        fetchCommunityPolygons()
+      ]);
+      setOdorZones(zones);
+      setCommunityPolygons(comms);
+    } catch (e) {
+      console.warn('Error loading polygons in UserMap:', e);
+    }
+  };
+
+  const resolveSiteCoords = (latRaw?: any, lngRaw?: any) => {
+    let lat = typeof latRaw === 'number' ? latRaw : parseFloat(latRaw);
+    let lng = typeof lngRaw === 'number' ? lngRaw : parseFloat(lngRaw);
+
+    if (isNaN(lat) || isNaN(lng) || !IS_IN_MANOLO_FORTICH(lat, lng)) {
