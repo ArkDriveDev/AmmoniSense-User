@@ -259,22 +259,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
             </div>
           </IonCardContent>
         </IonCard>
-
-        {/* Broadcast Action Button */}
-        <IonButton
-          expand="block"
-          color="primary"
-          size="large"
-          onClick={handleBroadcast}
-          disabled={isBroadcasting}
-          style={{ fontWeight: 700 }}
-        >
-          <IonIcon icon={radioOutline} slot="start" />
-          {isBroadcasting ? 'Broadcasting BLE Packet...' : 'Broadcast BLE Stream to Form'}
-        </IonButton>
-      </IonContent>
-    </IonModal>
-  );
-};
-
-export default BLESimulatorModal;
