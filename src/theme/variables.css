@@ -208,3 +208,38 @@ ion-button.btn-ammoni,
 .btn-secondary {
   --background: linear-gradient(135deg, #008B74 0%, #006E5C 100%);
   --color: #ffffff;
+}
+
+.btn-warning {
+  --background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  --color: #ffffff;
+}
+
+.btn-danger {
+  --background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  --color: #ffffff;
+}
+
+/* Status Badge Styles */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+}
+
+.status-badge.safe {
+  background-color: var(--ammoni-safe-bg);
+  border-color: var(--ammoni-safe-border);
+  color: var(--ammoni-safe-text);
+}
+
+.status-badge.warning {
+  background-color: var(--ammoni-warning-bg);
+  border-color: var(--ammoni-warning-border);
