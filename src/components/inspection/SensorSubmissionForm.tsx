@@ -418,3 +418,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 onIonChange={e => setSelectedSiteId(e.detail.value)}
               >
                 {sites.map(site => (
+                  <IonSelectOption key={site.id} value={site.id}>
+                    {site.site_name} ({site.site_code})
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+
+            <IonButton
+              fill="outline"
+              size="small"
+              color="primary"
+              onClick={() => setShowCreateSiteModal(true)}
+              style={{ marginLeft: '12px', marginTop: '12px' }}
+            >
+              <IonIcon icon={addOutline} slot="start" />
+              + New Site
+            </IonButton>
+          </div>
+        </IonCardContent>
+      </IonCard>
+
+      {/* 3-STEP WIZARD PROGRESS HEADER (No Grid Cells) */}
+      <IonGrid style={{ padding: 0, marginBottom: '16px' }}>
+        <IonRow>
+          {[
+            { num: 1, title: 'STEP 1: GPS Photo', icon: cameraOutline },
+            { num: 2, title: 'STEP 2: BLE Sensor', icon: bluetoothOutline },
+            { num: 3, title: 'STEP 3: Submit All', icon: cloudUploadOutline },
+          ].map(s => {
+            const isActive = currentStep === s.num;
+            const isDone = currentStep > s.num;
+            return (
+              <IonCol key={s.num} size="4">
+                <div
+                  onClick={() => {
