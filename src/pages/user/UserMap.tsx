@@ -978,3 +978,12 @@ export default function UserMap() {
 
         <IonToast
           isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMsg}
+          duration={3500}
+          position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
