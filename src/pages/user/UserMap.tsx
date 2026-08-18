@@ -202,18 +202,18 @@ export default function UserMap() {
             photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
             isOffline: true,
             is_pending_sync: true,
-          if (Array.isArray(lsArr)) {
-            lsOfflineFormatted = lsArr.map((os: any) => {
-              const coords = resolveSiteCoords(
-                os.current_latitude ?? os.latitude,
-                os.current_longitude ?? os.longitude
-              );
-              return {
-                id: os.id || `ls_${Date.now()}`,
-                site_code: os.site_code || 'LS_OFFLINE',
-                site_name: os.site_name || 'Offline Site',
-                site_type: os.site_type || 'Agricultural',
-                address: os.address || os.site_name,
+          };
+        });
+
+      // 2. Fetch from IndexedDB offline queue ('SITE_REGISTRATION')
+      let queuedOfflineFormatted: SiteMarkerData[] = [];
+      try {
+        const queue = await offlineStorage.getQueue();
+        queuedOfflineFormatted = queue
+          .filter((q) => q.type === 'SITE_REGISTRATION' && q.payload && !onlineCodes.has(q.payload.site_code))
+          .map((q) => {
+            const p = q.payload;
+            const coords = resolveSiteCoords(
                 latitude: coords.latitude,
                 longitude: coords.longitude,
                 grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
