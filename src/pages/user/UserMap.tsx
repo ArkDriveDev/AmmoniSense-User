@@ -733,3 +733,38 @@ export default function UserMap() {
                     </div>
                   </div>
                 </div>
+
+                {selectedReading.photo_url && (
+                  <div style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
+                    <img src={selectedReading.photo_url} alt="Reading Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Device UID</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedReading.device_uid || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Location</span>
+                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Temperature / Humidity</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {selectedReading.temperature ? `${selectedReading.temperature}°C` : 'N/A'} / {selectedReading.humidity ? `${selectedReading.humidity}%` : 'N/A'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Recorded At</span>
+                    <strong style={{ color: '#0f172a' }}>{new Date(selectedReading.created_at).toLocaleString()}</strong>
+                  </div>
+                </div>
+
+                {selectedReading.photo_url && (
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    onClick={() => setShowPhotoModal(true)}
+                  >
+                    <IonIcon icon={eyeOutline} slot="start" /> View Inspection Photo
