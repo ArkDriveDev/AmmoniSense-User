@@ -103,3 +103,38 @@ const Register: React.FC = () => {
           setShowToast(true);
           setLoading(false);
           return;
+        }
+        throw new Error('Account creation failed: ' + authError.message);
+      }
+
+      const user = authData.user ?? authData.session?.user;
+
+      if (!user) {
+        throw new Error('Failed to create user account');
+      }
+
+      // ============================================
+      // STEP 2: Upsert profile (INSERT OR UPDATE)
+      // ============================================
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: form.full_name,
+          role: 'environmental_inspector'
+        }, {
+          onConflict: 'id'
+        });
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw new Error('Profile creation failed: ' + profileError.message);
+      }
+
+      // ============================================
+      // STEP 3: Upsert site_owner (INSERT OR UPDATE)
+      // ============================================
+      const { error: ownerError } = await supabase
+        .from('site_owners')
+        .upsert({
+          owner_name: form.full_name,
