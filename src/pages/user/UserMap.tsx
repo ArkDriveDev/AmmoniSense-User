@@ -226,18 +226,18 @@ export default function UserMap() {
               address: p.address || p.site_name,
               latitude: coords.latitude,
               longitude: coords.longitude,
-        console.warn('Error reading localStorage offline_sites:', lsErr);
+              grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
+              owner_name: 'Inspector Owner',
+              photo_url: p.site_photo_url || p.photo_url,
+              isOffline: true,
+              is_pending_sync: true,
+            };
+          });
+      } catch (qErr) {
+        console.warn('Error fetching queued site registrations:', qErr);
       }
 
-      // Deduplicate all offline records by id
-      const offlineMap = new Map<string | number, SiteMarkerData>();
-      [...idbOfflineFormatted, ...queuedOfflineFormatted, ...lsOfflineFormatted].forEach((item) => {
-        offlineMap.set(item.id, item);
-      });
-      offlineFormatted = Array.from(offlineMap.values());
-    } catch (err) {
-      console.error('Error loading offline sites for map:', err);
-    }
+      // 3. Check localStorage fallback for 'offline_sites', purging synced/deleted
 
     // Combine offline sites and online sites, avoiding duplicates if online has synced an offline site ID
     const combinedMap = new Map<string | number, SiteMarkerData>();
