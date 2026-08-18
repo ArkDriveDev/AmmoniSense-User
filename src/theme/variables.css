@@ -173,3 +173,38 @@ ion-item.premium-input-item:focus-within {
 /* Premium List Items */
 ion-list.glass-list {
   background: transparent !important;
+}
+
+ion-list.glass-list ion-item {
+  --background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  margin-bottom: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+ion-list.glass-list ion-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(26, 54, 93, 0.1);
+}
+
+/* Buttons inside Premium Layout */
+ion-button.btn-ammoni,
+.btn-ammoni {
+  --min-height: 48px;
+  --border-radius: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(29, 93, 155, 0.2);
+}
+
+.btn-primary {
+  --background: linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%);
+  --color: #ffffff;
+}
+
+.btn-secondary {
+  --background: linear-gradient(135deg, #008B74 0%, #006E5C 100%);
+  --color: #ffffff;
