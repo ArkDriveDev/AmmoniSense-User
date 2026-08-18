@@ -706,18 +706,18 @@ export default function UserMap() {
                   >
                     <IonIcon icon={trashOutline} slot="icon-only" />
                   </IonButton>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>
-                        📷 Grid Cell: {selectedPhotoTag.grid_cell_id || 'Captured Tag'}
-                      </span>
-                      <IonBadge style={{ background: selectedPhotoTag.is_used ? '#6366f1' : '#8b5cf6', color: '#ffffff' }}>
-                        {selectedPhotoTag.is_used ? 'Step 1 Tag Submitted' : 'Step 1 Active Tag'}
-                      </IonBadge>
-                      {selectedPhotoTag.is_pending_sync && <PendingSyncBadge />}
-                    </div>
-                  </div>
                 </div>
+              </div>
+            )}
 
+            {/* SENSOR READING DETAILS */}
+            {selectedReading && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Sensor Reading Detail</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                      <span
                 {selectedPhotoTag.photo_url && (
                   <div style={{ width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
                     <img src={selectedPhotoTag.photo_url} alt="Inspection Photo Tag" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
