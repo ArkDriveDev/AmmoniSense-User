@@ -313,3 +313,37 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     setSubmitLoading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id || null;
+
+      const ammoniaNum = parseFloat(ammonia);
+      const tempNum = parseFloat(temperature);
+      const humNum = parseFloat(humidity);
+      const battNum = parseFloat(battery);
+
+      let status = 'LOW';
+      if (ammoniaNum > 70) status = 'HIGH';
+      else if (ammoniaNum > 40) status = 'MODERATE';
+
+      const sensorPayload: any = {
+        device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
+        ammonia: ammoniaNum,
+        temperature: isNaN(tempNum) ? null : tempNum,
+        humidity: isNaN(humNum) ? null : humNum,
+        battery: isNaN(battNum) ? 100 : battNum,
+        status,
+        latitude: cellLat,
+        longitude: cellLng,
+        submitted_by: userId,
+        photo_url: photoRecord?.photo_url || null,
+        inspection_photo_id: photoRecord?.id || null,
+      };
+
+      if (!syncService.isOnline()) {
+        throw new Error('OFFLINE_MODE');
+      }
+
+      const { data: insertedSensorData, error: sensorError } = await supabase
+        .from('sensor_data')
+        .insert([sensorPayload])
+        .select('id')
+        .single();
