@@ -1,18 +1,18 @@
 import React, { useEffect } from 'react';
 import L from 'leaflet';
-import { ReadingMarkerData, SiteMarkerData } from './FullMapView';
+import { OdorZone, CommunityPolygon } from '../../types/site';
 
 interface OdorZonePolygonLayerProps {
   map: L.Map | null;
-  readings?: ReadingMarkerData[];
-  sites?: SiteMarkerData[];
+  odorZones?: OdorZone[];
+  communityPolygons?: CommunityPolygon[];
   showOdorZones?: boolean;
+  showCommunities?: boolean;
 }
 
 export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
   map,
-  readings = [],
-  sites = [],
+  odorZones = [],
   showOdorZones = true,
 }) => {
   useEffect(() => {
