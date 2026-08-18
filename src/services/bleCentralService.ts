@@ -278,3 +278,23 @@ class BLECentralService {
    * Connect to actual hardware BLE Central Device and subscribe to 12-byte Float32 GATT Characteristic notifications
    */
   public async connectAndSubscribe(device: BLECentralDevice): Promise<void> {
+    this.activeDevice = device;
+    this.setState('connecting');
+
+    if (this.bluetoothDevice && this.bluetoothDevice.id === device.id) {
+      try {
+        const server = await this.bluetoothDevice.gatt.connect();
+        this.gattServer = server;
+        this.setState('subscribing');
+
+        const service = await server.getPrimaryService(BLECentralService.SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(BLECentralService.CHARACTERISTIC_UUID);
+
+        await characteristic.startNotifications();
+        this.setState('streaming');
+        device.connected = true;
+
+        characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
+          const value: DataView = event.target.value;
+          const reading = this.parse12ByteFloat32DataView(value, device.id, device.name, device.rssi);
+          if (reading) {
