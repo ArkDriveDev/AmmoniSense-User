@@ -348,3 +348,15 @@ class OfflineStorageService {
       if (lsStr) {
         const lsArr = JSON.parse(lsStr);
         if (Array.isArray(lsArr)) {
+          const filtered = lsArr.filter((s: any) => s.id !== id && s.temp_id !== id && s.site_code !== id);
+          localStorage.setItem('offline_sites', JSON.stringify(filtered));
+        }
+      }
+    } catch (lsErr) {
+      console.warn('Error removing site from localStorage offline_sites:', lsErr);
+    }
+  }
+}
+
+export const offlineStorage = new OfflineStorageService();
+export default offlineStorage;
