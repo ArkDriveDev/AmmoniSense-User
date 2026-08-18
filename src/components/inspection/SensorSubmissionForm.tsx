@@ -118,18 +118,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     const unsubCentral = bleCentralService.onTelemetry((telemetry: BLECentralReading) => {
       setAmmonia(telemetry.ammonia_ppm.toString());
       setTemperature(telemetry.temperature_c.toString());
-        setBleRssi(reading.rssi);
+      setHumidity(telemetry.humidity_pct.toString());
+      if (telemetry.device_name || telemetry.device_id) {
+        setSelectedDeviceUid(telemetry.device_name || telemetry.device_id);
       }
+      if (telemetry.rssi) setBleRssi(telemetry.rssi);
+      setBtConnected(true);
 
-      setToastMsg(`📡 BLE Telemetry Auto-Populated from ${reading.device_uid} (${reading.ammonia} ppm NH₃)`);
+      setToastMsg(`📡 BLE Central GATT Notification: NH₃ ${telemetry.ammonia_ppm} PPM`);
       setToastColor('success');
       setShowToast(true);
     });
 
-    return () => {
-      unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     if (selectedSiteId) {
