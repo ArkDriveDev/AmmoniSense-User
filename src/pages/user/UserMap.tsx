@@ -322,18 +322,18 @@ export default function UserMap() {
             device_uid: r.device_uid,
             created_at: r.created_at,
             photo_url: r.photo_url,
-            latitude: p.latitude || 8.3683,
-            longitude: p.longitude || 124.8637,
-            photo_url: p.photo_url,
-            grid_cell_id: p.grid_cell_id,
-            site_id: p.site_id,
-            site_name: 'Inspection Site',
-            is_used: p.is_used,
-            uploaded_at: p.uploaded_at,
             is_pending_sync: false,
           }))
-          .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
+          .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
       }
+    } catch (err) {
+      console.warn('Error fetching sensor data:', err);
+    }
+
+    try {
+      const queue = await offlineStorage.getQueue();
+      const offlineReadings: ReadingMarkerData[] = queue
+        .filter((q) => q.type === 'SENSOR_READING')
     } catch (err) {
       console.warn('Error fetching inspection photo tags:', err);
     }
