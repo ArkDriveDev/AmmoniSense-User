@@ -68,3 +68,38 @@
   --ion-color-light: #F8FAFC;
   --ion-color-light-rgb: 248, 250, 252;
   --ion-color-light-contrast: #0F172A;
+  --ion-color-light-contrast-rgb: 15, 23, 42;
+  --ion-color-light-shade: #E2E8F0;
+  --ion-color-light-tint: #FFFFFF;
+
+  /* Base Background & Text */
+  --ion-background-color: #F1F5F9;
+  --ion-background-color-rgb: 241, 245, 249;
+  --ion-text-color: #0F172A;
+  --ion-text-color-rgb: 15, 23, 42;
+  --ion-card-background: rgba(255, 255, 255, 0.9);
+  --ion-item-background: transparent;
+
+  /* Custom Ammonia Threshold Tokens */
+  --ammoni-safe-bg: #ECFDF5;
+  --ammoni-safe-border: #A7F3D0;
+  --ammoni-safe-text: #065F46;
+
+  --ammoni-warning-bg: #FFFBEB;
+  --ammoni-warning-border: #FDE68A;
+  --ammoni-warning-text: #92400E;
+
+  --ammoni-danger-bg: #FEF2F2;
+  --ammoni-danger-border: #FCA5A5;
+  --ammoni-danger-text: #991B1B;
+
+  --ammoni-offline-bg: #F1F5F9;
+  --ammoni-offline-border: #CBD5E1;
+  --ammoni-offline-text: #475569;
+}
+
+/* ==========================================================================
+   2. Premium Glass-morphism & Card Aesthetics (Matching Login Screen)
+   ========================================================================== */
+
+/* Global Ion Card Override */
