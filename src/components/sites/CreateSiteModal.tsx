@@ -243,3 +243,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         id: tempId,
         isOffline: true,
         isSynced: false,
+        site_code: form.site_code,
+        site_name: form.site_name,
+        site_type: form.site_type,
+        owner_id: null,
+        owner: {
+          owner_name: 'Inspector Owner',
+          contact_number: '',
+          email: '',
+          address: form.address || form.site_name,
+        },
+        current_latitude: form.current_latitude,
+        current_longitude: form.current_longitude,
+        address: form.address || form.site_name,
+        area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+        site_photo_url: photoPreview || photoRecord?.photo_url || '',
+        site_photo_thumbnail: photoPreview || photoRecord?.photo_url || '',
+        created_at: new Date().toISOString(),
+        created_by: userId,
+        notes: form.notes,
+        syncStatus: 'pending',
+        retryCount: 0,
+        lastModified: new Date().toISOString(),
+      };
+
+      await offlineStorage.saveOfflineSite(offlineSiteRecord);
+
+      await offlineStorage.enqueueItem('SITE_REGISTRATION', sitePayload);
+      offlineStorage.clearDraft(SITE_DRAFT_KEY);
+
+      setToastMsg(`📶 Offline Mode: Site "${form.site_name}" saved locally & queued for auto-sync!`);
+      setShowToast(true);
+
+      if (onSiteCreated) onSiteCreated(offlineSiteRecord);
+
+      setPhotoRecord(null);
