@@ -68,3 +68,38 @@ CREATE TABLE IF NOT EXISTS public.devices (
   status TEXT DEFAULT 'ACTIVE'::TEXT,
   installed_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID NULL,
+  CONSTRAINT devices_pkey PRIMARY KEY (id),
+  CONSTRAINT devices_device_uid_key UNIQUE (device_uid),
+  CONSTRAINT fk_devices_livestock FOREIGN KEY (livestock_id) REFERENCES livestock(id) ON DELETE CASCADE
+);
+
+-- 6. SENSOR_DATA
+CREATE TABLE IF NOT EXISTS public.sensor_data (
+  id BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+  device_uid TEXT NOT NULL,
+  ammonia DOUBLE PRECISION NULL,
+  temperature DOUBLE PRECISION NULL,
+  humidity DOUBLE PRECISION NULL,
+  battery DOUBLE PRECISION NULL,
+  status TEXT NULL,
+  grid_cell_id TEXT NULL,
+  latitude DOUBLE PRECISION NULL,
+  longitude DOUBLE PRECISION NULL,
+  submitted_by UUID NULL,
+  submitted_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT sensor_data_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_sensor_data_device FOREIGN KEY (device_uid) REFERENCES devices(device_uid) ON DELETE CASCADE,
+  CONSTRAINT fk_sensor_data_inspector FOREIGN KEY (submitted_by) REFERENCES profiles(id) ON DELETE SET NULL
+);
+
+-- 7. ACTIVITY_LOGS
+CREATE TABLE IF NOT EXISTS public.activity_logs (
+  id BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  action TEXT NOT NULL,
+  profile_id UUID NULL,
+  old_data JSONB NULL,
+  new_data JSONB NULL,
