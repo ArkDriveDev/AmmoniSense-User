@@ -94,7 +94,6 @@ export const registerSiteWithPhoto = async (
     if (locErr) {
       console.warn('Notice writing to site_locations:', locErr.message);
     }
-    }
     createdLocation = newLoc || locationPayload;
 
     // 4. Link & update inspection_photo if provided
@@ -106,6 +105,7 @@ export const registerSiteWithPhoto = async (
             site_id: createdSite.id,
             is_site_photo: true,
             is_used: true,
+          })
           })
           .eq('id', payload.photo_record_id)
           .select('*')
