@@ -394,18 +394,18 @@ export default function UserMap() {
           id: q.id,
           latitude: q.payload.latitude || 8.3683,
           longitude: q.payload.longitude || 124.8637,
-    );
-  });
+          photo_url: q.payload.photo_url,
+          grid_cell_id: q.payload.grid_cell_id,
+          site_id: q.payload.site_id || null,
+          site_name: 'Offline Inspection Tag',
+          is_used: false,
+          uploaded_at: q.timestamp,
+          is_pending_sync: true,
+        }))
+        .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
 
-  // Locate User GPS
-  const handleLocateUser = async () => {
-    setLocating(true);
-    try {
-      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-
-      if (IS_IN_MANOLO_FORTICH(lat, lng)) {
+      setPhotoTags([...offlinePhotoTags, ...serverPhotoTags]);
+    } catch (e) {
         setUserLocation({ lat, lng });
         setMapCenter({ lat, lng, zoom: 15 });
         setToastMsg('📍 Centered on your location in Manolo Fortich');
