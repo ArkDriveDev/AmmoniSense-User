@@ -237,3 +237,16 @@ export const saveCommunityPolygon = async (poly: CommunityPolygon): Promise<Comm
     .insert([payload])
     .select('*')
     .single();
+
+  if (error) {
+    throw new Error('Supabase save community_polygons error: ' + error.message);
+  }
+  return data;
+};
+
+/**
+ * Delete a Monitoring Site from Supabase, IndexedDB, and localStorage.
+ * Dispatches 'site_deleted' event for automatic UI/map refresh.
+ */
+export const deleteSite = async (siteId: string | number): Promise<void> => {
+  const strId = String(siteId);
