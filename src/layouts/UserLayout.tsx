@@ -172,3 +172,39 @@ export default function UserLayout({ children }: any) {
               <IonIcon icon={businessOutline} slot="start" />
               <IonLabel>Monitoring Sites</IonLabel>
             </IonItem>
+
+            <IonItem 
+              button 
+              onClick={() => navigate('/devices')}
+              color={isActive('/devices') || isActive('/my-devices') ? 'primary' : undefined}
+              style={isActive('/devices') || isActive('/my-devices') ? { 
+                borderLeft: '4px solid var(--ion-color-primary)',
+                fontWeight: 'bold'
+              } : {}}
+            >
+              <IonIcon icon={hardwareChipOutline} slot="start" />
+              <IonLabel>Devices</IonLabel>
+            </IonItem>
+
+            <IonItem 
+              button 
+              onClick={() => navigate('/my-sensor-data')}
+              color={isActive('/my-sensor-data') || isActive('/sensor-data') ? 'primary' : undefined}
+              style={isActive('/my-sensor-data') || isActive('/sensor-data') ? { 
+                borderLeft: '4px solid var(--ion-color-primary)',
+                fontWeight: 'bold'
+              } : {}}
+            >
+              <IonIcon icon={barChartOutline} slot="start" />
+              <IonLabel>Sensor Data</IonLabel>
+            </IonItem>
+
+            <IonItem 
+              button 
+              onClick={logout}
+              style={{ marginTop: '8px' }}
+            >
+              <IonIcon icon={logOutOutline} slot="start" />
+              <IonLabel color="danger">Logout</IonLabel>
+            </IonItem>
+          </IonList>
