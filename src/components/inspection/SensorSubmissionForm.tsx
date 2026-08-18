@@ -155,17 +155,17 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     };
   }, []);
 
-      const { data: owners } = await supabase
-        .from('site_owners')
-        .select('id')
-        .eq('created_by', userId);
-
-      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
-
-      let query = supabase.from('monitoring_sites').select('*');
-      if (ownerId) {
-        query = query.eq('owner_id', ownerId);
+  useEffect(() => {
+    if (selectedSiteId) {
+      const site = sites.find(s => s.id === selectedSiteId) || null;
+      setSelectedSite(site);
+      const siteLat = site?.current_latitude ?? site?.latitude;
+      const siteLng = site?.current_longitude ?? site?.longitude;
+      if (siteLat && siteLng && !photoRecord) {
+        setCellLat(siteLat);
+        setCellLng(siteLng);
       }
+      fetchDevicesForSite(selectedSiteId);
 
       let onlineSites: any[] = [];
       const { data, error } = await query;
