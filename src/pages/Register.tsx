@@ -348,3 +348,22 @@ const Register: React.FC = () => {
               style={{ marginTop: '24px' }}
             >
               Go to Login
+            </IonButton>
+          </IonContent>
+        </IonModal>
+
+        {/* TOAST NOTIFICATION */}
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMessage}
+          duration={5000}
+          color={toastColor}
+          position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+};
+
+export default Register;
