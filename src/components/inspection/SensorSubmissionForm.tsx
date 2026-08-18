@@ -454,18 +454,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 <div
                   onClick={() => {
                     if (s.num <= currentStep || (s.num === 2 && photoRecord)) {
-    }
-  };
-
-  const [showCreateSiteModal, setShowCreateSiteModal] = useState<boolean>(false);
-
-  return (
-    <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-      {/* Site Selection Top Bar */}
-      <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-        <IonCardContent style={{ padding: '12px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <IonItem lines="none" style={{ flex: 1, padding: 0 }}>
+                      setCurrentStep(s.num as any);
+                    }
+                  }}
+                  style={{
+                    backgroundColor: isActive ? '#3880ff' : isDone ? '#2dd36f' : '#f1f5f9',
+                    color: isActive || isDone ? '#ffffff' : '#64748b',
+                    padding: '10px 8px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
               <IonLabel position="stacked" style={{ fontWeight: 'bold', fontSize: '13px', color: '#475569' }}>
                 MONITORING SITE
               </IonLabel>
