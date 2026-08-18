@@ -32,3 +32,39 @@ export const SyncStatusBanner: React.FC = () => {
     await syncService.syncAll();
     setSyncing(false);
   };
+
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '12px',
+        fontWeight: 600,
+        padding: '4px 10px',
+        borderRadius: '20px',
+        backgroundColor: !isOnline
+          ? '#fff7ed'
+          : pendingCount > 0
+          ? '#fefce8'
+          : '#f0fdf4',
+        border: `1px solid ${
+          !isOnline
+            ? '#fed7aa'
+            : pendingCount > 0
+            ? '#fef08a'
+            : '#bbf7d0'
+        }`,
+        color: !isOnline
+          ? '#c2410c'
+          : pendingCount > 0
+          ? '#854d0e'
+          : '#15803d',
+        transition: 'all 0.3s ease',
+      }}
+    >
+      <IonIcon
+        icon={
+          !isOnline
+            ? cloudOfflineOutline
+            : syncing
