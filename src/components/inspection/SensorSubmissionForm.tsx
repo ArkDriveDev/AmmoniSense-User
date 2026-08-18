@@ -334,18 +334,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         latitude: cellLat,
         longitude: cellLng,
         submitted_by: userId,
-        if (reading.rssi !== undefined) setBleRssi(reading.rssi);
+        photo_url: photoRecord?.photo_url || null,
+        inspection_photo_id: photoRecord?.id || null,
+      };
 
-        setToastMsg(`Step 3 Complete! Received BLE telemetry from ${reading.device_uid}.`);
-        setToastColor('success');
-        setShowToast(true);
+      if (!syncService.isOnline()) {
+        throw new Error('OFFLINE_MODE');
       }
-    } catch (err: any) {
-      setToastMsg('Bluetooth connection failed: ' + (err.message || 'Error'));
-      setToastColor('warning');
-      setShowToast(true);
-    } finally {
-      setBtConnecting(false);
+
+      const { data: insertedSensorData, error: sensorError } = await supabase
+        .from('sensor_data')
+        .insert([sensorPayload])
+        .select('id')
     }
   };
 
