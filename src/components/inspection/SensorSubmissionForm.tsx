@@ -21,7 +21,7 @@ import {
 } from '@ionic/react';
 import {
   cameraOutline,
-  locationOutline,
+  bluetoothOutline,
   bluetoothOutline,
   checkmarkCircleOutline,
   cloudUploadOutline,
