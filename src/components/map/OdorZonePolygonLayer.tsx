@@ -28,21 +28,21 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
       odorZones.forEach((zone) => {
         if (!zone.coordinates || zone.coordinates.length < 3) return;
 
-        if (nh3 > 20) {
-          // Critical Hazard Zone (>20 ppm NH3) -> 400m Red Dispersion Plume
-          const redPlume = L.circle(center, {
-            radius: 400,
-            fillColor: '#ef4444',
-            fillOpacity: 0.35,
-            color: '#dc2626',
-            weight: 2,
-            dashArray: '4, 4',
-          }).bindPopup(`
-            <div style="font-family: sans-serif; padding: 4px;">
-              <strong style="color: #dc2626; font-size: 14px;">🚨 Critical Odor Dispersion Zone</strong>
-              <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-                <b>Ammonia NH₃:</b> ${nh3} ppm<br/>
-                <b>Plume Radius:</b> 400 meters<br/>
+        const isCritical = zone.severity_level === 'CRITICAL';
+        const isHigh = zone.severity_level === 'HIGH';
+        const color = isCritical ? '#ef4444' : isHigh ? '#f97316' : '#eab308';
+
+        const poly = L.polygon(zone.coordinates, {
+          color: color,
+          weight: 2.5,
+          dashArray: '6, 6',
+          fillColor: color,
+          fillOpacity: 0.35,
+        });
+
+        poly.bindPopup(`
+          <div style="font-family: sans-serif; padding: 4px;">
+            <strong style="color: ${color}; font-size: 14px;">🟧 ${zone.zone_name}</strong>
                 <b>Risk:</b> Respiratory Irritation / Immediate Mitigation Required
               </div>
             </div>
