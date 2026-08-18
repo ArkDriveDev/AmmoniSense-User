@@ -663,3 +663,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   <IonInput type="number" value={battery} onIonChange={e => setBattery(e.detail.value!)} />
                 </IonItem>
               </IonCol>
+            </IonRow>
+
+            <IonButton expand="block" color="primary" onClick={() => setCurrentStep(3)} style={{ marginTop: '16px' }}>
+              Proceed to STEP 3: Submit All ➔
+            </IonButton>
+          </IonCardContent>
+        </IonCard>
+      )}
+
+      {/* STEP 3: SUBMIT ALL DATA CARD */}
+      {currentStep === 3 && (
+        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+          <IonCardHeader>
+            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonIcon icon={cloudUploadOutline} color="success" />
+              STEP 3: Review & Submit All Inspection Data
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div><b>Site:</b> {selectedSite?.site_name || 'N/A'}</div>
+              <div><b>Device:</b> {selectedDeviceUid}</div>
+              <div><b>GPS:</b> {cellLat.toFixed(5)}°, {cellLng.toFixed(5)}°</div>
+              <div><b>Ammonia NH₃:</b> <IonBadge color={parseFloat(ammonia) > 40 ? 'warning' : 'success'}>{ammonia} ppm</IonBadge></div>
+              <div><b>Photo Linked:</b> {photoRecord ? `Photo #${photoRecord.id}` : 'None'}</div>
+            </div>
+
+            <IonButton
+              expand="block"
+              color="success"
+              size="large"
+              onClick={handleStep3_SubmitAll}
+              disabled={submitLoading}
+              style={{ fontWeight: 'bold' }}
+            >
