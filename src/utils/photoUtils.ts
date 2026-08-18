@@ -173,3 +173,38 @@ export const addStampToImage = (
     img.onerror = (err) => reject(err);
     img.src = imageDataUrl;
   });
+};
+
+/**
+ * Embed EXIF Location and Metadata into JPEG DataURL
+ */
+export const embedExifData = (
+  imageDataUrl: string,
+  options: StampOptions
+): string => {
+  try {
+    const zeroth: Record<number, any> = {};
+    const exif: Record<number, any> = {};
+    const gps: Record<number, any> = {};
+
+    // Set EXIF DateTimeOriginal
+    const now = new Date();
+    const dateStr = now
+      .toISOString()
+      .replace(/-/g, ':')
+      .replace('T', ' ')
+      .substring(0, 19);
+
+    exif[piexif.ExifIFD.DateTimeOriginal] = dateStr;
+    exif[piexif.ExifIFD.UserComment] = `NH3:${options.ammoniaPpm || 0}`;
+
+    // Set GPS EXIF Data
+    const latRef = options.latitude >= 0 ? 'N' : 'S';
+    const lngRef = options.longitude >= 0 ? 'E' : 'W';
+
+    gps[piexif.GPSIFD.GPSLatitudeRef] = latRef;
+    gps[piexif.GPSIFD.GPSLatitude] = degToExifRational(options.latitude);
+    gps[piexif.GPSIFD.GPSLongitudeRef] = lngRef;
+    gps[piexif.GPSIFD.GPSLongitude] = degToExifRational(options.longitude);
+
+    zeroth[piexif.ImageIFD.Make] = 'MENRO AmmoniSense';
