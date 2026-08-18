@@ -418,3 +418,38 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         html: `
           <div style="
             position: relative;
+            width: 32px;
+            height: 32px;
+            background: ${markerColor};
+            border: 2.5px solid #ffffff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+          ">
+            <div style="
+              transform: rotate(45deg);
+              color: #ffffff;
+              font-size: 14px;
+              font-weight: bold;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">
+              📷
+            </div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+      });
+
+      if (isPending) {
+        const pulseCircle = L.circle([tag.latitude, tag.longitude], {
+          radius: 90,
+          fillColor: '#8b5cf6',
+          fillOpacity: 0.2,
+          stroke: false,
