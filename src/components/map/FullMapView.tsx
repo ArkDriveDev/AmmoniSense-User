@@ -207,3 +207,39 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         opacity: 1,
         fillOpacity: 0.9,
       });
+
+      const pulseCircle = L.circle([userLocation.lat, userLocation.lng], {
+        radius: 120,
+        fillColor: '#3b82f6',
+        fillOpacity: 0.15,
+        stroke: false,
+      });
+
+      userMarker.bindPopup('<div style="font-weight: bold; color: #1e3a8a;">📍 Your Location (Manolo Fortich)</div>');
+
+      userGroup.addLayer(pulseCircle);
+      userGroup.addLayer(userMarker);
+    }
+  }, [userLocation]);
+
+  // Render Municipal Boundary & Outer Mask Layer
+  useEffect(() => {
+    if (!mapRef.current || !boundaryLayerGroupRef.current) return;
+    const boundaryGroup = boundaryLayerGroupRef.current;
+    boundaryGroup.clearLayers();
+
+    if (showBoundaryLayer) {
+      // 1. Inverted Mask Polygon to obscure everything OUTSIDE Manolo Fortich
+      const maskPolygon = L.polygon([WORLD_MASK_RING, MANOLO_FORTICH_BOUNDARY], {
+        color: '#0f3c5c',
+        weight: 2,
+        fillColor: '#0f172a',
+        fillOpacity: 0.65, // Mask out outside regions so ONLY Manolo Fortich is highlighted
+        interactive: false,
+      });
+
+      // 2. Bright Boundary Line for Manolo Fortich
+      const polygon = L.polygon(MANOLO_FORTICH_BOUNDARY, {
+        color: '#10b981',
+        weight: 3,
+        dashArray: '8, 6',
