@@ -199,23 +199,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
             <div style={{ marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <span style={{ fontWeight: 700, fontSize: '14px', color: '#0F172A' }}>Ammonia Concentration (NH₃)</span>
-                <IonBadge style={{ background: severity.color, fontSize: '13px', fontWeight: 800 }}>
-                  {ammonia.toFixed(1)} ppm
-                </IonBadge>
-              </div>
-              <IonRange
-                min={0}
-                max={100}
-                step={0.5}
-                value={ammonia}
-                onIonChange={(e) => setAmmonia(e.detail.value as number)}
-                style={{ '--bar-background-active': severity.color }}
-              />
-            </div>
-
-            {/* Temperature Slider */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: '#475569' }}>Temperature</span>
-                <span style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>{temperature.toFixed(1)} °C</span>
-              </div>
