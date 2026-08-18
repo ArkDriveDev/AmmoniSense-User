@@ -478,18 +478,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   <span>{s.title}</span>
                 </div>
               </IonCol>
-                ))}
-              </IonSelect>
-            </IonItem>
+            );
+          })}
+        </IonRow>
+      </IonGrid>
 
-            <IonButton
-              fill="outline"
-              size="small"
-              color="primary"
-              onClick={() => setShowCreateSiteModal(true)}
-              style={{ marginLeft: '12px', marginTop: '12px' }}
-            >
-              <IonIcon icon={addOutline} slot="start" />
+      {/* STEP 1: TAKE PHOTO CARD */}
+      {currentStep === 1 && (
+        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+          <IonCardHeader>
+            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonIcon icon={cameraOutline} color="primary" />
+              STEP 1: Capture Photo & GPS
               + New Site
             </IonButton>
           </div>
