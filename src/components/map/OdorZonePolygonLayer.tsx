@@ -43,21 +43,21 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
         poly.bindPopup(`
           <div style="font-family: sans-serif; padding: 4px;">
             <strong style="color: ${color}; font-size: 14px;">🟧 ${zone.zone_name}</strong>
-                <b>Risk:</b> Respiratory Irritation / Immediate Mitigation Required
-              </div>
+            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
+              <b>Severity Level:</b> ${zone.severity_level}<br/>
+              <b>Ammonia NH₃:</b> ${zone.ammonia_ppm || 0} ppm<br/>
+              <b>Polygon Vertices:</b> ${zone.coordinates.length} points
             </div>
-          `);
-          odorLayerGroup.addLayer(redPlume);
-        } else if (nh3 > 10) {
-          // High Warning Zone (10-20 ppm NH3) -> 250m Orange Plume
-          const orangePlume = L.circle(center, {
-            radius: 250,
-            fillColor: '#f97316',
-            fillOpacity: 0.3,
-            color: '#ea580c',
-            weight: 2,
-          }).bindPopup(`
-            <div style="font-family: sans-serif; padding: 4px;">
+          </div>
+        `);
+
+        odorGroup.addLayer(poly);
+      });
+    }
+
+    // 2. Render Vulnerable Community Polygons (🟩 Green)
+    if (showCommunities) {
+      communityPolygons.forEach((comm) => {
               <strong style="color: #ea580c; font-size: 14px;">⚠️ High Odor Warning Zone</strong>
               <div style="margin-top: 4px; font-size: 12px; color: #475569;">
                 <b>Ammonia NH₃:</b> ${nh3} ppm<br/>
