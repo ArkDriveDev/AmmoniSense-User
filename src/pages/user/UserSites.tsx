@@ -243,3 +243,38 @@ export default function UserSites() {
 
                       <p style={{ margin: '4px 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <IonIcon icon={locationOutline} style={{ color: '#1D5D9B' }} />
+                        {s.location || 'No location address set'}
+                      </p>
+
+                      <div style={{ marginTop: '8px', fontSize: '12px', color: '#94A3B8', fontWeight: 600 }}>
+                        Code: <span style={{ fontFamily: 'monospace', color: '#0F172A' }}>{s.site_code}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {s.isOffline && (
+                          <IonButton
+                            size="small"
+                            fill="clear"
+                            color="primary"
+                            onClick={(e) => handleEditOfflineSite(e, s.offlineRecord)}
+                            title="Edit offline site"
+                          >
+                            <IonIcon icon={createOutline} slot="icon-only" />
+                          </IonButton>
+                        )}
+                        {!s.isOffline && (
+                          <IonBadge style={{ background: 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)', color: '#ffffff', padding: '6px 12px', borderRadius: '20px', fontWeight: 700 }}>
+                            <IonIcon icon={hardwareChipOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                            {deviceCounts[s.id] || 0} Devices
+                          </IonBadge>
+                        )}
+                        <IonButton
+                          size="small"
+                          fill="clear"
+                          color="danger"
+                          onClick={(e) => handleDeleteSite(e, s.id, s.site_name)}
+                          title="Delete site"
+                        >
+                          <IonIcon icon={trashOutline} slot="icon-only" />
