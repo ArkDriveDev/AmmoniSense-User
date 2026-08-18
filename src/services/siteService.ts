@@ -46,8 +46,9 @@ export const registerSiteWithPhoto = async (
         throw new Error('Failed to create site owner record: ' + (ownerErr?.message || 'Error'));
       }
       createdOwner = newOwner;
+    }
 
-    // 2. Insert into monitoring_sites
+    // 2. Insert into monitoring_sites (no grid cells)
     const sitePayload = {
       site_code: payload.site_code,
       site_name: payload.site_name,
@@ -55,7 +56,6 @@ export const registerSiteWithPhoto = async (
       owner_id: createdOwner.id,
       current_latitude: payload.latitude,
       current_longitude: payload.longitude,
-      current_grid_cell_id: payload.grid_cell_id || 'A1',
       address: payload.address || payload.site_name,
       area_size_hectares: payload.area_size_hectares || 1.0,
       notes: payload.notes || null,
