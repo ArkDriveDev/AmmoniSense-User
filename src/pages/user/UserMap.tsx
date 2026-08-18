@@ -68,3 +68,37 @@ export default function UserMap() {
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
+  const [showReadingsLayer, setShowReadingsLayer] = useState<boolean>(true);
+  const [showPhotoTagsLayer, setShowPhotoTagsLayer] = useState<boolean>(true);
+  const [showBoundaryLayer, setShowBoundaryLayer] = useState<boolean>(true);
+  const [showOdorZonesLayer, setShowOdorZonesLayer] = useState<boolean>(true);
+
+  // Navigation & Location
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom?: number }>(MANOLO_FORTICH_CENTER);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState<boolean>(false);
+
+  // Bottom Sheet Details State
+  const [selectedSite, setSelectedSite] = useState<SiteMarkerData | null>(null);
+  const [selectedReading, setSelectedReading] = useState<ReadingMarkerData | null>(null);
+  const [selectedPhotoTag, setSelectedPhotoTag] = useState<PhotoTagMarkerData | null>(null);
+
+  // Modals & UI Toggles
+  const [showLegend, setShowLegend] = useState<boolean>(false);
+  const [showLayerPopover, setShowLayerPopover] = useState<boolean>(false);
+  const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
+
+  // Toasts
+  const [toastMsg, setToastMsg] = useState<string>('');
+  const [showToast, setShowToast] = useState<boolean>(false);
+
+  useEffect(() => {
+    loadMapData();
+
+    const handleSiteChanged = () => {
+      fetchSites();
+    };
+
+    window.addEventListener('site_deleted', handleSiteChanged);
+    window.addEventListener('site_synced', handleSiteChanged);
