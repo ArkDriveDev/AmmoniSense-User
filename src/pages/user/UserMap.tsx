@@ -406,18 +406,18 @@ export default function UserMap() {
 
       setPhotoTags([...offlinePhotoTags, ...serverPhotoTags]);
     } catch (e) {
-        setUserLocation({ lat, lng });
-        setMapCenter({ lat, lng, zoom: 15 });
-        setToastMsg('📍 Centered on your location in Manolo Fortich');
-      } else {
-        setMapCenter(MANOLO_FORTICH_CENTER);
-        setToastMsg('📍 Your GPS location is outside Manolo Fortich. Map view is restricted to Manolo Fortich.');
-      }
-      setShowToast(true);
-    } catch (err: any) {
-      console.warn('Geolocation error:', err);
-      setToastMsg('Could not acquire current GPS location');
-      setShowToast(true);
+      console.error('Error reading offline photo tags queue:', e);
+      setPhotoTags(serverPhotoTags);
+    }
+  };
+
+  // Filter photo tags by search query
+  const filteredPhotoTags = photoTags.filter((tag) => {
+    if (!searchText.trim()) return true;
+    const query = searchText.toLowerCase();
+    return (
+      tag.site_name?.toLowerCase().includes(query) ||
+      tag.id.toString().includes(query)
     } finally {
       setLocating(false);
     }
