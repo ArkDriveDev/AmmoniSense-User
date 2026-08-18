@@ -298,3 +298,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
                         }}>
                           <IonIcon icon={hardwareChipOutline} style={{ color: '#1D5D9B', fontSize: '22px' }} />
                         </div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>{device.name}</h4>
+                          <span style={{ fontSize: '12px', color: '#64748B', fontFamily: 'monospace' }}>ID: {device.id}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                        <IonBadge style={{ background: 'rgba(0,0,0,0.06)', color: rssiColor, fontSize: '11px', fontWeight: 700 }}>
+                          <IonIcon icon={cellularOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                          {device.rssi || -60} dBm
+                        </IonBadge>
+
+                        <IonButton
+                          size="small"
+                          color="success"
+                          onClick={() => handleConnectDevice(device)}
+                          disabled={isConnecting}
+                          style={{ fontWeight: 700, margin: 0 }}
+                        >
+                          {isConnecting ? (
