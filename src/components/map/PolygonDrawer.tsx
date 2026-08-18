@@ -278,3 +278,38 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
                   Area: {surfaceAreaHa} ha
                 </IonBadge>
               )}
+            </div>
+          </div>
+        </IonCardContent>
+      </IonCard>
+
+      {/* Map Container */}
+      <div style={{ position: 'relative', width: '100%', height, borderRadius: '12px', overflow: 'hidden', border: '2px solid #CBD5E1' }}>
+        <div ref={mapContainerRef} style={{ width: '100%', height: '100%', cursor: 'crosshair' }} />
+
+        {/* Map Drawing Overlay Instruction Banner */}
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          zIndex: 1000,
+          background: 'rgba(15, 23, 42, 0.88)',
+          color: '#ffffff',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '11px',
+          fontWeight: 700,
+          backdropFilter: 'blur(6px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.2)'
+        }}>
+          📍 Tap map to add polygon boundary points ({vertices.length}/3+ needed)
+        </div>
+
+        {/* Drawing Action Buttons (Undo / Clear) */}
+        <div style={{ position: 'absolute', bottom: '12px', right: '12px', zIndex: 1000, display: 'flex', gap: '8px' }}>
+          <IonButton size="small" fill="solid" color="medium" onClick={handleUndo} disabled={vertices.length === 0}>
+            Undo Point
+          </IonButton>
+          <IonButton size="small" fill="solid" color="danger" onClick={handleClear} disabled={vertices.length === 0}>
+            <IonIcon icon={trashOutline} slot="start" />
