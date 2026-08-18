@@ -523,3 +523,23 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
               </>
             ) : (
               <>
+                <IonIcon icon={addCircleOutline} slot="start" />
+                Save & Register Monitoring Site
+              </>
+            )}
+          </IonButton>
+        </IonGrid>
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMsg}
+          duration={3500}
+          position="bottom"
+        />
+      </IonContent>
+    </IonModal>
+  );
+};
+
+export default CreateSiteModal;
