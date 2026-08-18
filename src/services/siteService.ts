@@ -1,15 +1,15 @@
 import { supabase } from './supabase';
-import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
+import { CreateSitePayload, SiteRegistrationResult, OdorZone, CommunityPolygon } from '../types/site';
+import offlineStorage from './OfflineStorageService';
 
 /**
- * Register Monitoring Site with photo & GPS in an orchestrated single transaction sequence with rollback cleanup on error.
+ * Register Monitoring Site with photo & GPS without grid cells.
  */
 export const registerSiteWithPhoto = async (
   payload: CreateSitePayload
 ): Promise<SiteRegistrationResult> => {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) throw new Error('User authentication required');
 
   let createdOwner: any = null;
   let createdSite: any = null;
