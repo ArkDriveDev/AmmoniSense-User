@@ -338,3 +338,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
                   </IonSelect>
                 </IonItem>
                 <IonItem lines="full" style={{ flex: 1 }}>
+                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Ammonia NH₃ (ppm)</IonLabel>
+                  <IonInput type="number" value={ammoniaPpm} onIonChange={(e) => setAmmoniaPpm(e.detail.value!)} />
+                </IonItem>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <IonItem lines="full" style={{ marginBottom: '8px' }}>
+                <IonLabel position="stacked" style={{ fontWeight: 700 }}>Community Name</IonLabel>
+                <IonInput value={communityName} onIonChange={(e) => setCommunityName(e.detail.value!)} placeholder="e.g. Tankulan Residential District" />
+              </IonItem>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <IonItem lines="full" style={{ flex: 1 }}>
+                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Community Type</IonLabel>
+                  <IonSelect value={communityType} onIonChange={(e) => setCommunityType(e.detail.value)}>
+                    <IonSelectOption value="Residential">Residential</IonSelectOption>
+                    <IonSelectOption value="School">School / Elementary</IonSelectOption>
+                    <IonSelectOption value="Hospital">Hospital / Health Center</IonSelectOption>
+                    <IonSelectOption value="Commercial">Commercial District</IonSelectOption>
+                    <IonSelectOption value="Agricultural">Agricultural Zone</IonSelectOption>
