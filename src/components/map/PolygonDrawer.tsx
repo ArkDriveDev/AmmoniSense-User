@@ -198,3 +198,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     }
 
     const areaSqMeters = Math.abs(area / 2);
+    const areaHa = areaSqMeters / 10000;
+    setSurfaceAreaHa(parseFloat(areaHa.toFixed(2)));
+  };
+
+  const handleUndo = () => {
+    setVertices((prev) => prev.slice(0, prev.length - 1));
+  };
+
+  const handleClear = () => {
+    setVertices([]);
+    setSurfaceAreaHa(0);
+  };
+
+  const handleSaveShape = () => {
+    if (vertices.length < 3) {
+      alert('Please click on the map to place at least 3 vertices to form a polygon.');
+      return;
+    }
+
+    if (drawingMode === 'odor_zone') {
