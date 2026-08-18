@@ -68,3 +68,38 @@ export const captureImageWithCameraOrFallback = async (): Promise<string> => {
       reader.onerror = (error) => {
         if (document.body.contains(input)) document.body.removeChild(input);
         reject(error);
+      };
+      reader.readAsDataURL(file);
+    };
+
+    input.click();
+  });
+};
+
+// Convert decimal degrees to EXIF Rational format [[deg, 1], [min, 1], [sec*100, 100]]
+const degToExifRational = (deg: number): [[number, number], [number, number], [number, number]] => {
+  const absolute = Math.abs(deg);
+  const degrees = Math.floor(absolute);
+  const minutesNotTruncated = (absolute - degrees) * 60;
+  const minutes = Math.floor(minutesNotTruncated);
+  const seconds = Math.floor((minutesNotTruncated - minutes) * 60 * 100);
+
+  return [
+    [degrees, 1],
+    [minutes, 1],
+    [seconds, 100],
+  ];
+};
+
+/**
+ * Draw visible watermark / metadata stamp onto canvas
+ */
+export const addStampToImage = (
+  imageDataUrl: string,
+  options: StampOptions
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
