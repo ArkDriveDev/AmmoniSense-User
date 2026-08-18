@@ -59,23 +59,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
       setAmmonia(14.8);
       setTemperature(29.5);
       setHumidity(70.0);
-      setBattery(85);
-    } else if (preset === 'hazard') {
-      setAmmonia(54.2);
-      setTemperature(33.5);
-      setHumidity(82.0);
-      setBattery(74);
-    }
-  };
-
-  const handleBroadcast = () => {
-    setIsBroadcasting(true);
-    const reading: BLEReading = {
-      device_uid: deviceUid,
-      ammonia: parseFloat(ammonia.toFixed(1)),
-      temperature: parseFloat(temperature.toFixed(1)),
-      humidity: parseFloat(humidity.toFixed(1)),
-      battery,
-      rssi,
-      timestamp: new Date().toISOString()
-    };
