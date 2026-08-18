@@ -32,3 +32,39 @@ export interface ReadingMarkerData {
   photo_url?: string;
   is_pending_sync?: boolean;
 }
+
+export interface PhotoTagMarkerData {
+  id: string | number;
+  latitude: number;
+  longitude: number;
+  photo_url: string;
+  site_id?: number | null;
+  site_name?: string;
+  is_used?: boolean;
+  uploaded_at?: string;
+  is_pending_sync?: boolean;
+}
+
+interface FullMapViewProps {
+  sites?: SiteMarkerData[];
+  readings?: ReadingMarkerData[];
+  photoTags?: PhotoTagMarkerData[];
+  odorZones?: OdorZone[];
+  communityPolygons?: CommunityPolygon[];
+  showSitesLayer?: boolean;
+  showReadingsLayer?: boolean;
+  showPhotoTagsLayer?: boolean;
+  showBoundaryLayer?: boolean;
+  showOdorZonesLayer?: boolean;
+  onSelectSite?: (site: SiteMarkerData) => void;
+  onSelectReading?: (reading: ReadingMarkerData) => void;
+  onSelectPhotoTag?: (tag: PhotoTagMarkerData) => void;
+  centerLat?: number;
+  centerLng?: number;
+  zoom?: number;
+  userLocation?: { lat: number; lng: number } | null;
+  height?: string;
+}
+
+// Manolo Fortich Bounding Box Restriction
+export const MANOLO_FORTICH_BOUNDS: L.LatLngBoundsExpression = [
