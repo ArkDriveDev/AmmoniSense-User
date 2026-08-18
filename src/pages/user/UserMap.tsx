@@ -803,3 +803,38 @@ export default function UserMap() {
                     <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>
                   </div>
                   <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.latitude.toFixed(5)}°, {selectedPhotoTag.longitude.toFixed(5)}°</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Captured / Uploaded</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {selectedPhotoTag.uploaded_at ? new Date(selectedPhotoTag.uploaded_at).toLocaleString() : 'Recent'}
+                    </strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setShowPhotoModal(true);
+                    }}
+                  >
+                    <IonIcon icon={eyeOutline} slot="start" /> Full Photo View
+                  </IonButton>
+                  <IonButton
+                    expand="block"
+                    className="btn-ammoni btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      closeBottomSheet();
+                      navigate('/my-sensor-data');
+                    }}
+                  >
+                    Complete Inspection ➔
+                  </IonButton>
+                </div>
+              </div>
