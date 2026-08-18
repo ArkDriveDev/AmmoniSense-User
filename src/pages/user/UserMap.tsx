@@ -490,18 +490,18 @@ export default function UserMap() {
                 setShowLayerPopover(true);
               }}
               style={{ color: '#ffffff' }}
-          </div>
-        ) : (
-          <FullMapView
-            sites={filteredSites}
-            readings={filteredReadings}
-            photoTags={filteredPhotoTags}
-            showSitesLayer={showSitesLayer}
-            showReadingsLayer={showReadingsLayer}
-            showPhotoTagsLayer={showPhotoTagsLayer}
-            showBoundaryLayer={showBoundaryLayer}
-            showOdorZonesLayer={showOdorZonesLayer}
-            centerLat={mapCenter.lat}
+            >
+              <IonIcon icon={layersOutline} slot="icon-only" />
+            </IonButton>
+            <IonButton onClick={loadMapData} style={{ color: '#ffffff' }}>
+              <IonIcon icon={refreshOutline} slot="icon-only" />
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent style={{ position: 'relative' }}>
+        {/* Floating Top Search Bar */}
             centerLng={mapCenter.lng}
             zoom={mapCenter.zoom}
             userLocation={userLocation}
