@@ -197,23 +197,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
         rectangle.on('click', () => {
           setActiveCellId(cellId);
           if (onSelectCell) {
-            onSelectCell(cellId, center.lat, center.lng);
-          }
-        });
-
-        gridGroup.addLayer(rectangle);
-        gridGroup.addLayer(labelMarker);
-      }
-    }
-
-    // 2. Render Sensor Readings Markers
-    readings.forEach((reading) => {
-      const color = getStatusColor(reading.ammonia);
-
-      const circleMarker = L.circleMarker([reading.latitude, reading.longitude], {
-        radius: 9,
-        fillColor: color,
-        color: '#ffffff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9,
