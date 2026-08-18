@@ -430,18 +430,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               size="small"
               color="primary"
               onClick={() => setShowCreateSiteModal(true)}
-        ammonia: parseFloat(ammonia) || 0,
-        temperature: parseFloat(temperature) || 0,
-        humidity: parseFloat(humidity) || 0,
-        battery: parseFloat(battery) || 100,
-        status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
-        grid_cell_id: selectedCellId,
-        latitude: cellLat,
-        longitude: cellLng,
-        photo_url: photoRecord?.photo_url || null,
-      }, photoStoreId);
+              style={{ marginLeft: '12px', marginTop: '12px' }}
+            >
+              <IonIcon icon={addOutline} slot="start" />
+              + New Site
+            </IonButton>
+          </div>
+        </IonCardContent>
+      </IonCard>
 
-      offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
+      {/* 3-STEP WIZARD PROGRESS HEADER (No Grid Cells) */}
+      <IonGrid style={{ padding: 0, marginBottom: '16px' }}>
+        <IonRow>
 
       setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync when online!`);
       setToastColor('warning');
