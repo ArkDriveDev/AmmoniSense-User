@@ -70,18 +70,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [selectedDeviceUid, setSelectedDeviceUid] = useState<string>('');
 
   // 3-Step State (No Grid Cells)
-  const [devices, setDevices] = useState<{ id: number; device_uid: string }[]>([]);
-  const [selectedDeviceUid, setSelectedDeviceUid] = useState<string>('');
-
-  // 4-Step State
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
   // STEP 1 State: Photo & GPS
   const [photoRecord, setPhotoRecord] = useState<InspectionPhotoRecord | null>(null);
   const [step1Loading, setStep1Loading] = useState<boolean>(false);
+  const [cellLat, setCellLat] = useState<number>(8.3683);
+  const [cellLng, setCellLng] = useState<number>(124.8637);
 
-  // STEP 2 State: Grid Cell
-  const [selectedCellId, setSelectedCellId] = useState<string>('B3');
+  // STEP 2 State: Sensor Bluetooth Readings
+  const [ammonia, setAmmonia] = useState<string>('24.5');
+  const [temperature, setTemperature] = useState<string>('28.5');
+  const [humidity, setHumidity] = useState<string>('68.0');
   const [cellLat, setCellLat] = useState<number>(14.5995);
   const [cellLng, setCellLng] = useState<number>(120.9842);
   const [previousReadings, setPreviousReadings] = useState<SensorReadingMarker[]>([]);
