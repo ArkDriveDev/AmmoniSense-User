@@ -874,18 +874,18 @@ export default function UserMap() {
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                 <input
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#f97316' }}></span>
-                  <b>10 - 20 PPM:</b> High Concentration (Orange)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
-                  <b>&gt; 20 PPM:</b> Critical Alert (Red)
-                </div>
-              </div>
-            </IonCard>
+                  type="checkbox"
+                  checked={showPhotoTagsLayer}
+                  onChange={(e) => setShowPhotoTagsLayer(e.target.checked)}
+                />
+                <b>Step 1 Photo Tags</b> (📷 Pins)
+              </label>
 
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showBoundaryLayer}
+                  onChange={(e) => setShowBoundaryLayer(e.target.checked)}
             <IonButton expand="block" className="btn-ammoni btn-primary" onClick={() => setShowLegend(false)}>
               Close Legend
             </IonButton>
