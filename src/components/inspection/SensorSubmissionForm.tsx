@@ -274,18 +274,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   // =========================================================
   // STEP 2: CONNECT ESP32 BLUETOOTH / READ SENSOR
   // =========================================================
-      setCellLat(record.latitude);
-      setCellLng(record.longitude);
-
-      setToastMsg(`Step 1 Complete! Photo uploaded & inserted into inspection_photos (is_used = false).`);
-      setToastColor('success');
-      setShowToast(true);
-
-      // Auto advance to Step 2
-      setCurrentStep(2);
-    } catch (err: any) {
-      console.error('Step 1 Error:', err);
-      setToastMsg('Step 1 Photo Capture Failed: ' + (err.message || 'Error'));
+  const handleStep2_ConnectBluetooth = async () => {
+    setBtConnecting(true);
+    try {
+      const devices = await bleCentralService.scanForDevices();
+      if (devices.length > 0) {
+        await bleCentralService.connectAndSubscribe(devices[0]);
+        setBtConnected(true);
+        setSelectedDeviceUid(devices[0].name || devices[0].id);
+        setToastMsg(`Step 2 Complete! Connected to BLE Central device ${devices[0].name}.`);
+        setToastColor('success');
+        setShowToast(true);
+      } else {
       setToastColor('danger');
       setShowToast(true);
     } finally {
