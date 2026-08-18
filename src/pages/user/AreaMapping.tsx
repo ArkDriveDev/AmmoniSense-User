@@ -68,3 +68,38 @@ export default function AreaMapping() {
   const handleRefresh = async (event: CustomEvent) => {
     await loadData();
     event.detail.complete();
+  };
+
+  const handleSaveOdorZone = async (zone: OdorZone) => {
+    try {
+      const saved = await saveOdorZone(zone);
+      setOdorZones((prev) => [saved, ...prev]);
+      setToastMsg(`🟧 Odor Zone "${zone.zone_name}" saved successfully!`);
+      setToastColor('success');
+      setShowToast(true);
+    } catch (err: any) {
+      console.warn('Error saving odor zone, saving locally:', err);
+      const localZone = { ...zone, id: `local_${Date.now()}`, is_pending_sync: true };
+      setOdorZones((prev) => [localZone, ...prev]);
+      setToastMsg(`📶 Saved Odor Zone locally for auto-sync.`);
+      setToastColor('warning');
+      setShowToast(true);
+    }
+  };
+
+  const handleSaveCommunity = async (comm: CommunityPolygon) => {
+    try {
+      const saved = await saveCommunityPolygon(comm);
+      setCommunityPolygons((prev) => [saved, ...prev]);
+      setToastMsg(`🟩 Community Polygon "${comm.community_name}" saved successfully!`);
+      setToastColor('success');
+      setShowToast(true);
+    } catch (err: any) {
+      console.warn('Error saving community polygon, saving locally:', err);
+      const localComm = { ...comm, id: `local_${Date.now()}`, is_pending_sync: true };
+      setCommunityPolygons((prev) => [localComm, ...prev]);
+      setToastMsg(`📶 Saved Community Polygon locally for auto-sync.`);
+      setToastColor('warning');
+      setShowToast(true);
+    }
+  };
