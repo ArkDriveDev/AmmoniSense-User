@@ -103,3 +103,25 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
       icon: labelIcon,
       interactive: false,
     });
+
+    layerGroup.addLayer(circle);
+    layerGroup.addLayer(centerMarker);
+    layerGroup.addLayer(labelMarker);
+
+    // Fit view to geometry with padding
+    try {
+      const bounds = circle.getBounds();
+      map.fitBounds(bounds.pad(0.35));
+    } catch {
+      map.setView([validLat, validLng], 15);
+    }
+  }, [validLat, validLng, validArea, color, fillColor]);
+
+  return (
+    <div className="polygon-preview-container" style={{ height }}>
+      <div ref={mapContainerRef} className="polygon-preview-map" />
+    </div>
+  );
+};
+
+export default PolygonPreview;
