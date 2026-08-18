@@ -97,22 +97,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
     markersLayerGroupRef.current = L.layerGroup().addTo(map);
 
     map.on('zoomend', () => {
-      setCurrentZoom(map.getZoom());
-    });
-
-    mapRef.current = map;
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, []);
-
-  // Update map center when props change
-  useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.setView([centerLat, centerLng], currentZoom);
-    }
-  }, [centerLat, centerLng]);
