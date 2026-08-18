@@ -130,18 +130,18 @@ export default function UserMap() {
       setCommunityPolygons(comms);
     } catch (e) {
       console.warn('Error loading polygons in UserMap:', e);
-        });
-      } else if (sitesErr) {
-        console.warn('Supabase fetch sites error:', sitesErr.message);
-      }
-    } catch (err) {
-      console.warn('Network error or offline mode while fetching monitoring sites from Supabase:', err);
     }
+  };
 
-    let offlineFormatted: SiteMarkerData[] = [];
-    try {
-      // 1. Fetch from IndexedDB offline_sites store
-      const offlineRecords = await offlineStorage.getOfflineSites();
+  const resolveSiteCoords = (latRaw?: any, lngRaw?: any) => {
+    let lat = typeof latRaw === 'number' ? latRaw : parseFloat(latRaw);
+    let lng = typeof lngRaw === 'number' ? lngRaw : parseFloat(lngRaw);
+
+    if (isNaN(lat) || isNaN(lng) || !IS_IN_MANOLO_FORTICH(lat, lng)) {
+      return { latitude: 8.3683, longitude: 124.8637 };
+    }
+    return { latitude: lat, longitude: lng };
+  };
       const idbOfflineFormatted: SiteMarkerData[] = offlineRecords.map((os: any) => {
         const coords = resolveSiteCoords(
           os.current_latitude ?? os.latitude,
