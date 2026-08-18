@@ -33,3 +33,38 @@
   --ion-color-tertiary-tint: #23547A;
 
   /* Success: Safe Operational Level (< 25 ppm NH3) */
+  --ion-color-success: #059669;
+  --ion-color-success-rgb: 5, 150, 105;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #047857;
+  --ion-color-success-tint: #10B981;
+
+  /* Warning: Ammonia Warning Threshold (25 - 50 ppm NH3) */
+  --ion-color-warning: #D97706;
+  --ion-color-warning-rgb: 217, 119, 6;
+  --ion-color-warning-contrast: #ffffff;
+  --ion-color-warning-contrast-rgb: 255, 255, 255;
+  --ion-color-warning-shade: #B45309;
+  --ion-color-warning-tint: #F59E0B;
+
+  /* Danger: Ammonia Hazard Level (> 50 ppm NH3) */
+  --ion-color-danger: #DC2626;
+  --ion-color-danger-rgb: 220, 38, 38;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #B91C1C;
+  --ion-color-danger-tint: #EF4444;
+
+  /* Medium / Neutral Surfaces & Muted Text */
+  --ion-color-medium: #64748B;
+  --ion-color-medium-rgb: 100, 116, 139;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #475569;
+  --ion-color-medium-tint: #94A3B8;
+
+  /* Light Surface Backgrounds */
+  --ion-color-light: #F8FAFC;
+  --ion-color-light-rgb: 248, 250, 252;
+  --ion-color-light-contrast: #0F172A;
