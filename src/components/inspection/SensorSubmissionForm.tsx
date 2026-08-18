@@ -208,3 +208,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       const allSites = [...offlineSitesList, ...onlineSites];
       if (allSites.length > 0) {
+        setSites(allSites);
+        setSelectedSiteId(allSites[0].id);
+      }
+    } catch (err) {
+      console.error('Error fetching sites:', err);
+    }
+  };
+
+  const fetchDevicesForSite = async (siteId: number) => {
+    try {
+      const { data } = await supabase
+        .from('devices')
+        .select('id, device_uid')
+        .eq('site_id', siteId);
+
+      if (data && data.length > 0) {
+        setDevices(data);
+        setSelectedDeviceUid(data[0].device_uid);
+      } else {
+        setDevices([]);
+        setSelectedDeviceUid('ESP32-AMMONIA-NODE-01');
+      }
+    } catch (err) {
+      console.error('Error fetching devices:', err);
+    }
+  };
+
+  // =========================================================
+  // STEP 1: TAKE PHOTO
+  // =========================================================
+  const handleStep1_TakePhoto = async () => {
+    if (!selectedSiteId) {
+      setToastMsg('Please select or create a monitoring site first before taking an inspection photo.');
+      setToastColor('warning');
+      setShowToast(true);
