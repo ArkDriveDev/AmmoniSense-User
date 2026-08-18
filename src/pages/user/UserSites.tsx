@@ -278,3 +278,26 @@ export default function UserSites() {
                           title="Delete site"
                         >
                           <IonIcon icon={trashOutline} slot="icon-only" />
+                        </IonButton>
+                      </div>
+                    </div>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            ))}
+          </div>
+        )}
+
+        <CreateSiteModal
+          isOpen={showCreateModal}
+          onClose={() => {
+            setShowCreateModal(false);
+            setEditingOfflineSite(null);
+          }}
+          onSiteCreated={() => fetchSites()}
+          editSite={editingOfflineSite}
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
