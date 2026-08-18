@@ -634,18 +634,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 </div>
               )}
             </div>
-            </IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <p style={{ fontSize: '14px', color: '#64748b', marginTop: 0 }}>
-              The map is automatically centered on your photo's captured GPS (<b>{cellLat.toFixed(5)}°, {cellLng.toFixed(5)}°</b>). Tap a grid cell to select it.
-            </p>
 
-            <SiteGridMap
-              centerLat={cellLat}
-              centerLng={cellLng}
-              siteName={selectedSite?.site_name || 'Monitoring Site'}
-              selectedCellId={selectedCellId}
+            <IonItem lines="full" style={{ marginBottom: '12px' }}>
+              <IonLabel position="stacked">Ammonia (NH₃) Reading (ppm)</IonLabel>
+              <IonInput
+                type="number"
+                value={ammonia}
+                onIonChange={e => setAmmonia(e.detail.value!)}
+              />
+            </IonItem>
+
+            <IonRow>
+              <IonCol size="4">
               onSelectCell={handleStep2_SelectCell}
               readings={previousReadings}
               height="380px"
