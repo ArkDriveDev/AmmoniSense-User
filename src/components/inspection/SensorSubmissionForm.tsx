@@ -383,3 +383,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         battery: parseFloat(battery) || 100,
         status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
         latitude: cellLat,
+        longitude: cellLng,
+        photo_url: photoRecord?.photo_url || null,
+      }, photoStoreId);
+
+      offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
+
+      setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync when online!`);
+      setToastColor('warning');
+      setShowToast(true);
+
+      setPhotoRecord(null);
+      setCurrentStep(1);
+
+      if (onSuccess) onSuccess();
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: '850px', margin: '0 auto' }}>
+      {/* Site Selection Top Bar */}
+      <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+        <IonCardContent style={{ padding: '12px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <IonItem lines="none" style={{ flex: 1, padding: 0 }}>
+              <IonLabel position="stacked" style={{ fontWeight: 'bold', fontSize: '13px', color: '#475569' }}>
+                MONITORING SITE
+              </IonLabel>
+              <IonSelect
+                value={selectedSiteId}
+                placeholder="Select Site"
+                onIonChange={e => setSelectedSiteId(e.detail.value)}
+              >
+                {sites.map(site => (
