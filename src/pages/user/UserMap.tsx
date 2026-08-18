@@ -421,7 +421,8 @@ export default function UserMap() {
     const query = searchText.toLowerCase();
     return (
       tag.site_name?.toLowerCase().includes(query) ||
-      tag.id.toString().includes(query)
+      tag.id.toString().includes(query) ||
+      tag.grid_cell_id?.toLowerCase().includes(query)
     );
   });
 
@@ -433,7 +434,8 @@ export default function UserMap() {
       site.site_name.toLowerCase().includes(query) ||
       site.site_code?.toLowerCase().includes(query) ||
       site.address?.toLowerCase().includes(query) ||
-      site.owner_name?.toLowerCase().includes(query)
+      site.owner_name?.toLowerCase().includes(query) ||
+      site.site_type?.toLowerCase().includes(query)
     );
   });
 
@@ -441,9 +443,12 @@ export default function UserMap() {
   const filteredReadings = readings.filter((reading) => {
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
+    const severity = getAmmoniaSeverityLabel(reading.ammonia).toLowerCase();
     return (
       reading.device_uid?.toLowerCase().includes(query) ||
-      reading.ammonia.toString().includes(query)
+      reading.ammonia.toString().includes(query) ||
+      reading.grid_cell_id?.toLowerCase().includes(query) ||
+      severity.includes(query)
     );
   });
 
@@ -893,6 +898,15 @@ export default function UserMap() {
                 />
                 <b>Manolo Fortich Boundary</b>
               </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showOdorZonesLayer}
+                  onChange={(e) => setShowOdorZonesLayer(e.target.checked)}
+                />
+                <b>Odor Zones & Communities</b> (Polygons)
+              </label>
             </div>
           </div>
         </IonPopover>
@@ -935,7 +949,7 @@ export default function UserMap() {
               </div>
             </IonCard>
 
-            <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
+            <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
                 Sensor Readings Ammonia Levels (PPM)
               </h4>
@@ -955,6 +969,26 @@ export default function UserMap() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
                   <b>&gt; 20 PPM:</b> Critical Alert (Red)
+                </div>
+              </div>
+            </IonCard>
+
+            <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '14px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
+                Odor Zones & Vulnerable Communities
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#ef4444' }}></span>
+                  <b>Critical Odor Zone</b> (Severe NH₃ plume boundary)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#f97316' }}></span>
+                  <b>High Odor Zone</b> (Moderate NH₃ plume boundary)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#10b981' }}></span>
+                  <b>Vulnerable Community</b> (Schools, Hospitals, Residential)
                 </div>
               </div>
             </IonCard>
