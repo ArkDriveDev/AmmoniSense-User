@@ -278,3 +278,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     setBtConnecting(true);
     try {
       const devices = await bleCentralService.scanForDevices();
+      if (devices.length > 0) {
+        await bleCentralService.connectAndSubscribe(devices[0]);
+        setBtConnected(true);
+        setSelectedDeviceUid(devices[0].name || devices[0].id);
+        setToastMsg(`Step 2 Complete! Connected to BLE Central device ${devices[0].name}.`);
+        setToastColor('success');
+        setShowToast(true);
+      } else {
+        setToastMsg('No BLE Central hardware devices found. Ensure device is advertising Service 0000ffd0...');
+        setToastColor('warning');
+        setShowToast(true);
+      }
+    } catch (err: any) {
+      setToastMsg('BLE Bluetooth connection failed: ' + (err.message || 'Error'));
+      setToastColor('warning');
+      setShowToast(true);
+    } finally {
+      setBtConnecting(false);
+    }
+  };
+
+  // =========================================================
+  // STEP 3: SUBMIT ALL DATA
+  // =========================================================
+  const handleStep3_SubmitAll = async () => {
+    if (!ammonia) {
+      setToastMsg('Please enter an ammonia reading');
+      setToastColor('warning');
+      setShowToast(true);
+      return;
+    }
+
+    setSubmitLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
