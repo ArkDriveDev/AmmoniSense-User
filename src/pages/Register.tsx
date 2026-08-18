@@ -173,3 +173,38 @@ const Register: React.FC = () => {
             <IonCol>
               <IonCard>
                 <IonCardContent>
+                  <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                    <IonTitle style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                      Create Account
+                    </IonTitle>
+                    <IonText color="medium">
+                      <p>Register as Environmental Inspector</p>
+                    </IonText>
+                  </div>
+
+                  <IonInput
+                    label="Full Name"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    placeholder="Enter your full name"
+                    value={form.full_name}
+                    onIonChange={(e) => setForm({ ...form, full_name: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
+
+                  <IonInput
+                    label="Email"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="email"
+                    placeholder="youremail@example.com"
+                    value={form.email}
+                    onIonChange={(e) => setForm({ ...form, email: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
+
+                  <IonInput
+                    label="Phone (Optional)"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="tel"
