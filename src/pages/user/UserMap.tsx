@@ -178,18 +178,18 @@ export default function UserMap() {
     const onlineCodes = new Set(onlineFormatted.map((s) => s.site_code).filter(Boolean));
 
     let offlineFormatted: SiteMarkerData[] = [];
-              id: q.id || `queue_${Date.now()}`,
-              site_code: p.site_code || 'QUEUED',
-              site_name: p.site_name || 'Unsubmitted Site',
-              site_type: p.site_type || 'Agricultural',
-              address: p.address || p.site_name,
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
-              owner_name: 'Inspector Owner',
-              photo_url: p.site_photo_url || p.photo_url,
-              isOffline: true,
-              is_pending_sync: true,
+    try {
+      // 1. Fetch from IndexedDB offline_sites store (filtering out deleted / synced items)
+      const offlineRecords = await offlineStorage.getOfflineSites();
+      const idbOfflineFormatted: SiteMarkerData[] = offlineRecords
+        .filter((os: any) => !os.isDeleted && !onlineCodes.has(os.site_code))
+        .map((os: any) => {
+          const coords = resolveSiteCoords(
+            os.current_latitude ?? os.latitude,
+            os.current_longitude ?? os.longitude
+          );
+
+          return {
             };
           });
       } catch (qErr) {
