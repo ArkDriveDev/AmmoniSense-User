@@ -208,3 +208,38 @@ export default function UserSites() {
                   justifyContent: 'center',
                   marginBottom: '16px'
                 }}>
+                  <IonIcon icon={businessOutline} style={{ fontSize: '32px', color: '#1D5D9B' }} />
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>No Sites Registered</h3>
+                <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 20px 0' }}>
+                  Register your first environmental monitoring site to start tracking ammonia levels.
+                </p>
+                <IonButton className="btn-ammoni btn-primary" expand="block" onClick={() => setShowCreateModal(true)}>
+                  <IonIcon icon={addOutline} slot="start" />
+                  Create Monitoring Site
+                </IonButton>
+              </IonCardContent>
+            </IonCard>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {sites.map((s) => (
+              <IonCard 
+                key={s.id} 
+                className="premium-card premium-card-accent" 
+                style={{ margin: 0, cursor: 'pointer' }}
+                onClick={() => !s.isOffline && navigate(`/devices?site=${s.id}`)}
+              >
+                <IonCardContent style={{ padding: '18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>{s.site_name}</h2>
+                        <IonBadge style={{ background: '#EBF3FA', color: '#1D5D9B', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                          {s.site_type}
+                        </IonBadge>
+                        {s.isOffline && <PendingSyncBadge />}
+                      </div>
+
+                      <p style={{ margin: '4px 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <IonIcon icon={locationOutline} style={{ color: '#1D5D9B' }} />
