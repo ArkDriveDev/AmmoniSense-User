@@ -502,18 +502,18 @@ export default function UserMap() {
 
       <IonContent style={{ position: 'relative' }}>
         {/* Floating Top Search Bar */}
-            centerLng={mapCenter.lng}
-            zoom={mapCenter.zoom}
-            userLocation={userLocation}
-            onSelectSite={(site) => {
-              closeBottomSheet();
-              setSelectedSite(site);
-            }}
-            onSelectReading={(reading) => {
-              closeBottomSheet();
-              setSelectedReading(reading);
-            }}
-            onSelectPhotoTag={(tag) => {
+        <div
+          style={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            right: '12px',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
               closeBottomSheet();
               setSelectedPhotoTag(tag);
             }}
