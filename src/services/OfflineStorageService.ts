@@ -172,3 +172,39 @@ class OfflineStorageService {
       req.onerror = () => reject(req.error);
     });
   }
+
+  async removeQueueItem(id: string): Promise<void> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+      const store = tx.objectStore(QUEUE_STORE);
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async updateQueueItemStatus(
+    id: string,
+    status: QueueItem['status'],
+    errorMsg?: string
+  ): Promise<void> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+      const store = tx.objectStore(QUEUE_STORE);
+      const getReq = store.get(id);
+
+      getReq.onsuccess = () => {
+        const item: QueueItem = getReq.result;
+        if (item) {
+          item.status = status;
+          if (status === 'failed') {
+            item.retryCount += 1;
+          }
+          if (errorMsg) {
+            item.errorMsg = errorMsg;
+          }
+          const putReq = store.put(item);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
