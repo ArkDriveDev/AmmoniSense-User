@@ -33,3 +33,38 @@ export const SENSOR_DRAFT_KEY = 'draft_sensor_submission';
 export const SITE_DRAFT_KEY = 'draft_site_creation';
 
 class OfflineStorageService {
+  private dbPromise: Promise<IDBDatabase> | null = null;
+
+  constructor() {
+    this.initDB();
+  }
+
+  // Initialize IndexedDB
+  private initDB(): Promise<IDBDatabase> {
+    if (this.dbPromise) return this.dbPromise;
+
+    this.dbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+          db.createObjectStore(QUEUE_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(PHOTO_STORE)) {
+          db.createObjectStore(PHOTO_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(OFFLINE_SITES_STORE)) {
+          db.createObjectStore(OFFLINE_SITES_STORE, { keyPath: 'id' });
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    return this.dbPromise;
+  }
+
+  // ==========================================
+  // LOCAL STORAGE HELPERS (Session & Drafts)
