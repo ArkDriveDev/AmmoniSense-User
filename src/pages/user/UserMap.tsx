@@ -593,3 +593,38 @@ export default function UserMap() {
               width: '44px',
               height: '44px',
             }}
+          >
+            {locating ? <IonSpinner name="crescent" style={{ width: '20px', height: '20px' }} /> : <IonIcon icon={locateOutline} style={{ fontSize: '22px' }} />}
+          </IonButton>
+        </div>
+
+        {/* BOTTOM SHEET DETAIL DRAWER */}
+        {(selectedSite || selectedReading || selectedPhotoTag) && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1050,
+              background: '#ffffff',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
+              boxShadow: '0 -8px 30px rgba(15, 60, 92, 0.25)',
+              padding: '20px',
+              maxHeight: '75vh',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Drawer Header Handle & Close Button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ width: '40px', height: '4px', background: '#cbd5e1', borderRadius: '2px', margin: '0 auto' }}></div>
+              <IonButton fill="clear" size="small" onClick={closeBottomSheet} style={{ position: 'absolute', right: '12px', top: '12px', color: '#64748b' }}>
+                <IonIcon icon={closeOutline} style={{ fontSize: '24px' }} />
+              </IonButton>
+            </div>
+
+            {/* SITE DETAILS */}
+            {selectedSite && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
