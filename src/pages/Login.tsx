@@ -103,3 +103,37 @@ export default function Login() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        margin: '0 auto 16px auto',
+                        boxShadow: '0 8px 24px rgba(29, 93, 155, 0.3)'
+                      }}>
+                        <IonIcon icon={leafOutline} style={{ fontSize: '32px', color: '#FFFFFF' }} />
+                      </div>
+                      <IonTitle style={{ fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.02em' }}>
+                        AmmoniSense
+                      </IonTitle>
+                      <IonText color="medium">
+                        <p style={{ margin: '6px 0 0 0', fontSize: '14px', fontWeight: '500' }}>
+                          Environmental Ammonia Monitoring
+                        </p>
+                      </IonText>
+                    </div>
+
+                    <IonItem className="premium-input-item" lines="none">
+                      <IonIcon icon={mailOutline} slot="start" style={{ color: '#1D5D9B' }} />
+                      <IonInput
+                        type="email"
+                        placeholder="Inspector Email"
+                        value={email}
+                        onIonChange={(e) => setEmail(e.detail.value!)}
+                      />
+                    </IonItem>
+
+                    <IonItem className="premium-input-item" lines="none" style={{ marginTop: '12px' }}>
+                      <IonIcon icon={lockClosedOutline} slot="start" style={{ color: '#1D5D9B' }} />
+                      <IonInput
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onIonChange={(e) => setPassword(e.detail.value!)}
+                      />
+                    </IonItem>
