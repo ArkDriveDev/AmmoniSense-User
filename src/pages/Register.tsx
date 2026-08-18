@@ -208,3 +208,38 @@ const Register: React.FC = () => {
                     labelPlacement="stacked"
                     fill="outline"
                     type="tel"
+                    placeholder="Enter your phone number"
+                    value={form.phone}
+                    onIonChange={(e) => setForm({ ...form, phone: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
+
+                  <IonInput
+                    label="Organization (Optional)"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    placeholder="Enter your organization name"
+                    value={form.organization_name}
+                    onIonChange={(e) => setForm({ ...form, organization_name: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  />
+
+                  <IonInput
+                    label="Password"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="password"
+                    placeholder="Enter password (min 6 chars)"
+                    value={form.password}
+                    onIonChange={(e) => setForm({ ...form, password: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  >
+                    <IonInputPasswordToggle slot="end" />
+                  </IonInput>
+
+                  <IonInput
+                    label="Confirm Password"
+                    labelPlacement="stacked"
+                    fill="outline"
+                    type="password"
+                    placeholder="Confirm your password"
