@@ -706,18 +706,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               ) : (
                 <>
                   <IonIcon icon={checkmarkDoneCircleOutline} slot="start" />
-                      <IonSpinner name="crescent" />
-                      &nbsp;Connecting BLE...
-                    </>
-                  ) : (
-                    <>
-                      <IonIcon icon={bluetoothOutline} slot="start" />
-                      {btConnected ? 'Re-scan ESP32 BLE' : 'Connect ESP32 BLE'}
-                    </>
-                  )}
-                </IonButton>
+                  CONFIRM & SUBMIT ALL DATA
+                </>
+              )}
+            </IonButton>
+          </IonCardContent>
+        </IonCard>
+      )}
 
-                <IonButton fill="outline" color="dark" onClick={() => setShowBLESimulatorModal(true)}>
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMsg}
                   📡 Launch BLE Simulator
                 </IonButton>
               </div>
