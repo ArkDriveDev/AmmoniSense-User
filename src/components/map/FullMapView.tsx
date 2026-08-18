@@ -68,3 +68,38 @@ interface FullMapViewProps {
 
 // Manolo Fortich Bounding Box Restriction
 export const MANOLO_FORTICH_BOUNDS: L.LatLngBoundsExpression = [
+  [8.2200, 124.7000], // South-West
+  [8.5000, 125.0200]  // North-East
+];
+
+// Manolo Fortich Municipal Boundary Polygon
+const MANOLO_FORTICH_BOUNDARY: [number, number][] = [
+  [8.4650, 124.7800],
+  [8.4800, 124.8500],
+  [8.4600, 124.9200],
+  [8.4100, 124.9600],
+  [8.3500, 124.9700],
+  [8.2800, 124.9300],
+  [8.2600, 124.8500],
+  [8.2900, 124.7500],
+  [8.3600, 124.7300],
+  [8.4200, 124.7500],
+];
+
+// Outer World ring for inverted masking outside Manolo Fortich
+const WORLD_MASK_RING: [number, number][] = [
+  [90, -180],
+  [90, 180],
+  [-90, -180],
+  [-90, -180],
+];
+
+// Brand Color for all Site Pins
+export const SITE_BRAND_COLOR = '#1D5D9B';
+export const PHOTO_TAG_BRAND_COLOR = '#8b5cf6'; // Purple for photo tags
+
+export const getAmmoniaColor = (ammonia: number): string => {
+  if (ammonia > 20) return '#ef4444'; // Critical Red (>20 PPM)
+  if (ammonia > 10) return '#f97316'; // High Orange (10-20 PPM)
+  if (ammonia > 5) return '#eab308'; // Warning Yellow (5-10 PPM)
+  return '#22c55e'; // Normal Green (0-5 PPM)
