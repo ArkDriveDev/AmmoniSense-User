@@ -310,18 +310,18 @@ export default function UserMap() {
 
       if (!error && data) {
         serverReadings = data
-    let serverPhotoTags: PhotoTagMarkerData[] = [];
-    try {
-      const { data, error } = await supabase
-        .from('inspection_photos')
-        .select('*')
-        .order('uploaded_at', { ascending: false })
-        .limit(200);
-
-      if (!error && data) {
-        serverPhotoTags = data
-          .map((p: any) => ({
-            id: p.id,
+          .map((r: any) => ({
+            id: r.id,
+            ammonia: r.ammonia || 0,
+            temperature: r.temperature,
+            humidity: r.humidity,
+            battery: r.battery,
+            latitude: r.latitude || 8.3683,
+            longitude: r.longitude || 124.8637,
+            grid_cell_id: r.grid_cell_id,
+            device_uid: r.device_uid,
+            created_at: r.created_at,
+            photo_url: r.photo_url,
             latitude: p.latitude || 8.3683,
             longitude: p.longitude || 124.8637,
             photo_url: p.photo_url,
