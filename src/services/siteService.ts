@@ -106,7 +106,6 @@ export const registerSiteWithPhoto = async (
             is_site_photo: true,
             is_used: true,
           })
-          })
           .eq('id', payload.photo_record_id)
           .select('*')
           .single();
@@ -118,6 +117,7 @@ export const registerSiteWithPhoto = async (
             {
               photo_url: payload.photo_url,
               latitude: payload.latitude,
+              longitude: payload.longitude,
               longitude: payload.longitude,
               site_id: createdSite.id,
               is_site_photo: true,
