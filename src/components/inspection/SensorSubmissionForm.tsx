@@ -358,17 +358,17 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         await step4_markPhotoAsUsed(photoRecord.id, sensorDataId);
       }
 
-    }
+      setToastMsg(`🎉 Inspection Success! Sensor reading & photo fully submitted & linked!`);
+      setToastColor('success');
+      setShowToast(true);
+      offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
 
-    setSubmitLoading(true);
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id || null;
+      setPhotoRecord(null);
+      setCurrentStep(1);
 
-      const ammoniaNum = parseFloat(ammonia);
-      const tempNum = parseFloat(temperature);
-      const humNum = parseFloat(humidity);
-      const battNum = parseFloat(battery);
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      console.warn('Network error or offline mode during inspection submit, queueing item:', err);
 
       let status = 'LOW';
       if (ammoniaNum > 70) status = 'HIGH';
