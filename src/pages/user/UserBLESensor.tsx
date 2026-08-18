@@ -58,3 +58,22 @@ export default function UserBLESensor() {
     }
 
     // Save reading to offline draft / localStorage so SensorSubmissionForm loads it
+    offlineStorage.saveDraft('draft_ble_central_reading', reading);
+    navigate('/sensor-data');
+  };
+
+  return (
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>BLE Central Scanner & Reader</IonTitle>
+          <IonButton slot="end" fill="clear" onClick={() => setShowScannerModal(true)} style={{ color: '#ffffff' }}>
+            <IonIcon icon={searchOutline} />
+          </IonButton>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent />
+        </IonRefresher>
