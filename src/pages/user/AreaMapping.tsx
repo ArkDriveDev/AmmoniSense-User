@@ -208,3 +208,32 @@ export default function AreaMapping() {
                               </IonBadge>
                               <h4 style={{ margin: '2px 0 4px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{c.community_name}</h4>
                               <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
+                                Population: <b>{(c.estimated_population || 0).toLocaleString()} residents</b>
+                              </p>
+                            </div>
+                            {c.is_pending_sync && (
+                              <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
+                            )}
+                          </div>
+                        </IonCardContent>
+                      </IonCard>
+                    </IonCol>
+                  ))}
+                </IonRow>
+              </IonGrid>
+            )}
+          </div>
+        </IonGrid>
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMsg}
+          duration={3500}
+          color={toastColor}
+          position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
