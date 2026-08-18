@@ -250,18 +250,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       const record = await step1_takeAndUploadPhoto(
         selectedSiteId || undefined,
         selectedSite?.site_name || 'MENRO Site'
-      }
-    } catch (err) {
-      console.error('Error fetching previous readings:', err);
-    }
-  };
+      );
 
-  // =========================================================
-  // STEP 1: TAKE PHOTO
-  // =========================================================
-  const handleStep1_TakePhoto = async () => {
-    if (!selectedSiteId) {
-      setToastMsg('Please select or create a monitoring site first before taking an inspection photo.');
+      setPhotoRecord(record);
+      setCellLat(record.latitude);
+      setCellLng(record.longitude);
+
+      setToastMsg(`Step 1 Complete! Inspection photo uploaded & GPS captured.`);
+      setToastColor('success');
+      setShowToast(true);
+
+      setCurrentStep(2);
+    } catch (err: any) {
       setToastColor('warning');
       setShowToast(true);
       return;
