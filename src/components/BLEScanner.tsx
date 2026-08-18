@@ -198,3 +198,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
             >
               <IonIcon icon={bluetoothOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
               BLE Hardware: {permStatus?.bluetoothEnabled ? 'Enabled' : 'Disabled / Restricted'}
+            </IonBadge>
+
+            <IonBadge
+              style={{
+                background: permStatus?.locationGranted ? '#ecfdf5' : '#fffbe0',
+                color: permStatus?.locationGranted ? '#047857' : '#b45309',
+                padding: '6px 10px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '11px',
+              }}
+            >
+              <IonIcon icon={locationOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+              Location Services: {permStatus?.locationGranted ? 'Granted' : 'Required'}
+            </IonBadge>
+          </div>
+        </div>
+
+        {/* PERMISSION ERROR ALERT CARD */}
+        {permissionError && (
