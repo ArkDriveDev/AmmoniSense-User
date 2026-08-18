@@ -33,3 +33,38 @@ class SyncService {
   }
 
   public isOnline(): boolean {
+    return this.onlineStatus;
+  }
+
+  public subscribe(listener: SyncEventListener): () => void {
+    this.listeners.add(listener);
+    // Initial notification
+    this.getPendingCount().then((count) => {
+      listener({ type: 'status_change', isOnline: this.onlineStatus, pendingCount: count });
+    });
+
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private async notifyListeners(type: SyncEventType, activeItem?: QueueItem, message?: string) {
+    const pendingCount = await this.getPendingCount();
+    this.listeners.forEach((listener) => {
+      listener({
+        type,
+        isOnline: this.onlineStatus,
+        pendingCount,
+        activeItem,
+        message,
+      });
+    });
+  }
+
+  public async getPendingCount(): Promise<number> {
+    try {
+      const queue = await offlineStorage.getQueue();
+      return queue.filter((item) => item.status !== 'failed').length;
+    } catch {
+      return 0;
+    }
