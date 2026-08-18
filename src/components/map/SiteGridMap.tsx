@@ -137,23 +137,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
     }
 
     const { latOffset, lngOffset } = metersToLatLngOffset(effectiveCellMeters, centerLat);
-
-    const halfGrid = Math.floor(gridSize / 2);
-    const startLat = centerLat - halfGrid * latOffset;
-    const startLng = centerLng - halfGrid * lngOffset;
-
-    const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-
-    for (let r = 0; r < gridSize; r++) {
-      for (let c = 0; c < gridSize; c++) {
-        const colLetter = cols[c] || `C${c + 1}`;
-        const rowNum = r + 1;
-        const cellId = `${colLetter}${rowNum}`;
-
-        const south = startLat + r * latOffset;
-        const north = south + latOffset;
-        const west = startLng + c * lngOffset;
-        const east = west + lngOffset;
-
-        const bounds = L.latLngBounds([
-          [south, west],
