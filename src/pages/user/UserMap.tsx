@@ -173,3 +173,38 @@ export default function UserMap() {
       }
     } catch (err) {
       console.warn('Network error or offline mode while fetching monitoring sites from Supabase:', err);
+    }
+
+    const onlineCodes = new Set(onlineFormatted.map((s) => s.site_code).filter(Boolean));
+
+    let offlineFormatted: SiteMarkerData[] = [];
+    try {
+      // 1. Fetch from IndexedDB offline_sites store (filtering out deleted / synced items)
+      const offlineRecords = await offlineStorage.getOfflineSites();
+      const idbOfflineFormatted: SiteMarkerData[] = offlineRecords
+        .filter((os: any) => !os.isDeleted && !onlineCodes.has(os.site_code))
+        .map((os: any) => {
+          const coords = resolveSiteCoords(
+            os.current_latitude ?? os.latitude,
+            os.current_longitude ?? os.longitude
+          );
+
+          return {
+            id: os.id,
+            site_code: os.site_code || 'OFFLINE',
+            site_name: os.site_name || 'Offline Site',
+            site_type: os.site_type || 'Agricultural',
+            address: os.address || os.site_name,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
+            owner_name: os.owner?.owner_name || 'Inspector Owner',
+            photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
+            isOffline: true,
+            is_pending_sync: true,
+          };
+        });
+
+      // 2. Fetch from IndexedDB offline queue ('SITE_REGISTRATION')
+      let queuedOfflineFormatted: SiteMarkerData[] = [];
+      try {
