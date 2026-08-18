@@ -1,7 +1,6 @@
 /**
  * BLE Service for AmmoniSense
- * Supports Web Bluetooth API for live ESP32 node connection
- * and BroadcastChannel fallback for simulator app / test environments.
+ * Supports Web Bluetooth API for live hardware ESP32 node connections
  */
 
 export interface BLEReading {
@@ -32,8 +31,7 @@ class BLEService {
   private gattServer: any = null;
   private broadcastChannel: BroadcastChannel | null = null;
 
-  // Standard / Custom GATT UUIDs for Environmental & Ammonia Sensing
-  public static SERVICE_UUID = '0000181a-0000-1000-8000-00805f9b34fb'; // Environmental Sensing
+  public static SERVICE_UUID = '0000181a-0000-1000-8000-00805f9b34fb';
   public static AMMONIA_CHAR_UUID = '00002a6e-0000-1000-8000-00805f9b34fb';
   public static CHANNEL_NAME = 'ammonisense_ble_stream';
 
@@ -82,13 +80,14 @@ class BLEService {
   }
 
   /**
-   * Scan and connect to real Bluetooth Low Energy ESP32 Device
+   * Scan and connect to actual Bluetooth Low Energy ESP32 Device
    */
   public async scanAndConnect(): Promise<BLEReading | null> {
     const nav = navigator as any;
     if (!nav.bluetooth) {
-      console.warn('Web Bluetooth is not supported in this browser. Falling back to simulator mode.');
-      return this.simulateConnection();
+      console.warn('Web Bluetooth is not supported in this browser environment.');
+      this.setState('disconnected');
+      return null;
     }
 
     try {
@@ -109,11 +108,10 @@ class BLEService {
       this.gattServer = server;
       this.setState('connected');
 
-      // Attempt to subscribe to telemetry characteristic if supported
       try {
         const service = await server.getPrimaryService(BLEService.SERVICE_UUID);
         const characteristic = await service.getCharacteristic(BLEService.AMMONIA_CHAR_UUID);
-        
+
         await characteristic.startNotifications();
         characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
           const value = event.target.value;
@@ -121,20 +119,20 @@ class BLEService {
           if (parsed) {
             this.setState('streaming');
             this.notifyReadingListeners(parsed);
+            this.broadcastTelemetry(parsed);
           }
         });
       } catch (gattErr) {
-        console.info('GATT characteristic auto-subscribe skipped, generating telemetry reading from connected node.');
+        console.info('GATT characteristic auto-subscribe check:', gattErr);
       }
 
-      // Return initial connection payload
       const initialReading: BLEReading = {
-        device_uid: device.name || `ESP32-AMMONIA-${device.id?.substring(0, 4) || 'NODE-01'}`,
-        ammonia: parseFloat((12 + Math.random() * 15).toFixed(1)),
-        temperature: parseFloat((27 + Math.random() * 4).toFixed(1)),
-        humidity: parseFloat((62 + Math.random() * 15).toFixed(1)),
-        battery: parseFloat((85 + Math.random() * 15).toFixed(0)),
-        rssi: -58 - Math.floor(Math.random() * 15),
+        device_uid: device.name || `ESP32-AMMONIA-${device.id?.substring(0, 4) || 'NODE'}`,
+        ammonia: 0,
+        temperature: 28,
+        humidity: 65,
+        battery: 100,
+        rssi: -60,
         timestamp: new Date().toISOString(),
       };
 
@@ -148,53 +146,6 @@ class BLEService {
     }
   }
 
-  /**
-   * Fallback simulator connection when hardware BLE is unavailable
-   */
-  public async simulateConnection(preset?: 'normal' | 'moderate' | 'hazard'): Promise<BLEReading> {
-    this.setState('connecting');
-    await new Promise((r) => setTimeout(r, 600));
-
-    let nh3 = 18.5;
-    let temp = 28.5;
-    let hum = 66.0;
-    let batt = 92.0;
-
-    if (preset === 'normal') {
-      nh3 = parseFloat((2.0 + Math.random() * 3.0).toFixed(1));
-      temp = parseFloat((26.5 + Math.random() * 2.0).toFixed(1));
-      hum = parseFloat((55.0 + Math.random() * 10.0).toFixed(1));
-    } else if (preset === 'moderate') {
-      nh3 = parseFloat((12.5 + Math.random() * 8.0).toFixed(1));
-      temp = parseFloat((29.5 + Math.random() * 2.0).toFixed(1));
-      hum = parseFloat((68.0 + Math.random() * 8.0).toFixed(1));
-    } else if (preset === 'hazard') {
-      nh3 = parseFloat((48.0 + Math.random() * 35.0).toFixed(1));
-      temp = parseFloat((33.0 + Math.random() * 3.0).toFixed(1));
-      hum = parseFloat((78.0 + Math.random() * 10.0).toFixed(1));
-    } else {
-      nh3 = parseFloat((15.0 + Math.random() * 20.0).toFixed(1));
-    }
-
-    const reading: BLEReading = {
-      device_uid: 'ESP32-AMMONIA-NODE-01',
-      ammonia: nh3,
-      temperature: temp,
-      humidity: hum,
-      battery: batt,
-      rssi: -62,
-      timestamp: new Date().toISOString(),
-    };
-
-    this.setState('streaming');
-    this.notifyReadingListeners(reading);
-    this.broadcastTelemetry(reading);
-    return reading;
-  }
-
-  /**
-   * Broadcast telemetry data payload via BroadcastChannel
-   */
   public broadcastTelemetry(reading: BLEReading) {
     if (this.broadcastChannel) {
       this.broadcastChannel.postMessage({
@@ -204,9 +155,6 @@ class BLEService {
     }
   }
 
-  /**
-   * Parse BLE DataView binary buffer
-   */
   private parseBLEDataView(dataView: DataView, deviceUid: string): BLEReading | null {
     try {
       if (dataView.byteLength < 4) return null;
