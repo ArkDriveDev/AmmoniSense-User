@@ -286,18 +286,18 @@ export default function UserMap() {
     } catch (err) {
       console.error('Error loading offline sites for map:', err);
     }
-        .map((q) => ({
-          id: q.id,
-          ammonia: q.payload.ammonia || 0,
-          temperature: q.payload.temperature,
-          humidity: q.payload.humidity,
-          battery: q.payload.battery,
-          latitude: q.payload.latitude || 8.3683,
-          longitude: q.payload.longitude || 124.8637,
-          grid_cell_id: q.payload.grid_cell_id,
-          device_uid: q.payload.device_uid || 'OFFLINE-NODE',
-          created_at: q.timestamp,
-          photo_url: q.payload.photo_url,
+
+    // Combine offline sites and online sites, avoiding duplicates if online has synced an offline site ID
+    const combinedMap = new Map<string | number, SiteMarkerData>();
+    // First add offline sites (unsubmitted / pending sync)
+    offlineFormatted.forEach((s) => combinedMap.set(s.id, s));
+    // Then add online sites
+    onlineFormatted.forEach((s) => combinedMap.set(s.id, s));
+
+    const finalSites = Array.from(combinedMap.values());
+    console.log('📍 Total sites loaded for map display:', finalSites.length, finalSites);
+    setSites(finalSites);
+  };
           is_pending_sync: true,
         }))
         .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
