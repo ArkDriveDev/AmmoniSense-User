@@ -103,3 +103,38 @@ export const addStampToImage = (
     img.crossOrigin = 'anonymous';
 
     img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        reject(new Error('Failed to get 2D canvas context'));
+        return;
+      }
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Draw original photo
+      ctx.drawImage(img, 0, 0);
+
+      // Scale font and dimensions according to image size
+      const scale = Math.max(1, img.width / 1000);
+      const bannerHeight = 110 * scale;
+      const fontSizeLarge = Math.round(20 * scale);
+      const fontSizeSmall = Math.round(14 * scale);
+      const padding = 16 * scale;
+
+      // Draw Translucent Overlay Banner at bottom
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)'; // Dark slate semi-transparent
+      ctx.fillRect(0, img.height - bannerHeight, img.width, bannerHeight);
+
+      // Top accent line on banner
+      ctx.fillStyle = '#3880ff'; // Primary Blue
+      ctx.fillRect(0, img.height - bannerHeight, img.width, 4 * scale);
+
+      // Text styling
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${fontSizeLarge}px sans-serif`;
+
+      const nowStr = new Date().toLocaleString();
+      const latStr = options.latitude.toFixed(6);
