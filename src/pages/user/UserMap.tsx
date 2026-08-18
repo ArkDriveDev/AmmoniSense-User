@@ -550,18 +550,18 @@ export default function UserMap() {
             odorZones={odorZones}
             communityPolygons={communityPolygons}
             centerLat={mapCenter.lat}
-        {/* BOTTOM SHEET DETAIL DRAWER */}
-        {(selectedSite || selectedReading || selectedPhotoTag) && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1050,
-              background: '#ffffff',
-              borderTopLeftRadius: '24px',
-              borderTopRightRadius: '24px',
+            centerLng={mapCenter.lng}
+            zoom={mapCenter.zoom}
+            userLocation={userLocation}
+            onSelectSite={(site) => {
+              closeBottomSheet();
+              setSelectedSite(site);
+            }}
+            onSelectReading={(reading) => {
+              closeBottomSheet();
+              setSelectedReading(reading);
+            }}
+            onSelectPhotoTag={(tag) => {
               boxShadow: '0 -8px 30px rgba(15, 60, 92, 0.25)',
               padding: '20px',
               maxHeight: '75vh',
