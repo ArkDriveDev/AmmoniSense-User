@@ -243,3 +243,38 @@ export const uploadPhotoToSupabase = async (
   blob: Blob,
   siteId: string | number = 'general'
 ): Promise<string | null> => {
+  try {
+    const filename = `site_${siteId}/${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
+    
+    const { data, error } = await supabase.storage
+      .from('sensor-photos')
+      .upload(filename, blob, {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+
+    if (error) {
+      console.warn('Storage upload notice (checking permissions/bucket):', error.message);
+      return null;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('sensor-photos')
+      .getPublicUrl(data.path);
+
+    return publicUrlData.publicUrl;
+  } catch (err) {
+    console.error('Error uploading photo to Supabase storage:', err);
+    return null;
+  }
+};
+
+/**
+ * STEP 1: Take Photo & Save to `inspection_photos` table (is_used = false)
+ */
+export const step1_takeAndUploadPhoto = async (
+  siteId?: number,
+  siteName: string = 'Monitoring Site'
+): Promise<InspectionPhotoRecord> => {
+  // 1. Get current GPS location
+  let latitude = 14.5995;
