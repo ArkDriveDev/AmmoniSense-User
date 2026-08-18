@@ -103,3 +103,13 @@ export const SyncStatusBanner: React.FC = () => {
             fontWeight: 'bold',
           }}
         >
+          Sync Now
+        </IonButton>
+      )}
+
+      {syncing && <IonSpinner name="crescent" style={{ width: '14px', height: '14px' }} />}
+    </div>
+  );
+};
+
+export default SyncStatusBanner;
