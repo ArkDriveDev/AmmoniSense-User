@@ -178,3 +178,15 @@ export const fetchOdorZones = async (): Promise<OdorZone[]> => {
  */
 export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
   const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id || null;
+
+  const payload = {
+    site_id: zone.site_id || null,
+    zone_name: zone.zone_name,
+    severity_level: zone.severity_level,
+    ammonia_ppm: zone.ammonia_ppm,
+    coordinates: zone.coordinates,
+    created_by: userId,
+  };
+
+  const { data, error } = await supabase
