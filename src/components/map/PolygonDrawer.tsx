@@ -258,3 +258,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
               </IonChip>
               <IonChip
                 color={drawingMode === 'community' ? 'success' : 'medium'}
+                outline={drawingMode !== 'community'}
+                onClick={() => {
+                  setDrawingMode('community');
+                  handleClear();
+                }}
+                style={{ fontWeight: 700, cursor: 'pointer' }}
+              >
+                🟩 Community Polygon
+              </IonChip>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonBadge style={{ background: '#E2E8F0', color: '#334155', fontSize: '11px', fontWeight: 700 }}>
+                {vertices.length} Vertices
+              </IonBadge>
+              {surfaceAreaHa > 0 && (
+                <IonBadge style={{ background: 'rgba(29, 93, 155, 0.12)', color: '#1D5D9B', fontSize: '11px', fontWeight: 700 }}>
+                  Area: {surfaceAreaHa} ha
+                </IonBadge>
+              )}
