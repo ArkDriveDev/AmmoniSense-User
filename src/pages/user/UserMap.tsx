@@ -58,18 +58,18 @@ export default function UserMap() {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
+  const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
+  const [photoTags, setPhotoTags] = useState<PhotoTagMarkerData[]>([]);
+  const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
+  const [communityPolygons, setCommunityPolygons] = useState<CommunityPolygon[]>([]);
+
+  // Search input
+  const [searchText, setSearchText] = useState<string>('');
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
   const [showReadingsLayer, setShowReadingsLayer] = useState<boolean>(true);
   const [showPhotoTagsLayer, setShowPhotoTagsLayer] = useState<boolean>(true);
-  const [showBoundaryLayer, setShowBoundaryLayer] = useState<boolean>(true);
-  const [showOdorZonesLayer, setShowOdorZonesLayer] = useState<boolean>(true);
-
-  // Navigation & Location
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom?: number }>(MANOLO_FORTICH_CENTER);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState<boolean>(false);
 
   // Bottom Sheet Details State
   const [selectedSite, setSelectedSite] = useState<SiteMarkerData | null>(null);
