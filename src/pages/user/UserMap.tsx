@@ -208,3 +208,38 @@ export default function UserMap() {
       // 2. Fetch from IndexedDB offline queue ('SITE_REGISTRATION')
       let queuedOfflineFormatted: SiteMarkerData[] = [];
       try {
+        const queue = await offlineStorage.getQueue();
+        queuedOfflineFormatted = queue
+          .filter((q) => q.type === 'SITE_REGISTRATION' && q.payload && !onlineCodes.has(q.payload.site_code))
+          .map((q) => {
+            const p = q.payload;
+            const coords = resolveSiteCoords(
+              p.current_latitude ?? p.latitude,
+              p.current_longitude ?? p.longitude
+            );
+
+            return {
+              id: q.id || `queue_${Date.now()}`,
+              site_code: p.site_code || 'QUEUED',
+              site_name: p.site_name || 'Unsubmitted Site',
+              site_type: p.site_type || 'Agricultural',
+              address: p.address || p.site_name,
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
+              owner_name: 'Inspector Owner',
+              photo_url: p.site_photo_url || p.photo_url,
+              isOffline: true,
+              is_pending_sync: true,
+            };
+          });
+      } catch (qErr) {
+        console.warn('Error fetching queued site registrations:', qErr);
+      }
+
+      // 3. Check localStorage fallback for 'offline_sites', purging synced/deleted
+      let lsOfflineFormatted: SiteMarkerData[] = [];
+      try {
+        const lsStr = localStorage.getItem('offline_sites');
+        if (lsStr) {
+          const lsArr = JSON.parse(lsStr);
