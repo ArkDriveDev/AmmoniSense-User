@@ -78,3 +78,23 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
       fillColor: fillColor,
       fillOpacity: 0.25,
       weight: 2.5,
+      dashArray: '6, 6',
+    });
+
+    // Center point marker
+    const centerMarker = L.circleMarker([validLat, validLng], {
+      radius: 6,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      fillOpacity: 1,
+    });
+
+    // Area Label Badge at center
+    const areaLabelText = `${validArea.toFixed(2)} Ha (${Math.round(areaSqMeters).toLocaleString()} m²)`;
+    const labelIcon = L.divIcon({
+      className: 'polygon-preview-label-marker',
+      html: `<div class="preview-area-badge">${areaLabelText}</div>`,
+      iconSize: [170, 28],
+      iconAnchor: [85, 14],
+    });
