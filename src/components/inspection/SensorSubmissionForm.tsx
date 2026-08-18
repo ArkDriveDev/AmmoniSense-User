@@ -562,18 +562,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               </IonButton>
             )}
           </IonCardContent>
-                  </IonChip>
-                </div>
-                <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>
-                  <b>GPS:</b> {photoRecord.latitude.toFixed(5)}°, {photoRecord.longitude.toFixed(5)}° | <b>Photo ID:</b> #{photoRecord.id}
-                </div>
-                <IonButton fill="clear" color="medium" size="small" onClick={handleStep1_TakePhoto} style={{ marginTop: '4px' }}>
-                  Retake Photo
-                </IonButton>
-              </div>
-            ) : !selectedSiteId ? (
-              <div style={{
-                padding: '24px',
+        </IonCard>
+      )}
+
+      {/* STEP 2: ESP32 BLUETOOTH SENSOR READING */}
+      {currentStep === 2 && (
+        <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+          <IonCardHeader>
+            <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonIcon icon={bluetoothOutline} color="tertiary" />
+              STEP 2: Read Sensor via Bluetooth (ESP32)
+            </IonCardTitle>
+          </IonCardHeader>
                 border: '2px dashed #fcd34d',
                 borderRadius: '12px',
                 display: 'flex',
