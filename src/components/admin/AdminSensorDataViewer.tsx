@@ -243,3 +243,38 @@ export const AdminSensorDataViewer: React.FC = () => {
                             setShowPhotoModal(true);
                           }}
                         >
+                          <img
+                            src={record.photo_url}
+                            alt="Inspection Photo"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            background: 'rgba(0,0,0,0.65)',
+                            padding: '4px 8px',
+                            color: '#ffffff',
+                            fontSize: '11px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <IonIcon icon={imageOutline} /> View Stamped EXIF Photo
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ height: '8px' }}></div>
+                      )}
+
+                      <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div>
+                          <IonIcon icon={hardwareChipOutline} style={{ marginRight: '4px' }} />
+                          <b>Device:</b> {record.device_uid}
+                        </div>
+                        {record.latitude && record.longitude && (
+                          <div>
+                            <IonIcon icon={locationOutline} style={{ marginRight: '4px' }} />
+                            <b>GPS:</b> {record.latitude.toFixed(5)}°, {record.longitude.toFixed(5)}°
+                          </div>
