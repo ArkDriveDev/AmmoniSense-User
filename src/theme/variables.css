@@ -138,3 +138,38 @@ ion-card:hover,
 /* Stats Card - Glass Effect */
 .stats-card {
   background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px !important;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(26, 54, 93, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(26, 54, 93, 0.12) !important;
+}
+
+/* Premium Form Input Items inside Cards */
+ion-item.premium-input-item {
+  --background: rgba(248, 250, 252, 0.7);
+  --border-radius: 12px;
+  --border-color: rgba(226, 232, 240, 0.8);
+  --border-width: 1px;
+  --highlight-height: 0px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+ion-item.premium-input-item:focus-within {
+  border-color: #1D5D9B;
+  box-shadow: 0 0 0 3px rgba(29, 93, 155, 0.15);
+}
+
+/* Premium List Items */
+ion-list.glass-list {
+  background: transparent !important;
