@@ -208,3 +208,38 @@ class BLECentralService {
         const available = await nav.bluetooth.getAvailability();
         status.bluetoothEnabled = available;
         if (!available) {
+          status.canScan = false;
+          status.errorMsg = 'Bluetooth hardware is turned off or unavailable. Please enable Bluetooth on your device.';
+        }
+      }
+    } catch (btErr) {
+      console.warn('Bluetooth availability check notice:', btErr);
+    }
+
+    return status;
+  }
+
+  /**
+   * Open Android App Settings prompt for missing permissions
+   */
+  public async openSettings(): Promise<void> {
+    if (typeof window !== 'undefined') {
+      alert(
+        '⚠️ BLE & Location Permissions Required\n\n' +
+          'To scan for nearby BLE sensor nodes:\n' +
+          '1. Open device Settings > Apps > AmmoniSense.\n' +
+          '2. Tap Permissions.\n' +
+          '3. Enable Nearby Devices (Bluetooth) & Location (Fine Location).'
+      );
+    }
+  }
+
+  /**
+   * Scan for actual hardware BLE devices advertising Service 0000ffd0-0000-1000-8000-00805f9b34fb
+   * Automatically requests all permissions first.
+   */
+  public async scanForDevices(): Promise<BLECentralDevice[]> {
+    const permStatus = await this.checkAndRequestPermissions();
+    if (!permStatus.canScan) {
+      console.warn('BLE scan prevented by permission/hardware check:', permStatus.errorMsg);
+      this.setState('disconnected');
