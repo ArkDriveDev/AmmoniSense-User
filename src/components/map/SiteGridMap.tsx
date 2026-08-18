@@ -37,23 +37,3 @@ interface SiteGridMapProps {
 // Convert meters to approximate lat/lng offset
 const metersToLatLngOffset = (meters: number, lat: number) => {
   const latOffset = meters / 111111;
-  const lngOffset = meters / (111111 * Math.cos((lat * Math.PI) / 180));
-  return { latOffset, lngOffset };
-};
-
-const getStatusColor = (ammonia: number) => {
-  if (ammonia > 50) return '#eb445a'; // Danger Red
-  if (ammonia > 25) return '#ffc409'; // Warning Yellow
-  return '#2dd36f'; // Normal Green
-};
-
-export const SiteGridMap: React.FC<SiteGridMapProps> = ({
-  centerLat = 14.5995,
-  centerLng = 120.9842,
-  zoom = 18,
-  siteName = 'Monitoring Site',
-  readings = [],
-  selectedCellId = '',
-  onSelectCell,
-  gridSize = 6,
-  cellSizeMeters = 50,
