@@ -68,3 +68,38 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
     layerGroup.clearLayers();
 
     // 1 Ha = 10,000 m² -> Radius = sqrt(Area / PI)
+    const areaSqMeters = validArea * 10000;
+    const radiusMeters = Math.sqrt(areaSqMeters / Math.PI);
+
+    // Dashed semi-transparent preview polygon / circle
+    const circle = L.circle([validLat, validLng], {
+      radius: radiusMeters,
+      color: color,
+      fillColor: fillColor,
+      fillOpacity: 0.25,
+      weight: 2.5,
+      dashArray: '6, 6',
+    });
+
+    // Center point marker
+    const centerMarker = L.circleMarker([validLat, validLng], {
+      radius: 6,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      fillOpacity: 1,
+    });
+
+    // Area Label Badge at center
+    const areaLabelText = `${validArea.toFixed(2)} Ha (${Math.round(areaSqMeters).toLocaleString()} m²)`;
+    const labelIcon = L.divIcon({
+      className: 'polygon-preview-label-marker',
+      html: `<div class="preview-area-badge">${areaLabelText}</div>`,
+      iconSize: [170, 28],
+      iconAnchor: [85, 14],
+    });
+
+    const labelMarker = L.marker([validLat, validLng], {
+      icon: labelIcon,
+      interactive: false,
+    });
