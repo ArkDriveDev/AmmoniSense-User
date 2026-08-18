@@ -138,3 +138,37 @@ export const registerSiteWithPhoto = async (
         createdSite.site_photo_id = photoRecord.id;
       }
     }
+
+    return {
+      owner: createdOwner,
+      site: createdSite,
+      location: createdLocation,
+      photo: photoRecord,
+    };
+  } catch (error: any) {
+    console.error('Transaction failure during site registration, initiating cleanup rollback:', error);
+
+    if (createdSite?.id) {
+      await supabase.from('site_locations').delete().eq('site_id', createdSite.id);
+      await supabase.from('monitoring_sites').delete().eq('id', createdSite.id);
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Fetch all Odor Zones from Supabase
+ */
+export const fetchOdorZones = async (): Promise<OdorZone[]> => {
+  const { data, error } = await supabase
+    .from('odor_zones')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Supabase fetch odor_zones notice:', error.message);
+    return [];
+  }
+  return data || [];
+};
