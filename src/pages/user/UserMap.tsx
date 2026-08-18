@@ -730,18 +730,18 @@ export default function UserMap() {
                         {getAmmoniaSeverityLabel(selectedReading.ammonia)}
                       </IonBadge>
                       {selectedReading.is_pending_sync && <PendingSyncBadge />}
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>
+                    </div>
                   </div>
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.latitude.toFixed(5)}°, {selectedPhotoTag.longitude.toFixed(5)}°</strong>
+                </div>
+
+                {selectedReading.photo_url && (
+                  <div style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
+                    <img src={selectedReading.photo_url} alt="Reading Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
                   <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Captured / Uploaded</span>
-                    <strong style={{ color: '#0f172a' }}>
-                      {selectedPhotoTag.uploaded_at ? new Date(selectedPhotoTag.uploaded_at).toLocaleString() : 'Recent'}
-                    </strong>
                   </div>
                 </div>
 
