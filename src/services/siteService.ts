@@ -190,3 +190,15 @@ export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
   };
 
   const { data, error } = await supabase
+    .from('odor_zones')
+    .insert([payload])
+    .select('*')
+    .single();
+
+  if (error) {
+    throw new Error('Supabase save odor_zones error: ' + error.message);
+  }
+  return data;
+};
+
+/**
