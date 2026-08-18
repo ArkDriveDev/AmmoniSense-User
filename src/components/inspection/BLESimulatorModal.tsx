@@ -39,23 +39,3 @@ interface BLESimulatorModalProps {
 export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
   isOpen,
   onClose,
-  onSimulatedReading
-}) => {
-  const [deviceUid, setDeviceUid] = useState<string>('ESP32-AMMONIA-NODE-01');
-  const [ammonia, setAmmonia] = useState<number>(24.5);
-  const [temperature, setTemperature] = useState<number>(28.5);
-  const [humidity, setHumidity] = useState<number>(68.0);
-  const [battery, setBattery] = useState<number>(92);
-  const [rssi, setRssi] = useState<number>(-62);
-  const [isBroadcasting, setIsBroadcasting] = useState<boolean>(false);
-
-  const applyPreset = (preset: 'normal' | 'moderate' | 'hazard') => {
-    if (preset === 'normal') {
-      setAmmonia(3.2);
-      setTemperature(27.0);
-      setHumidity(58.0);
-      setBattery(98);
-    } else if (preset === 'moderate') {
-      setAmmonia(14.8);
-      setTemperature(29.5);
-      setHumidity(70.0);
