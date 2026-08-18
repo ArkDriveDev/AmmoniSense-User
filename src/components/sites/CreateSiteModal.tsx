@@ -278,3 +278,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       if (onSiteCreated) onSiteCreated(offlineSiteRecord);
 
       setPhotoRecord(null);
+      setPhotoPreview(null);
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderGpsBadge = () => {
+    if (gpsSource === 'photo_exif') {
+      return (
+        <IonBadge style={{ background: '#ECFDF5', color: '#065F46', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
+          <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+          Photo EXIF GPS
+        </IonBadge>
+      );
+    } else if (gpsSource === 'device_gps') {
+      return (
+        <IonBadge style={{ background: '#EBF3FA', color: '#1D5D9B', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
+          <IonIcon icon={navigateOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+          Device Live GPS
+        </IonBadge>
+      );
+    } else {
+      return (
+        <IonBadge style={{ background: '#FFFBEB', color: '#92400E', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
+          <IonIcon icon={warningOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+          Manual Coordinates
+        </IonBadge>
+      );
+    }
+  };
+
+  return (
+    <IonModal isOpen={isOpen} onDidDismiss={onClose}>
+      <IonHeader className="ion-no-border">
