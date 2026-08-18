@@ -68,3 +68,38 @@ export default function UserLayout({ children }: any) {
       }
       
       if (userData.user?.email) {
+        setUserEmail(userData.user.email);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    offlineStorage.clearSession();
+    navigate('/login');
+  };
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  return (
+    <IonSplitPane contentId="user-main">
+      {/* SIDEBAR MENU */}
+      <IonMenu contentId="user-main" type="push" side="start">
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle style={{ fontSize: '18px', fontWeight: 'bold' }}>
+              Ammonisense Monitor
+            </IonTitle>
+            <IonButtons slot="end">
+              <IonMenuButton autoHide={false}>
+                <IonIcon icon={closeOutline} />
+              </IonMenuButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
