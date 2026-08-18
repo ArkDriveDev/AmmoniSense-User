@@ -198,3 +198,23 @@ export default function AreaMapping() {
                   ))}
 
                   {communityPolygons.map((c, idx) => (
+                    <IonCol key={c.id || idx} size="12" size-md="6">
+                      <IonCard className="premium-card" style={{ margin: '0 0 12px 0' }}>
+                        <IonCardContent style={{ padding: '14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <IonBadge style={{ background: '#2DD36F', color: '#ffffff', fontSize: '10px', fontWeight: 800, marginBottom: '6px' }}>
+                                🟩 COMMUNITY ({c.community_type})
+                              </IonBadge>
+                              <h4 style={{ margin: '2px 0 4px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{c.community_name}</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
+                                Population: <b>{(c.estimated_population || 0).toLocaleString()} residents</b>
+                              </p>
+                            </div>
+                            {c.is_pending_sync && (
+                              <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
+                            )}
+                          </div>
+                        </IonCardContent>
+                      </IonCard>
+                    </IonCol>
