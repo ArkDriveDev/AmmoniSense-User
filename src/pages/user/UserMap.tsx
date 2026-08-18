@@ -838,3 +838,38 @@ export default function UserMap() {
                   </IonButton>
                 </div>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* LAYER TOGGLE POPOVER */}
+        <IonPopover
+          isOpen={showLayerPopover}
+          event={popoverEvent}
+          onDidDismiss={() => setShowLayerPopover(false)}
+        >
+          <div style={{ padding: '16px', minWidth: '220px' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
+              Map Layers
+            </h4>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showSitesLayer}
+                  onChange={(e) => setShowSitesLayer(e.target.checked)}
+                />
+                <b>Monitoring Sites</b> (Pins)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showReadingsLayer}
+                  onChange={(e) => setShowReadingsLayer(e.target.checked)}
+                />
+                <b>Sensor Readings</b> (Dots)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
