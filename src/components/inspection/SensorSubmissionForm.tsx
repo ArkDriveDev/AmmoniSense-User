@@ -526,18 +526,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 <h4 style={{ margin: '0 0 6px 0', color: '#92400e', fontWeight: 'bold' }}>
                   No Monitoring Site Selected
                 </h4>
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <IonIcon icon={isDone ? checkmarkDoneCircleOutline : s.icon} style={{ fontSize: '18px' }} />
-                  <span>{s.title}</span>
-                </div>
-              </IonCol>
-            );
+                <p style={{ margin: 0, color: '#b45309', fontSize: '13px', maxWidth: '400px', lineHeight: '1.4' }}>
+                  Please select a site using the <b>MONITORING SITE</b> dropdown above.
+                </p>
+              </div>
+            ) : (
+              <div style={{
+                height: '180px',
+                border: '2px dashed #cbd5e1',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
           })}
         </IonRow>
       </IonGrid>
