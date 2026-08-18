@@ -103,3 +103,38 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
       setScanning(false);
       checkPermissions();
     }
+  };
+
+  const handleOpenSettings = async () => {
+    await bleCentralService.openSettings();
+  };
+
+  const handleConnectDevice = async (device: BLECentralDevice) => {
+    setActiveDeviceId(device.id);
+    try {
+      await bleCentralService.connectAndSubscribe(device);
+      if (onSelectDevice) {
+        onSelectDevice(device);
+      }
+      onClose();
+    } catch (err) {
+      console.error('Connect error:', err);
+    }
+  };
+
+  const getRssiColor = (rssi?: number) => {
+    if (!rssi) return '#94a3b8';
+    if (rssi > -60) return '#22c55e'; // Excellent Green
+    if (rssi > -75) return '#eab308'; // Moderate Yellow
+    return '#ef4444'; // Weak Red
+  };
+
+  return (
+    <IonModal isOpen={isOpen} onDidDismiss={onClose}>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700, fontSize: '16px' }}>
+            <IonIcon icon={bluetoothOutline} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+            BLE Central Scanner
+          </IonTitle>
+          <IonButtons slot="end">
