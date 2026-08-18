@@ -298,3 +298,23 @@ class BLECentralService {
           const value: DataView = event.target.value;
           const reading = this.parse12ByteFloat32DataView(value, device.id, device.name, device.rssi);
           if (reading) {
+            this.notifyTelemetryListeners(reading);
+            this.broadcastTelemetry(reading);
+          }
+        });
+        return;
+      } catch (gattErr) {
+        console.error('Actual GATT hardware connection failed:', gattErr);
+        this.setState('disconnected');
+        throw gattErr;
+      }
+    } else {
+      this.setState('disconnected');
+      throw new Error('Device not paired or Web Bluetooth instance missing.');
+    }
+  }
+
+  /**
+   * Broadcast telemetry data to all tabs/windows via BroadcastChannel
+   */
+  public broadcastTelemetry(reading: BLECentralReading) {
