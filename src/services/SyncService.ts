@@ -190,14 +190,22 @@ class SyncService {
     if (error) {
       throw new Error(`monitoring_sites insert error: ${error.message}`);
     }
-    // Delete local OfflineSite record from IndexedDB once synced to Supabase
+    // Delete local OfflineSite record from IndexedDB & localStorage once synced to Supabase
     if (item.payload?.temp_id || item.payload?.id) {
       const tempId = item.payload.temp_id || item.payload.id;
       try {
         await offlineStorage.deleteOfflineSite(tempId);
+        offlineStorage.removeSiteFromLocalStorage(tempId);
+        if (item.payload.site_code) {
+          offlineStorage.removeSiteFromLocalStorage(item.payload.site_code);
+        }
       } catch (e) {
         console.warn('Could not remove local offline site record:', e);
       }
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('site_synced'));
+      window.dispatchEvent(new CustomEvent('site_deleted'));
     }
   }
 
