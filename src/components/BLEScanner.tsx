@@ -278,3 +278,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
           </IonCard>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {devices.map((device) => {
+              const rssiColor = getRssiColor(device.rssi);
+              const isConnecting = connectionState === 'connecting' && activeDeviceId === device.id;
+
+              return (
+                <IonCard key={device.id} className="premium-card" style={{ margin: 0 }}>
+                  <IonCardContent style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '12px',
+                          background: 'rgba(29, 93, 155, 0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <IonIcon icon={hardwareChipOutline} style={{ color: '#1D5D9B', fontSize: '22px' }} />
+                        </div>
