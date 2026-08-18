@@ -593,3 +593,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                     ESP32-AMMONIA-NODE-01
                   </IonSelectOption>
                 )}
+              </IonSelect>
+            </IonItem>
+
+            <div style={{
+              backgroundColor: btConnected ? '#f0fdf4' : '#f8fafc',
+              border: `1px solid ${btConnected ? '#86efac' : '#cbd5e1'}`,
+              borderRadius: '8px',
+              padding: '16px',
+              textAlign: 'center',
+              marginBottom: '16px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <IonButton color="tertiary" onClick={handleStep2_ConnectBluetooth} disabled={btConnecting}>
+                  {btConnecting ? (
+                    <>
+                      <IonSpinner name="crescent" />
+                      &nbsp;Connecting BLE...
+                    </>
+                  ) : (
+                    <>
+                      <IonIcon icon={bluetoothOutline} slot="start" />
+                      {btConnected ? 'Re-scan ESP32 BLE' : 'Connect ESP32 BLE'}
+                    </>
+                  )}
+                </IonButton>
+              </div>
+
+              {btConnected && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <span>
+                    <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                    BLE Connected ({selectedDeviceUid})
+                  </span>
+                  {bleRssi && (
+                    <IonBadge color="success" style={{ fontSize: '10px' }}>
