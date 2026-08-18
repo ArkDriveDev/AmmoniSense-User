@@ -142,18 +142,18 @@ export default function UserMap() {
     }
     return { latitude: lat, longitude: lng };
   };
-      const idbOfflineFormatted: SiteMarkerData[] = offlineRecords.map((os: any) => {
-        const coords = resolveSiteCoords(
-          os.current_latitude ?? os.latitude,
-          os.current_longitude ?? os.longitude
-        );
 
-        return {
-          id: os.id,
-          site_code: os.site_code || 'OFFLINE',
-          site_name: os.site_name || 'Offline Site',
-          site_type: os.site_type || 'Agricultural',
-          address: os.address || os.site_name,
+  const fetchSites = async () => {
+    let onlineFormatted: SiteMarkerData[] = [];
+    try {
+      const { data: sitesData, error: sitesErr } = await supabase
+        .from('monitoring_sites')
+        .select('*');
+
+      if (!sitesErr && sitesData) {
+        onlineFormatted = sitesData.map((s: any) => {
+          const coords = resolveSiteCoords(s.current_latitude, s.current_longitude);
+          return {
           latitude: coords.latitude,
           longitude: coords.longitude,
           grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
