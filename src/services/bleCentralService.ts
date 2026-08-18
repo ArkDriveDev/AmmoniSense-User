@@ -18,3 +18,23 @@ export interface BLEPermissionStatus {
   bluetoothEnabled: boolean;
   locationEnabled: boolean;
   canScan: boolean;
+  errorMsg?: string;
+}
+
+export interface BLECentralDevice {
+  id: string;
+  name: string;
+  rssi?: number;
+  connected?: boolean;
+}
+
+export interface BLECentralReading {
+  device_id: string;
+  device_name: string;
+  ammonia_ppm: number;
+  temperature_c: number;
+  humidity_pct: number;
+  battery_pct?: number;
+  rssi?: number;
+  timestamp: string;
+}
