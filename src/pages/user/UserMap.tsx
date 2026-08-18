@@ -454,18 +454,18 @@ export default function UserMap() {
       if (IS_IN_MANOLO_FORTICH(lat, lng)) {
         setUserLocation({ lat, lng });
         setMapCenter({ lat, lng, zoom: 15 });
-      <IonContent style={{ position: 'relative' }}>
-        {/* Floating Top Search Bar */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            right: '12px',
-            zIndex: 1000,
-          }}
-        >
-          <div
+        setToastMsg('📍 Centered on your location in Manolo Fortich');
+      } else {
+        setMapCenter(MANOLO_FORTICH_CENTER);
+        setToastMsg('📍 Your GPS location is outside Manolo Fortich. Map view is restricted to Manolo Fortich.');
+      }
+      setShowToast(true);
+    } catch (err: any) {
+      console.warn('Geolocation error:', err);
+      setToastMsg('Could not acquire current GPS location');
+      setShowToast(true);
+    } finally {
+      setLocating(false);
             style={{
               background: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(8px)',
