@@ -33,3 +33,38 @@ export interface SensorRecord {
   status: string;
   latitude?: number;
   longitude?: number;
+  created_at: string;
+  photo_url?: string;
+  submitted_by?: string;
+  is_pending_sync?: boolean;
+}
+
+export const AdminSensorDataViewer: React.FC = () => {
+  const [sites, setSites] = useState<{ id: number; site_name: string; current_latitude?: number | null; current_longitude?: number | null; latitude?: number; longitude?: number }[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<number | 'all'>('all');
+
+  const [records, setRecords] = useState<SensorRecord[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const [selectedPhotoRecord, setSelectedPhotoRecord] = useState<SensorRecord | null>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchSites();
+    fetchSensorData();
+  }, []);
+
+  useEffect(() => {
+    fetchSensorData();
+  }, [selectedSiteId]);
+
+  const fetchSites = async () => {
+    try {
+      const { data } = await supabase.from('monitoring_sites').select('*');
+      if (data) setSites(data);
+    } catch (err) {
+      console.error('Error fetching sites:', err);
+    }
+  };
+
+  const fetchSensorData = async () => {
