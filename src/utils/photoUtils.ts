@@ -208,3 +208,38 @@ export const embedExifData = (
     gps[piexif.GPSIFD.GPSLongitude] = degToExifRational(options.longitude);
 
     zeroth[piexif.ImageIFD.Make] = 'MENRO AmmoniSense';
+    zeroth[piexif.ImageIFD.Model] = 'Capacitor Inspector Mobile';
+
+    const exifObj = { '0th': zeroth, Exif: exif, GPS: gps };
+    const exifBytes = piexif.dump(exifObj);
+
+    return piexif.insert(exifBytes, imageDataUrl);
+  } catch (err) {
+    console.error('Error embedding EXIF data:', err);
+    return imageDataUrl;
+  }
+};
+
+/**
+ * Helper to convert DataURL to Blob
+ */
+export const dataURLtoBlob = (dataurl: string): Blob => {
+  const arr = dataurl.split(',');
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
+
+/**
+ * Upload Photo Blob to Supabase Storage Bucket ('sensor-photos')
+ */
+export const uploadPhotoToSupabase = async (
+  blob: Blob,
+  siteId: string | number = 'general'
+): Promise<string | null> => {
