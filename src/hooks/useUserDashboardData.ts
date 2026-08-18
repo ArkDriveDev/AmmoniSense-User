@@ -68,3 +68,38 @@ export function useUserDashboardData() {
         const { data } = await supabase
           .from('sensor_data')
           .select('*')
+          .in('device_uid', deviceUids)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        sensorData = data || [];
+      } else {
+        const { data } = await supabase
+          .from('sensor_data')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        sensorData = data || [];
+      }
+
+      const activeDevices = devices?.filter(d => d.status === 'ACTIVE') || [];
+      const avgAmmonia = sensorData.reduce((sum, d) => sum + (d.ammonia || 0), 0) / (sensorData.length || 1);
+
+      setStats({
+        siteCount: sites?.length || 0,
+        deviceCount: devices?.length || 0,
+        activeDevices: activeDevices.length,
+        alertCount: 0,
+        notificationCount: 0,
+        latestAmmonia: sensorData[0]?.ammonia || 0,
+        averageAmmonia: avgAmmonia || 0
+      });
+
+      const processedData = processChartData(sensorData, devices || []);
+      setChartData(processedData);
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
