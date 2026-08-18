@@ -442,18 +442,18 @@ export default function UserMap() {
       reading.ammonia.toString().includes(query)
     );
   });
-              }}
-              style={{ color: '#ffffff' }}
-            >
-              <IonIcon icon={layersOutline} slot="icon-only" />
-            </IonButton>
-            <IonButton onClick={loadMapData} style={{ color: '#ffffff' }}>
-              <IonIcon icon={refreshOutline} slot="icon-only" />
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
 
+  // Locate User GPS
+  const handleLocateUser = async () => {
+    setLocating(true);
+    try {
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      if (IS_IN_MANOLO_FORTICH(lat, lng)) {
+        setUserLocation({ lat, lng });
+        setMapCenter({ lat, lng, zoom: 15 });
       <IonContent style={{ position: 'relative' }}>
         {/* Floating Top Search Bar */}
         <div
