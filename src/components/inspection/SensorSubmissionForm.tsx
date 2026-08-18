@@ -612,16 +612,16 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                       &nbsp;Connecting BLE...
                     </>
                   ) : (
-                    '📷 Take Inspection Photo'
+                    <>
+                      <IonIcon icon={bluetoothOutline} slot="start" />
+                      {btConnected ? 'Re-scan ESP32 BLE' : 'Connect ESP32 BLE'}
+                    </>
                   )}
                 </IonButton>
               </div>
-            )}
 
-            {photoRecord && (
-              <IonButton expand="block" color="primary" onClick={() => setCurrentStep(2)} style={{ marginTop: '16px' }}>
-                Proceed to STEP 2: Select Grid Cell ➔
-              </IonButton>
+              {btConnected && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             )}
           </IonCardContent>
         </IonCard>
