@@ -208,3 +208,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         if (onSiteCreated) {
           onSiteCreated({ ...editSite, ...sitePayload });
         }
+        onClose();
+      } catch (err: any) {
+        console.error('Error updating offline site locally:', err);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    try {
+      if (!syncService.isOnline()) {
+        throw new Error('OFFLINE_MODE');
+      }
+
+      const result = await registerSiteWithPhoto(sitePayload);
+
+      setToastMsg(`Monitoring Site "${result.site.site_name}" created successfully!`);
+      setShowToast(true);
+      offlineStorage.clearDraft(SITE_DRAFT_KEY);
+
+      if (onSiteCreated) onSiteCreated(result.site);
+
+      setPhotoRecord(null);
+      setPhotoPreview(null);
+      onClose();
+    } catch (err: any) {
+      console.warn('Network error or offline mode during site creation, queueing item:', err);
+      
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id || 'inspector_user';
+
+      const offlineSiteRecord: OfflineSite = {
+        id: tempId,
+        isOffline: true,
+        isSynced: false,
