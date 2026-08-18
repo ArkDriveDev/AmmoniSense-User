@@ -886,18 +886,18 @@ export default function UserMap() {
                   type="checkbox"
                   checked={showBoundaryLayer}
                   onChange={(e) => setShowBoundaryLayer(e.target.checked)}
-            <IonButton expand="block" className="btn-ammoni btn-primary" onClick={() => setShowLegend(false)}>
-              Close Legend
-            </IonButton>
+                />
+                <b>Manolo Fortich Boundary</b>
+              </label>
+            </div>
           </div>
-        </IonModal>
+        </IonPopover>
 
-        {/* PHOTO MODAL */}
-        <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
+        {/* LEGEND MODAL */}
+        <IonModal isOpen={showLegend} onDidDismiss={() => setShowLegend(false)}>
           <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-            <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>Inspection Photo</h2>
-            {(selectedReading?.photo_url || selectedPhotoTag?.photo_url) && (
-              <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
                 <img src={selectedReading?.photo_url || selectedPhotoTag?.photo_url} alt="Inspection Photo" style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }} />
               </div>
             )}
