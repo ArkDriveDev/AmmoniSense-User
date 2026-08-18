@@ -238,3 +238,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
             </IonCardContent>
           </IonCard>
         )}
+
+        {/* Scan Control Action Button */}
+        <IonButton
+          expand="block"
+          color="primary"
+          onClick={handleStartScan}
+          disabled={scanning}
+          style={{ fontWeight: 700, marginBottom: '16px' }}
+        >
+          {scanning ? (
+            <>
+              <IonSpinner name="crescent" />
+              &nbsp;Scanning BLE Central Devices...
+            </>
+          ) : (
+            <>
+              <IonIcon icon={searchOutline} slot="start" />
+              Scan for BLE Sensor Devices
+            </>
+          )}
