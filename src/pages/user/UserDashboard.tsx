@@ -103,3 +103,38 @@ export default function UserDashboard() {
                 <IonCardContent style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(29, 93, 155, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <IonIcon icon={analyticsOutline} style={{ color: '#1D5D9B', fontSize: '20px' }} />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>Ammonia Concentration Trend</h3>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>Real-time telemetry trendline (ppm)</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ height: '240px' }}>
+                    <AmmoniaTrendChart data={chartData.ammoniaTrend} />
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+
+          {/* Device Status & Quick Summary Row */}
+          <IonRow>
+            <IonCol size="12" size-md="6">
+              <IonCard className="premium-card">
+                <IonCardContent style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                    <IonIcon icon={pulseOutline} style={{ color: '#008B74', fontSize: '20px' }} />
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>Device Health Breakdown</h3>
+                  </div>
+                  <div style={{ height: '200px' }}>
