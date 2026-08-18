@@ -257,22 +257,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
         left: '50px',
         zIndex: 1000,
         backgroundColor: 'rgba(255, 255, 255, 0.92)',
-        backdropFilter: 'blur(4px)',
-        padding: '6px 12px',
-        borderRadius: '20px',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-        fontSize: '12px',
-        fontWeight: 600,
-        color: '#0f172a',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
-      }}>
-        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3880ff' }}></span>
-        {siteName} {activeCellId ? `• Selected Cell: ${activeCellId}` : '• Tap cell to select'}
-      </div>
-    </div>
-  );
-};
-
-export default SiteGridMap;
