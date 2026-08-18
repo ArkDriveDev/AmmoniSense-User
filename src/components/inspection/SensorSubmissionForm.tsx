@@ -310,18 +310,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       return;
     }
 
-    setCurrentStep(3);
-  };
-
-  // =========================================================
-  // STEP 3: CONNECT ESP32 BLUETOOTH / READ SENSOR
-  // =========================================================
-  const handleStep3_ConnectBluetooth = async () => {
-    setBtConnecting(true);
+    setSubmitLoading(true);
     try {
-      let reading: BLEReading | null = null;
-      try {
-        reading = await bleService.scanAndConnect();
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id || null;
+
+      const ammoniaNum = parseFloat(ammonia);
+      const tempNum = parseFloat(temperature);
+      const humNum = parseFloat(humidity);
+      const battNum = parseFloat(battery);
+
+      let status = 'LOW';
+      if (ammoniaNum > 70) status = 'HIGH';
       } catch (scanErr: any) {
         console.info('Scanning fallback to simulator connection');
         reading = await bleService.simulateConnection('moderate');
