@@ -718,18 +718,18 @@ export default function UserMap() {
                     <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Sensor Reading Detail</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                       <span
-                {selectedPhotoTag.photo_url && (
-                  <div style={{ width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
-                    <img src={selectedPhotoTag.photo_url} alt="Inspection Photo Tag" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
-                  <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Grid Cell ID</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.grid_cell_id || 'Pending Selection'}</strong>
-                  </div>
-                  <div>
+                        style={{
+                          fontSize: '22px',
+                          fontWeight: 800,
+                          color: getAmmoniaColor(selectedReading.ammonia),
+                        }}
+                      >
+                        {selectedReading.ammonia.toFixed(1)} PPM
+                      </span>
+                      <IonBadge style={{ background: getAmmoniaColor(selectedReading.ammonia), color: '#ffffff' }}>
+                        {getAmmoniaSeverityLabel(selectedReading.ammonia)}
+                      </IonBadge>
+                      {selectedReading.is_pending_sync && <PendingSyncBadge />}
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site</span>
                     <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>
                   </div>
