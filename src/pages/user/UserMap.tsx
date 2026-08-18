@@ -802,18 +802,18 @@ export default function UserMap() {
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site</span>
                     <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>
                   </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.latitude.toFixed(5)}°, {selectedPhotoTag.longitude.toFixed(5)}°</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Captured / Uploaded</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {selectedPhotoTag.uploaded_at ? new Date(selectedPhotoTag.uploaded_at).toLocaleString() : 'Recent'}
+                    </strong>
+                  </div>
+                </div>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showPhotoTagsLayer}
-                  onChange={(e) => setShowPhotoTagsLayer(e.target.checked)}
-                />
-                <b>Step 1 Photo Tags</b> (📷 Pins)
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                <input
                   type="checkbox"
                   checked={showBoundaryLayer}
                   onChange={(e) => setShowBoundaryLayer(e.target.checked)}
