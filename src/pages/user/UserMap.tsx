@@ -698,3 +698,38 @@ export default function UserMap() {
                           setShowToast(true);
                           fetchSites();
                         } catch (err: any) {
+                          setToastMsg(err.message || 'Failed to delete site.');
+                          setShowToast(true);
+                        }
+                      }
+                    }}
+                  >
+                    <IonIcon icon={trashOutline} slot="icon-only" />
+                  </IonButton>
+                </div>
+              </div>
+            )}
+
+            {/* SENSOR READING DETAILS */}
+            {selectedReading && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Sensor Reading Detail</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                      <span
+                        style={{
+                          fontSize: '22px',
+                          fontWeight: 800,
+                          color: getAmmoniaColor(selectedReading.ammonia),
+                        }}
+                      >
+                        {selectedReading.ammonia.toFixed(1)} PPM
+                      </span>
+                      <IonBadge style={{ background: getAmmoniaColor(selectedReading.ammonia), color: '#ffffff' }}>
+                        {getAmmoniaSeverityLabel(selectedReading.ammonia)}
+                      </IonBadge>
+                      {selectedReading.is_pending_sync && <PendingSyncBadge />}
+                    </div>
+                  </div>
+                </div>
