@@ -13,20 +13,20 @@ interface OdorZonePolygonLayerProps {
 export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
   map,
   odorZones = [],
+  communityPolygons = [],
   showOdorZones = true,
+  showCommunities = true,
 }) => {
   useEffect(() => {
     if (!map) return;
 
-    const odorLayerGroup = L.layerGroup().addTo(map);
+    const odorGroup = L.layerGroup().addTo(map);
+    const commGroup = L.layerGroup().addTo(map);
 
-    // Render Ammonia Spatial Odor Dispersion Plumes directly from real sensor readings
+    // 1. Render Odor Zone Polygons (🟧 Orange / Red)
     if (showOdorZones) {
-      readings.forEach((reading) => {
-        if (!reading.latitude || !reading.longitude || !reading.ammonia) return;
-
-        const nh3 = reading.ammonia;
-        const center: [number, number] = [reading.latitude, reading.longitude];
+      odorZones.forEach((zone) => {
+        if (!zone.coordinates || zone.coordinates.length < 3) return;
 
         if (nh3 > 20) {
           // Critical Hazard Zone (>20 ppm NH3) -> 400m Red Dispersion Plume
