@@ -57,3 +57,24 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
       setConnectionState(state);
       setScanning(state === 'scanning');
     });
+
+    const unsubDevices = bleCentralService.onDevicesDiscovered((devs) => {
+      setDevices(devs);
+    });
+
+    setDevices(bleCentralService.getDiscoveredDevices());
+
+    if (isOpen) {
+      checkPermissions();
+    }
+
+    return () => {
+      unsubState();
+      unsubDevices();
+    };
+  }, [isOpen]);
+
+  const checkPermissions = async () => {
+    try {
+      const status = await bleCentralService.checkAndRequestPermissions();
+      setPermStatus(status);
