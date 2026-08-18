@@ -98,3 +98,23 @@ class BLECentralService {
 
   public onTelemetry(listener: BLECentralTelemetryListener): () => void {
     this.telemetryListeners.push(listener);
+    return () => {
+      this.telemetryListeners = this.telemetryListeners.filter((l) => l !== listener);
+    };
+  }
+
+  public onDevicesDiscovered(listener: BLECentralDeviceListener): () => void {
+    this.deviceListeners.push(listener);
+    return () => {
+      this.deviceListeners = this.deviceListeners.filter((l) => l !== listener);
+    };
+  }
+
+  public onStateChange(listener: BLECentralStateListener): () => void {
+    this.stateListeners.push(listener);
+    return () => {
+      this.stateListeners = this.stateListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notifyTelemetryListeners(reading: BLECentralReading) {
