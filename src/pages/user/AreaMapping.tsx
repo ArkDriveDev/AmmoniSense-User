@@ -158,3 +158,23 @@ export default function AreaMapping() {
             </h4>
 
             {loading ? (
+              <div style={{ textAlign: 'center', padding: '30px' }}>
+                <IonSpinner name="crescent" color="primary" />
+                <p style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Loading spatial polygons...</p>
+              </div>
+            ) : odorZones.length === 0 && communityPolygons.length === 0 ? (
+              <IonCard className="premium-card" style={{ margin: 0, padding: '20px', textAlign: 'center' }}>
+                <IonCardContent>
+                  <IonIcon icon={layersOutline} style={{ fontSize: '36px', color: '#94A3B8', marginBottom: '8px' }} />
+                  <p style={{ margin: 0, color: '#64748B', fontWeight: 600, fontSize: '14px' }}>
+                    No spatial polygons saved yet. Tap points on the map above to draw Odor Zones or Community boundaries!
+                  </p>
+                </IonCardContent>
+              </IonCard>
+            ) : (
+              <IonGrid style={{ padding: 0 }}>
+                <IonRow>
+                  {odorZones.map((z, idx) => (
+                    <IonCol key={z.id || idx} size="12" size-md="6">
+                      <IonCard className="premium-card" style={{ margin: '0 0 12px 0' }}>
+                        <IonCardContent style={{ padding: '14px' }}>
