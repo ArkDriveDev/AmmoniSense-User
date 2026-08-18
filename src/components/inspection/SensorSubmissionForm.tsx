@@ -106,18 +106,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     if (draftBLE) {
       setAmmonia(draftBLE.ammonia_ppm.toString());
       setTemperature(draftBLE.temperature_c.toString());
-
-    // Subscribe to real-time BLE telemetry (Hardware BLE or Simulator stream)
-    const unsubscribe = bleService.onReading((reading: BLEReading) => {
-      setAmmonia(reading.ammonia.toString());
-      setTemperature(reading.temperature.toString());
-      setHumidity(reading.humidity.toString());
-      setBattery(reading.battery.toString());
-      setBtConnected(true);
-      if (reading.device_uid) {
-        setSelectedDeviceUid(reading.device_uid);
+      setHumidity(draftBLE.humidity_pct.toString());
+      if (draftBLE.device_name || draftBLE.device_id) {
+        setSelectedDeviceUid(draftBLE.device_name || draftBLE.device_id);
       }
-      if (reading.rssi !== undefined) {
+      setBtConnected(true);
+      offlineStorage.clearDraft('draft_ble_central_reading');
+    }
+
+    // Subscribe to BLE Central 12-byte Float32 telemetry
+    const unsubCentral = bleCentralService.onTelemetry((telemetry: BLECentralReading) => {
+      setAmmonia(telemetry.ammonia_ppm.toString());
+      setTemperature(telemetry.temperature_c.toString());
         setBleRssi(reading.rssi);
       }
 
