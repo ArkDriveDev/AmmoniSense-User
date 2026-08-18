@@ -418,3 +418,37 @@ export interface CaptureSitePhotoResult {
   latitude: number;
   longitude: number;
   gpsSource: GpsSource;
+}
+
+/**
+ * Capture Site Photo via Capacitor Camera, extract EXIF GPS or fallback to Device GPS, stamp, upload & record
+ */
+export const captureSitePhoto = async (
+  siteName: string = 'New Monitoring Site'
+): Promise<CaptureSitePhotoResult> => {
+  // 1. Capture photo via Capacitor Camera (with web/unimplemented fallback)
+  const capturedDataUrl = await captureImageWithCameraOrFallback();
+
+  // 2. Try EXIF GPS extraction from captured photo
+  let gpsSource: GpsSource = 'photo_exif';
+  let extracted = extractGpsFromExif(capturedDataUrl);
+  let latitude = extracted?.latitude;
+  let longitude = extracted?.longitude;
+
+  // 3. Fallback to Device GPS if EXIF GPS is missing
+  if (latitude === undefined || longitude === undefined) {
+    gpsSource = 'device_gps';
+    try {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+      });
+      latitude = position.coords.latitude;
+      longitude = position.coords.longitude;
+    } catch (geoErr) {
+      console.warn('Device GPS fallback failed, using default manual coordinates:', geoErr);
+      gpsSource = 'manual';
+      latitude = 14.5995;
+      longitude = 120.9842;
+    }
+  }
