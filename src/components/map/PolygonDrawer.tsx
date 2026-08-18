@@ -57,3 +57,24 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
   const [zoneName, setZoneName] = useState<string>('Odor Impact Zone A');
   const [severityLevel, setSeverityLevel] = useState<'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL'>('HIGH');
   const [ammoniaPpm, setAmmoniaPpm] = useState<string>('24.5');
+
+  // Community Form State
+  const [communityName, setCommunityName] = useState<string>('Poblacion Community');
+  const [communityType, setCommunityType] = useState<'Residential' | 'School' | 'Hospital' | 'Commercial' | 'Agricultural'>('Residential');
+  const [population, setPopulation] = useState<string>('1200');
+
+  // Computed Surface Area (Hectares)
+  const [surfaceAreaHa, setSurfaceAreaHa] = useState<number>(0);
+
+  // Initialize Leaflet Map Instance
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    const map = L.map(mapContainerRef.current, {
+      center: [centerLat, centerLng],
+      zoom: zoom,
