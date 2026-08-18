@@ -58,3 +58,22 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({ reading })
           background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.96), rgba(29, 93, 155, 0.92))',
           color: '#ffffff',
           borderRadius: '16px',
+          padding: '18px',
+          boxShadow: '0 8px 24px rgba(15, 60, 92, 0.25)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255, 255, 255, 0.15)'
+        }}
+      >
+        <IonCardContent style={{ padding: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div>
+              <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, fontWeight: 700 }}>
+                AMMONIA CONCENTRATION (NH₃)
+              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '42px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '-1px' }}>
+                  {reading.ammonia_ppm.toFixed(2)}
+                </span>
+                <span style={{ fontSize: '18px', fontWeight: 700, opacity: 0.9 }}>PPM</span>
+              </div>
+            </div>
