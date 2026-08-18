@@ -33,3 +33,38 @@ interface PolygonDrawerProps {
   height?: string;
   onSaveOdorZone?: (zone: OdorZone) => void;
   onSaveCommunity?: (community: CommunityPolygon) => void;
+}
+
+export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
+  centerLat = 8.3683,
+  centerLng = 124.8637,
+  zoom = 14,
+  height = '420px',
+  onSaveOdorZone,
+  onSaveCommunity,
+}) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const polylineRef = useRef<L.Polyline | null>(null);
+  const polygonRef = useRef<L.Polygon | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+
+  // Draw State
+  const [vertices, setVertices] = useState<[number, number][]>([]);
+  const [drawingMode, setDrawingMode] = useState<'odor_zone' | 'community'>('odor_zone');
+
+  // Odor Zone Form State
+  const [zoneName, setZoneName] = useState<string>('Odor Impact Zone A');
+  const [severityLevel, setSeverityLevel] = useState<'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL'>('HIGH');
+  const [ammoniaPpm, setAmmoniaPpm] = useState<string>('24.5');
+
+  // Community Form State
+  const [communityName, setCommunityName] = useState<string>('Poblacion Community');
+  const [communityType, setCommunityType] = useState<'Residential' | 'School' | 'Hospital' | 'Commercial' | 'Agricultural'>('Residential');
+  const [population, setPopulation] = useState<string>('1200');
+
+  // Computed Surface Area (Hectares)
+  const [surfaceAreaHa, setSurfaceAreaHa] = useState<number>(0);
+
+  // Initialize Leaflet Map Instance
+  useEffect(() => {
