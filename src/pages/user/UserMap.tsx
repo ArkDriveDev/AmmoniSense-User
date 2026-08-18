@@ -478,18 +478,18 @@ export default function UserMap() {
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
-              placeholder="Search site name, code, or address..."
-              showClearButton="always"
-              style={{ '--background': 'transparent', '--box-shadow': 'none', padding: 0 }}
-            />
-          </div>
-        </div>
-
-        {/* Map Canvas */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#F1F5F9' }}>
-            <IonSpinner name="crescent" color="primary" />
-            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading Manolo Fortich Monitoring Sites...</p>
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>Monitoring Sites Map</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => setShowLegend(true)} style={{ color: '#ffffff' }}>
+              <IonIcon icon={informationCircleOutline} slot="icon-only" />
+            </IonButton>
+            <IonButton
+              onClick={(e) => {
+                setPopoverEvent(e.nativeEvent);
+                setShowLayerPopover(true);
+              }}
+              style={{ color: '#ffffff' }}
           </div>
         ) : (
           <FullMapView
