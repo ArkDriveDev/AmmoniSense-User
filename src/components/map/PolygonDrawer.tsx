@@ -173,3 +173,38 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       polylineRef.current = line;
       setSurfaceAreaHa(0);
     } else {
+      setSurfaceAreaHa(0);
+    }
+  }, [vertices, drawingMode]);
+
+  // Calculate polygon surface area in hectares
+  const calculateSurfaceArea = (pts: [number, number][]) => {
+    if (pts.length < 3) return;
+    // Simple Shoelace formula converted to approximate square meters / hectares
+    let area = 0;
+    const R = 6378137; // Earth radius in meters
+    const degToRad = Math.PI / 180;
+
+    for (let i = 0; i < pts.length; i++) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % pts.length];
+
+      const x1 = p1[1] * degToRad * R * Math.cos(p1[0] * degToRad);
+      const y1 = p1[0] * degToRad * R;
+      const x2 = p2[1] * degToRad * R * Math.cos(p2[0] * degToRad);
+      const y2 = p2[0] * degToRad * R;
+
+      area += x1 * y2 - x2 * y1;
+    }
+
+    const areaSqMeters = Math.abs(area / 2);
+    const areaHa = areaSqMeters / 10000;
+    setSurfaceAreaHa(parseFloat(areaHa.toFixed(2)));
+  };
+
+  const handleUndo = () => {
+    setVertices((prev) => prev.slice(0, prev.length - 1));
+  };
+
+  const handleClear = () => {
+    setVertices([]);
