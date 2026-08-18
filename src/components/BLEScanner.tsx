@@ -313,3 +313,30 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
                         <IonButton
                           size="small"
                           color="success"
+                          onClick={() => handleConnectDevice(device)}
+                          disabled={isConnecting}
+                          style={{ fontWeight: 700, margin: 0 }}
+                        >
+                          {isConnecting ? (
+                            <>
+                              <IonSpinner name="crescent" style={{ width: '14px', height: '14px' }} />
+                              &nbsp;Connecting...
+                            </>
+                          ) : (
+                            'Connect & Subscribe'
+                          )}
+                        </IonButton>
+                      </div>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              );
+            })}
+          </div>
+        )}
+      </IonContent>
+    </IonModal>
+  );
+};
+
+export default BLEScanner;
