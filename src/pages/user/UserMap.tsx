@@ -814,18 +814,18 @@ export default function UserMap() {
                   </div>
                 </div>
 
-                  type="checkbox"
-                  checked={showBoundaryLayer}
-                  onChange={(e) => setShowBoundaryLayer(e.target.checked)}
-                />
-                <b>Manolo Fortich Boundary</b>
-              </label>
-            </div>
-          </div>
-        </IonPopover>
-
-        {/* LEGEND MODAL */}
-        <IonModal isOpen={showLegend} onDidDismiss={() => setShowLegend(false)}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setShowPhotoModal(true);
+                    }}
+                  >
+                    <IonIcon icon={eyeOutline} slot="start" /> Full Photo View
+                  </IonButton>
+                  <IonButton
           <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
