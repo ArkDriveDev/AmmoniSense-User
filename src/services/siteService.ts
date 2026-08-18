@@ -80,8 +80,8 @@ export const registerSiteWithPhoto = async (
       site_id: createdSite.id,
       latitude: payload.latitude,
       longitude: payload.longitude,
-      grid_cell_id: payload.grid_cell_id || 'A1',
       address: payload.address || payload.site_name,
+      recorded_by: user.id,
       recorded_by: user.id,
       notes: `Initial registration location recorded via ${payload.gps_source || 'GPS'}.`,
     };
