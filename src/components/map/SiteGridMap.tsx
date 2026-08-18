@@ -77,23 +77,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
 
     // Clean up existing map instance if re-mounting
     if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
-
-    const map = L.map(mapContainerRef.current, {
-      center: [centerLat, centerLng],
-      zoom: zoom,
-      zoomControl: true,
-    });
-
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | MENRO',
-      maxZoom: 21,
-    }).addTo(map);
-
-    gridLayerGroupRef.current = L.layerGroup().addTo(map);
-    markersLayerGroupRef.current = L.layerGroup().addTo(map);
-
-    map.on('zoomend', () => {
