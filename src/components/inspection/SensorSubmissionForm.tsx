@@ -490,18 +490,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
             <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IonIcon icon={cameraOutline} color="primary" />
               STEP 1: Capture Photo & GPS
-              + New Site
-            </IonButton>
-          </div>
-        </IonCardContent>
-      </IonCard>
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <p style={{ fontSize: '14px', color: '#64748b', marginTop: 0 }}>
+              Take an inspection photo. GPS coordinates will be captured and linked to your inspection.
+            </p>
 
-      {/* 4-STEP WIZARD PROGRESS HEADER */}
-      <IonGrid style={{ padding: 0, marginBottom: '16px' }}>
-        <IonRow>
-          {[
-            { num: 1, title: 'STEP 1: Take Photo', icon: cameraOutline },
-            { num: 2, title: 'STEP 2: Grid Cell', icon: locationOutline },
+            {photoRecord ? (
+              <div style={{ textAlign: 'center', margin: '16px 0' }}>
+                <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', borderRadius: '8px', overflow: 'hidden', border: '2px solid #2dd36f' }}>
+                  <img src={photoRecord.dataUrl || photoRecord.photo_url} alt="Captured" style={{ width: '100%', maxHeight: '240px', objectFit: 'cover' }} />
+                </div>
             { num: 3, title: 'STEP 3: ESP32 Bluetooth', icon: bluetoothOutline },
             { num: 4, title: 'STEP 4: Submit All', icon: cloudUploadOutline },
           ].map(s => {
