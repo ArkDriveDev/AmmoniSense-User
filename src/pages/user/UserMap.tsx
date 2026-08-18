@@ -453,3 +453,38 @@ export default function UserMap() {
 
       if (IS_IN_MANOLO_FORTICH(lat, lng)) {
         setUserLocation({ lat, lng });
+        setMapCenter({ lat, lng, zoom: 15 });
+        setToastMsg('📍 Centered on your location in Manolo Fortich');
+      } else {
+        setMapCenter(MANOLO_FORTICH_CENTER);
+        setToastMsg('📍 Your GPS location is outside Manolo Fortich. Map view is restricted to Manolo Fortich.');
+      }
+      setShowToast(true);
+    } catch (err: any) {
+      console.warn('Geolocation error:', err);
+      setToastMsg('Could not acquire current GPS location');
+      setShowToast(true);
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const closeBottomSheet = () => {
+    setSelectedSite(null);
+    setSelectedReading(null);
+    setSelectedPhotoTag(null);
+  };
+
+  return (
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>Monitoring Sites Map</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => setShowLegend(true)} style={{ color: '#ffffff' }}>
+              <IonIcon icon={informationCircleOutline} slot="icon-only" />
+            </IonButton>
+            <IonButton
+              onClick={(e) => {
+                setPopoverEvent(e.nativeEvent);
+                setShowLayerPopover(true);
