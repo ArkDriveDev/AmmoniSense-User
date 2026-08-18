@@ -313,3 +313,38 @@ export default function UserMap() {
           .map((r: any) => ({
             id: r.id,
             ammonia: r.ammonia || 0,
+            temperature: r.temperature,
+            humidity: r.humidity,
+            battery: r.battery,
+            latitude: r.latitude || 8.3683,
+            longitude: r.longitude || 124.8637,
+            grid_cell_id: r.grid_cell_id,
+            device_uid: r.device_uid,
+            created_at: r.created_at,
+            photo_url: r.photo_url,
+            is_pending_sync: false,
+          }))
+          .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
+      }
+    } catch (err) {
+      console.warn('Error fetching sensor data:', err);
+    }
+
+    try {
+      const queue = await offlineStorage.getQueue();
+      const offlineReadings: ReadingMarkerData[] = queue
+        .filter((q) => q.type === 'SENSOR_READING')
+        .map((q) => ({
+          id: q.id,
+          ammonia: q.payload.ammonia || 0,
+          temperature: q.payload.temperature,
+          humidity: q.payload.humidity,
+          battery: q.payload.battery,
+          latitude: q.payload.latitude || 8.3683,
+          longitude: q.payload.longitude || 124.8637,
+          grid_cell_id: q.payload.grid_cell_id,
+          device_uid: q.payload.device_uid || 'OFFLINE-NODE',
+          created_at: q.timestamp,
+          photo_url: q.payload.photo_url,
+          is_pending_sync: true,
+        }))
