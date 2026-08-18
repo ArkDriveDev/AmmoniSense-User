@@ -243,3 +243,38 @@ export const saveCommunityPolygon = async (poly: CommunityPolygon): Promise<Comm
   }
   return data;
 };
+
+/**
+ * Delete a Monitoring Site from Supabase, IndexedDB, and localStorage.
+ * Dispatches 'site_deleted' event for automatic UI/map refresh.
+ */
+export const deleteSite = async (siteId: string | number): Promise<void> => {
+  const strId = String(siteId);
+
+  // 1. Always purge local offline site records (IndexedDB + queue + localStorage)
+  try {
+    await offlineStorage.deleteOfflineSite(strId);
+    offlineStorage.removeSiteFromLocalStorage(strId);
+  } catch (e) {
+    console.warn('Error purging local site record:', e);
+  }
+
+  // 2. If it's a online Supabase site (non-temp ID), delete from Supabase tables
+  if (!strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_')) {
+    try {
+      // Delete associated site location records first
+      const { error: locErr } = await supabase
+        .from('site_locations')
+        .delete()
+        .eq('site_id', siteId);
+      if (locErr) console.warn('Delete site_locations notice:', locErr.message);
+
+      // Delete site record from monitoring_sites
+      const { error: siteErr } = await supabase
+        .from('monitoring_sites')
+        .delete()
+        .eq('id', siteId);
+
+      if (siteErr) {
+        throw new Error('Failed to delete monitoring site from Supabase: ' + siteErr.message);
+      }
