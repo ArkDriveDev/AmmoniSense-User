@@ -982,3 +982,8 @@ export default function UserMap() {
           message={toastMsg}
           duration={3500}
           position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
