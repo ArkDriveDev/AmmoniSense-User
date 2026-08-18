@@ -694,18 +694,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               expand="block"
               color="success"
               size="large"
-            <div style={{
-              backgroundColor: btConnected ? '#f0fdf4' : '#f8fafc',
-              border: `1px solid ${btConnected ? '#86efac' : '#cbd5e1'}`,
-              borderRadius: '8px',
-              padding: '16px',
-              textAlign: 'center',
-              marginBottom: '16px'
-            }}>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <IonButton color="tertiary" onClick={handleStep3_ConnectBluetooth} disabled={btConnecting}>
-                  {btConnecting ? (
-                    <>
+              onClick={handleStep3_SubmitAll}
+              disabled={submitLoading}
+              style={{ fontWeight: 'bold' }}
+            >
+              {submitLoading ? (
+                <>
+                  <IonSpinner name="crescent" />
+                  &nbsp;Submitting Inspection Data...
+                </>
+              ) : (
+                <>
+                  <IonIcon icon={checkmarkDoneCircleOutline} slot="start" />
                       <IonSpinner name="crescent" />
                       &nbsp;Connecting BLE...
                     </>
