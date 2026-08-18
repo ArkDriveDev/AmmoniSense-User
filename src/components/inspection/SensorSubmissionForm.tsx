@@ -787,32 +787,3 @@ export default SensorSubmissionForm;
             <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div><b>Site:</b> {selectedSite?.site_name || 'N/A'}</div>
               <div><b>Grid Cell:</b> <IonBadge color="primary">{selectedCellId}</IonBadge></div>
-              <div><b>GPS:</b> {cellLat.toFixed(5)}°, {cellLng.toFixed(5)}°</div>
-              <div><b>Device:</b> {selectedDeviceUid}</div>
-              <div><b>Ammonia NH₃:</b> <IonBadge color={parseFloat(ammonia) > 40 ? 'warning' : 'success'}>{ammonia} ppm</IonBadge></div>
-              <div><b>Photo Linked:</b> {photoRecord ? `Photo #${photoRecord.id}` : 'None'}</div>
-            </div>
-
-            <IonButton
-              expand="block"
-              color="success"
-              size="large"
-              onClick={handleStep4_SubmitAll}
-              disabled={submitLoading}
-              style={{ fontWeight: 'bold' }}
-            >
-              {submitLoading ? (
-                <>
-                  <IonSpinner name="crescent" />
-                  &nbsp;Inserting sensor_data & linking photo...
-                </>
-              ) : (
-                <>
-                  <IonIcon icon={checkmarkDoneCircleOutline} slot="start" />
-                  CONFIRM & SUBMIT ALL DATA
-                </>
-              )}
-            </IonButton>
-          </IonCardContent>
-        </IonCard>
-      )}
