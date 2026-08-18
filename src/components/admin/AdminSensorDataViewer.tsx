@@ -173,3 +173,38 @@ export const AdminSensorDataViewer: React.FC = () => {
               No monitoring sites or sensor readings have been added yet. Add a monitoring site or submit inspection readings to display the interactive spatial map.
             </p>
           </IonCardContent>
+        </IonCard>
+      ) : (
+        <IonCard style={{ margin: '0 0 24px 0', borderRadius: '12px', overflow: 'hidden' }}>
+          <IonCardHeader style={{ paddingBottom: '8px' }}>
+            <IonCardTitle style={{ fontSize: '16px', fontWeight: 'bold' }}>
+              Interactive Spatial Map & Odor Dispersion
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent style={{ padding: '0 16px 16px 16px' }}>
+            <FullMapView
+              centerLat={activeSiteObj?.current_latitude ?? activeSiteObj?.latitude ?? 8.3683}
+              centerLng={activeSiteObj?.current_longitude ?? activeSiteObj?.longitude ?? 124.8637}
+              readings={mapMarkers}
+              height="440px"
+            />
+          </IonCardContent>
+        </IonCard>
+      )}
+
+      {/* Sensor Data Grid List */}
+      <h3 style={{ margin: '0 0 12px 4px', fontSize: '18px', fontWeight: 'bold', color: '#1e293b' }}>
+        Sensor Readings & Inspection Photos ({records.length})
+      </h3>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <IonSpinner />
+          <p>Loading inspection logs...</p>
+        </div>
+      ) : records.length === 0 ? (
+        <IonCard style={{ textAlign: 'center', padding: '32px' }}>
+          <p style={{ color: '#64748b' }}>No inspection sensor data found for selected filter.</p>
+        </IonCard>
+      ) : (
+        <IonGrid style={{ padding: 0 }}>
