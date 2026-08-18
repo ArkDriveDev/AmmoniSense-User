@@ -219,23 +219,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
                 <span style={{ fontWeight: 600, fontSize: '13px', color: '#475569' }}>Temperature</span>
                 <span style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>{temperature.toFixed(1)} °C</span>
               </div>
-              <IonRange
-                min={15}
-                max={45}
-                step={0.5}
-                value={temperature}
-                onIonChange={(e) => setTemperature(e.detail.value as number)}
-              />
-            </div>
-
-            {/* Humidity Slider */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: '#475569' }}>Humidity</span>
-                <span style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>{humidity.toFixed(1)} %</span>
-              </div>
-              <IonRange
-                min={20}
-                max={100}
-                step={1}
-                value={humidity}
