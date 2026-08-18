@@ -18,3 +18,23 @@ import {
   IonAlert
 } from '@ionic/react';
 import {
+  bluetoothOutline,
+  closeOutline,
+  searchOutline,
+  radioButtonOnOutline,
+  checkmarkCircleOutline,
+  cellularOutline,
+  hardwareChipOutline,
+  warningOutline,
+  locationOutline,
+  settingsOutline
+} from 'ionicons/icons';
+import bleCentralService, { BLECentralDevice, BLECentralState, BLEPermissionStatus } from '../services/bleCentralService';
+
+interface BLEScannerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectDevice?: (device: BLECentralDevice) => void;
+}
+
+export const BLEScanner: React.FC<BLEScannerProps> = ({
