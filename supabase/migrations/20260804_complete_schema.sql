@@ -103,3 +103,38 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
   profile_id UUID NULL,
   old_data JSONB NULL,
   new_data JSONB NULL,
+  details JSONB NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT activity_logs_pkey PRIMARY KEY (id)
+);
+
+-- INDEXES
+CREATE INDEX IF NOT EXISTS idx_livestock_location ON public.livestock (current_latitude, current_longitude);
+CREATE INDEX IF NOT EXISTS idx_livestock_grid_cell ON public.livestock (current_grid_cell_id);
+CREATE INDEX IF NOT EXISTS idx_livestock_locations_livestock_id ON public.livestock_locations (livestock_id);
+CREATE INDEX IF NOT EXISTS idx_livestock_locations_recorded_at ON public.livestock_locations (recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_livestock_locations_grid_cell ON public.livestock_locations (grid_cell_id);
+CREATE INDEX IF NOT EXISTS idx_sensor_data_device_uid ON public.sensor_data (device_uid);
+CREATE INDEX IF NOT EXISTS idx_sensor_data_created_at ON public.sensor_data (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sensor_data_grid_cell ON public.sensor_data (grid_cell_id);
+
+-- TRIGGERS
+CREATE OR REPLACE FUNCTION update_livestock_current_location()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.livestock 
+  SET 
+    current_latitude = NEW.latitude,
+    current_longitude = NEW.longitude,
+    current_grid_cell_id = NEW.grid_cell_id
+  WHERE id = NEW.livestock_id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_livestock_current_location_trigger ON public.livestock_locations;
+CREATE TRIGGER update_livestock_current_location_trigger
+AFTER INSERT ON public.livestock_locations
+FOR EACH ROW
+EXECUTE FUNCTION update_livestock_current_location();
