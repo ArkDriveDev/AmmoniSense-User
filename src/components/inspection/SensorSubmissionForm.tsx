@@ -238,18 +238,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   // =========================================================
   // STEP 1: TAKE PHOTO
   // =========================================================
-          .filter(d => d.latitude && d.longitude)
-          .map(d => ({
-            id: d.id,
-            latitude: d.latitude,
-            longitude: d.longitude,
-            ammonia: d.ammonia || 0,
-            grid_cell_id: d.grid_cell_id || undefined,
-            device_uid: d.device_uid,
-            created_at: d.created_at,
-            photo_url: d.photo_url || undefined,
-          }));
-        setPreviousReadings(formatted);
+  const handleStep1_TakePhoto = async () => {
+    if (!selectedSiteId) {
+      setToastMsg('Please select or create a monitoring site first before taking an inspection photo.');
+      setToastColor('warning');
+      setShowToast(true);
+      return;
+    }
+    setStep1Loading(true);
+    try {
+      const record = await step1_takeAndUploadPhoto(
+        selectedSiteId || undefined,
+        selectedSite?.site_name || 'MENRO Site'
       }
     } catch (err) {
       console.error('Error fetching previous readings:', err);
