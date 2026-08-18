@@ -738,22 +738,3 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 };
 
 export default SensorSubmissionForm;
-
-              <IonInput
-                type="number"
-                value={ammonia}
-                onIonChange={e => setAmmonia(e.detail.value!)}
-              />
-            </IonItem>
-
-            <IonRow>
-              <IonCol size="4">
-                <IonItem lines="full">
-                  <IonLabel position="stacked">Temp (°C)</IonLabel>
-                  <IonInput type="number" value={temperature} onIonChange={e => setTemperature(e.detail.value!)} />
-                </IonItem>
-              </IonCol>
-              <IonCol size="4">
-                <IonItem lines="full">
-                  <IonLabel position="stacked">Humidity (%)</IonLabel>
-                  <IonInput type="number" value={humidity} onIonChange={e => setHumidity(e.detail.value!)} />
