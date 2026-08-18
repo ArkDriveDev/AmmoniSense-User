@@ -118,18 +118,18 @@ export default function UserMap() {
       loadPolygons()
     ]);
     setLoading(false);
-            site_code: s.site_code,
-            site_name: s.site_name,
-            site_type: s.site_type || 'Agricultural',
-            address: s.address,
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            grid_cell_id: s.current_grid_cell_id || 'A1',
-            owner_name: 'Inspector Owner',
-            photo_url: s.site_photo_thumbnail || s.site_photo_url,
-            isOffline: false,
-            is_pending_sync: false,
-          };
+  };
+
+  const loadPolygons = async () => {
+    try {
+      const [zones, comms] = await Promise.all([
+        fetchOdorZones(),
+        fetchCommunityPolygons()
+      ]);
+      setOdorZones(zones);
+      setCommunityPolygons(comms);
+    } catch (e) {
+      console.warn('Error loading polygons in UserMap:', e);
         });
       } else if (sitesErr) {
         console.warn('Supabase fetch sites error:', sitesErr.message);
