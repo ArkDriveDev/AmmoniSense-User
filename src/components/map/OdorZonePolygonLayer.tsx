@@ -94,6 +94,3 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
 };
 
 export default OdorZonePolygonLayer;
-
-
-export default OdorZonePolygonLayer;
