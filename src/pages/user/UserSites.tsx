@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
+import { deleteSite } from '../../services/siteService';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 import { OfflineSite } from '../../types/site';
 import {
@@ -46,6 +47,18 @@ export default function UserSites() {
 
   useEffect(() => {
     fetchSites();
+
+    const handleSiteDeleted = () => {
+      fetchSites();
+    };
+
+    window.addEventListener('site_deleted', handleSiteDeleted);
+    window.addEventListener('site_synced', handleSiteDeleted);
+
+    return () => {
+      window.removeEventListener('site_deleted', handleSiteDeleted);
+      window.removeEventListener('site_synced', handleSiteDeleted);
+    };
   }, []);
 
   const fetchSites = async () => {
@@ -122,11 +135,15 @@ export default function UserSites() {
     }
   };
 
-  const handleDeleteOfflineSite = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteSite = async (e: React.MouseEvent, siteId: string | number, siteName: string) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this unsynced offline site?')) {
-      await offlineStorage.deleteOfflineSite(id);
-      await fetchSites();
+    if (window.confirm(`Are you sure you want to delete monitoring site "${siteName}"?`)) {
+      try {
+        await deleteSite(siteId);
+        await fetchSites();
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete site.');
+      }
     }
   };
 
@@ -235,8 +252,8 @@ export default function UserSites() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                      {s.isOffline ? (
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {s.isOffline && (
                           <IonButton
                             size="small"
                             fill="clear"
@@ -246,25 +263,23 @@ export default function UserSites() {
                           >
                             <IonIcon icon={createOutline} slot="icon-only" />
                           </IonButton>
-                          <IonButton
-                            size="small"
-                            fill="clear"
-                            color="danger"
-                            onClick={(e) => handleDeleteOfflineSite(e, s.id)}
-                            title="Delete offline site"
-                          >
-                            <IonIcon icon={trashOutline} slot="icon-only" />
-                          </IonButton>
-                        </div>
-                      ) : (
-                        <>
+                        )}
+                        {!s.isOffline && (
                           <IonBadge style={{ background: 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)', color: '#ffffff', padding: '6px 12px', borderRadius: '20px', fontWeight: 700 }}>
                             <IonIcon icon={hardwareChipOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
                             {deviceCounts[s.id] || 0} Devices
                           </IonBadge>
-                          <IonIcon icon={chevronForwardOutline} style={{ color: '#94A3B8', fontSize: '20px' }} />
-                        </>
-                      )}
+                        )}
+                        <IonButton
+                          size="small"
+                          fill="clear"
+                          color="danger"
+                          onClick={(e) => handleDeleteSite(e, s.id, s.site_name)}
+                          title="Delete site"
+                        >
+                          <IonIcon icon={trashOutline} slot="icon-only" />
+                        </IonButton>
+                      </div>
                     </div>
                   </div>
                 </IonCardContent>
