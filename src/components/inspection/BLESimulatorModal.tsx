@@ -139,23 +139,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
             <IonBadge style={{ background: severity.bg, color: severity.color, padding: '6px 12px', fontSize: '11px', fontWeight: 700 }}>
               {severity.label}
             </IonBadge>
-          </div>
-        </div>
-
-        {/* Quick Presets */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Telemetry Presets
-          </label>
-          <IonGrid style={{ padding: 0, marginTop: '8px' }}>
-            <IonRow>
-              <IonCol size="4">
-                <IonButton
-                  expand="block"
-                  fill="outline"
-                  color="success"
-                  size="small"
-                  onClick={() => applyPreset('normal')}
-                  style={{ fontWeight: 600 }}
-                >
-                  <IonIcon icon={checkmarkCircleOutline} slot="start" />
