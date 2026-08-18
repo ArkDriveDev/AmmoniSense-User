@@ -574,18 +574,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               STEP 2: Read Sensor via Bluetooth (ESP32)
             </IonCardTitle>
           </IonCardHeader>
-                border: '2px dashed #fcd34d',
-                borderRadius: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#fffbeb',
-                margin: '16px 0',
-                textAlign: 'center'
-              }}>
-                <IonIcon icon={cameraOutline} style={{ fontSize: '48px', color: '#d97706', marginBottom: '8px' }} />
-                <h4 style={{ margin: '0 0 6px 0', color: '#92400e', fontWeight: 'bold' }}>
+          <IonCardContent>
+            <IonItem lines="full" style={{ marginBottom: '12px' }}>
+              <IonLabel position="stacked">Target Device</IonLabel>
+              <IonSelect
+                value={selectedDeviceUid}
+                placeholder="Select Device"
+                onIonChange={e => setSelectedDeviceUid(e.detail.value)}
+              >
+                {devices.length > 0 ? (
+                  devices.map(d => (
+                    <IonSelectOption key={d.device_uid} value={d.device_uid}>
+                      {d.device_uid}
                   No Monitoring Site Selected
                 </h4>
                 <p style={{ margin: 0, color: '#b45309', fontSize: '13px', maxWidth: '400px', lineHeight: '1.4' }}>
