@@ -394,18 +394,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       setShowToast(true);
 
       setPhotoRecord(null);
-      const { data: insertedSensorData, error: sensorError } = await supabase
-        .from('sensor_data')
-        .insert([sensorPayload])
-        .select('id')
-        .single();
+      setCurrentStep(1);
 
-      if (sensorError) {
-        throw new Error('Supabase insert sensor_data error: ' + sensorError.message);
-      }
+      if (onSuccess) onSuccess();
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
 
-      const sensorDataId = insertedSensorData?.id;
-
+  return (
+    <div style={{ maxWidth: '850px', margin: '0 auto' }}>
+      {/* Site Selection Top Bar */}
+      <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
       if (photoRecord?.id && sensorDataId) {
         await step4_markPhotoAsUsed(photoRecord.id, sensorDataId);
       }
