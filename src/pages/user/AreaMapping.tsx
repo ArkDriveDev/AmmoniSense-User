@@ -103,3 +103,38 @@ export default function AreaMapping() {
       setShowToast(true);
     }
   };
+
+  return (
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
+          <IonTitle style={{ fontWeight: 700 }}>Spatial Polygon & Area Mapping</IonTitle>
+          <IonButton slot="end" fill="clear" onClick={loadData} style={{ color: '#ffffff' }}>
+            <IonIcon icon={refreshOutline} />
+          </IonButton>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent />
+        </IonRefresher>
+
+        <IonGrid style={{ maxWidth: '850px', margin: '0 auto', padding: 0 }}>
+          {/* Top Info Banner */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.95), rgba(29, 93, 155, 0.9))',
+              borderRadius: '16px',
+              padding: '16px',
+              color: '#ffffff',
+              marginBottom: '16px',
+              boxShadow: '0 6px 20px rgba(15, 60, 92, 0.2)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <IonIcon icon={shapesOutline} style={{ fontSize: '28px', color: '#60A5FA' }} />
+              <div>
+                <h3 style={{ margin: 0, fontWeight: 800, fontSize: '17px' }}>Polygon Area Mapping</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', opacity: 0.85 }}>
