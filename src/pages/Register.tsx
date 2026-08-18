@@ -278,3 +278,38 @@ const Register: React.FC = () => {
                         </span>
                       </p>
                     </IonText>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
+
+        {/* VERIFICATION MODAL */}
+        <IonModal isOpen={showVerificationModal} onDidDismiss={() => setShowVerificationModal(false)}>
+          <IonContent className="ion-padding" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IonCard style={{ maxWidth: '500px', margin: 'auto' }}>
+              <IonCardHeader>
+                <IonCardTitle>Confirm Registration</IonCardTitle>
+                <hr />
+                <IonCardSubtitle>Full Name</IonCardSubtitle>
+                <IonCardTitle>{form.full_name}</IonCardTitle>
+
+                <IonCardSubtitle>Email</IonCardSubtitle>
+                <IonCardTitle>{form.email}</IonCardTitle>
+
+                {form.phone && (
+                  <>
+                    <IonCardSubtitle>Phone</IonCardSubtitle>
+                    <IonCardTitle>{form.phone}</IonCardTitle>
+                  </>
+                )}
+
+                {form.organization_name && (
+                  <>
+                    <IonCardSubtitle>Organization</IonCardSubtitle>
+                    <IonCardTitle>{form.organization_name}</IonCardTitle>
+                  </>
+                )}
+              </IonCardHeader>
+              <IonCardContent>
