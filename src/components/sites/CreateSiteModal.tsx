@@ -383,3 +383,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           </IonCard>
 
           <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Code</IonLabel>
+            <IonInput
+              value={form.site_code}
+              onIonChange={e => setForm({ ...form, site_code: e.detail.value! })}
+              placeholder="e.g. SITE-2026-001"
+            />
+          </IonItem>
+
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Name *</IonLabel>
+            <IonInput
+              value={form.site_name}
+              onIonChange={e => setForm({ ...form, site_name: e.detail.value! })}
+              placeholder="e.g. Silang Livestock Farm - Site A"
+            />
+          </IonItem>
+
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Category / Type</IonLabel>
+            <IonSelect
+              value={form.site_type}
+              onIonChange={e => setForm({ ...form, site_type: e.detail.value! })}
+            >
+              <IonSelectOption value="Piggery">Piggery Farm</IonSelectOption>
+              <IonSelectOption value="Poultry">Poultry Farm</IonSelectOption>
+              <IonSelectOption value="Agricultural">Agricultural Zone</IonSelectOption>
+              <IonSelectOption value="Industrial">Industrial Facility</IonSelectOption>
+              <IonSelectOption value="River/Waterway">River / Waterway</IonSelectOption>
+            </IonSelect>
+          </IonItem>
+
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Address / Location Description</IonLabel>
+            <IonInput
+              value={form.address}
