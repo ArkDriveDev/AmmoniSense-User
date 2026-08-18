@@ -165,3 +165,16 @@ export const fetchOdorZones = async (): Promise<OdorZone[]> => {
     .from('odor_zones')
     .select('*')
     .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Supabase fetch odor_zones notice:', error.message);
+    return [];
+  }
+  return data || [];
+};
+
+/**
+ * Save new Odor Zone to Supabase
+ */
+export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
+  const { data: userData } = await supabase.auth.getUser();
