@@ -68,3 +68,38 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({ reading })
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
             <div>
               <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, fontWeight: 700 }}>
+                AMMONIA CONCENTRATION (NH₃)
+              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '42px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '-1px' }}>
+                  {reading.ammonia_ppm.toFixed(2)}
+                </span>
+                <span style={{ fontSize: '18px', fontWeight: 700, opacity: 0.9 }}>PPM</span>
+              </div>
+            </div>
+
+            <IonBadge style={{ background: severity.bg, color: severity.color, padding: '8px 14px', borderRadius: '20px', fontSize: '11px', fontWeight: 800 }}>
+              <IonIcon icon={severity.icon} style={{ verticalAlign: 'middle', marginRight: '4px', fontSize: '14px' }} />
+              {severity.label}
+            </IonBadge>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', fontSize: '12px', opacity: 0.9 }}>
+            <div>
+              <b>Node:</b> {reading.device_name || reading.device_id}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="pulse-dot"></span>
+              GATT 12-Byte Float32 Notification
+            </div>
+          </div>
+        </IonCardContent>
+      </IonCard>
+
+      {/* Environmental Metrics (Temp & Humidity & Battery) */}
+      <IonGrid style={{ padding: 0 }}>
+        <IonRow>
+          {/* Temperature */}
+          <IonCol size="6">
+            <IonCard className="premium-card" style={{ margin: 0, padding: '14px' }}>
+              <IonCardContent style={{ padding: 0 }}>
