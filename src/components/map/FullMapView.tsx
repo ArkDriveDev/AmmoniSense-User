@@ -103,3 +103,38 @@ export const getAmmoniaColor = (ammonia: number): string => {
   if (ammonia > 10) return '#f97316'; // High Orange (10-20 PPM)
   if (ammonia > 5) return '#eab308'; // Warning Yellow (5-10 PPM)
   return '#22c55e'; // Normal Green (0-5 PPM)
+};
+
+export const getAmmoniaSeverityLabel = (ammonia: number): string => {
+  if (ammonia > 20) return 'Critical';
+  if (ammonia > 10) return 'High';
+  if (ammonia > 5) return 'Warning';
+  return 'Normal';
+};
+
+export const FullMapView: React.FC<FullMapViewProps> = ({
+  sites = [],
+  readings = [],
+  photoTags = [],
+  odorZones = [],
+  communityPolygons = [],
+  showSitesLayer = true,
+  showReadingsLayer = true,
+  showPhotoTagsLayer = true,
+  showBoundaryLayer = true,
+  showOdorZonesLayer = true,
+  onSelectSite,
+  onSelectReading,
+  onSelectPhotoTag,
+  centerLat = 8.3683,
+  centerLng = 124.8637,
+  zoom = 13,
+  userLocation = null,
+  height = '100%',
+}) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+
+  const boundaryLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const sitesLayerGroupRef = useRef<L.LayerGroup | null>(null);
