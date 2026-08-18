@@ -12,7 +12,6 @@ import {
   IonRow,
   IonCol,
   IonBadge,
-  IonChip,
   IonButton,
   IonIcon,
   IonModal,
@@ -20,7 +19,7 @@ import {
 } from '@ionic/react';
 import { eyeOutline, locationOutline, calendarOutline, hardwareChipOutline, imageOutline, mapOutline } from 'ionicons/icons';
 import { supabase } from '../../services/supabase';
-import SiteGridMap, { SensorReadingMarker } from '../map/SiteGridMap';
+import FullMapView, { ReadingMarkerData } from '../map/FullMapView';
 import offlineStorage from '../../services/OfflineStorageService';
 import PendingSyncBadge from '../common/PendingSyncBadge';
 
@@ -32,7 +31,6 @@ export interface SensorRecord {
   humidity?: number;
   battery?: number;
   status: string;
-  grid_cell_id?: string;
   latitude?: number;
   longitude?: number;
   created_at: string;
@@ -44,7 +42,6 @@ export interface SensorRecord {
 export const AdminSensorDataViewer: React.FC = () => {
   const [sites, setSites] = useState<{ id: number; site_name: string; current_latitude?: number | null; current_longitude?: number | null; latitude?: number; longitude?: number }[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<number | 'all'>('all');
-  const [selectedCellFilter, setSelectedCellFilter] = useState<string>('all');
 
   const [records, setRecords] = useState<SensorRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -59,7 +56,7 @@ export const AdminSensorDataViewer: React.FC = () => {
 
   useEffect(() => {
     fetchSensorData();
-  }, [selectedSiteId, selectedCellFilter]);
+  }, [selectedSiteId]);
 
   const fetchSites = async () => {
     try {
@@ -74,15 +71,11 @@ export const AdminSensorDataViewer: React.FC = () => {
     setLoading(true);
     let serverRecords: SensorRecord[] = [];
     try {
-      let query = supabase
+      const query = supabase
         .from('sensor_data')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
-
-      if (selectedCellFilter !== 'all') {
-        query = query.eq('grid_cell_id', selectedCellFilter);
-      }
 
       const { data, error } = await query;
       if (!error && data) {
@@ -92,11 +85,10 @@ export const AdminSensorDataViewer: React.FC = () => {
       console.warn('Error or offline during fetchSensorData:', err);
     }
 
-    // Retrieve pending queue items for optimistic UI updates
     try {
       const queue = await offlineStorage.getQueue();
       const pendingReadings = queue
-        .filter(q => q.type === 'SENSOR_READING' && (selectedCellFilter === 'all' || q.payload.grid_cell_id === selectedCellFilter))
+        .filter(q => q.type === 'SENSOR_READING')
         .map(q => ({
           id: q.id,
           device_uid: q.payload.device_uid || 'ESP32-AMMONIA-NODE-01',
@@ -105,7 +97,6 @@ export const AdminSensorDataViewer: React.FC = () => {
           humidity: q.payload.humidity,
           battery: q.payload.battery,
           status: q.payload.status || 'LOW',
-          grid_cell_id: q.payload.grid_cell_id,
           latitude: q.payload.latitude,
           longitude: q.payload.longitude,
           created_at: q.timestamp,
@@ -122,15 +113,13 @@ export const AdminSensorDataViewer: React.FC = () => {
     }
   };
 
-  // Convert records to map markers
-  const mapMarkers: SensorReadingMarker[] = records
+  const mapMarkers: ReadingMarkerData[] = records
     .filter(r => r.latitude && r.longitude)
     .map(r => ({
       id: r.id,
       latitude: r.latitude!,
       longitude: r.longitude!,
       ammonia: r.ammonia || 0,
-      grid_cell_id: r.grid_cell_id || undefined,
       device_uid: r.device_uid,
       created_at: r.created_at,
       photo_url: r.photo_url || undefined,
@@ -150,7 +139,7 @@ export const AdminSensorDataViewer: React.FC = () => {
         <IonCardContent>
           <IonGrid style={{ padding: 0 }}>
             <IonRow>
-              <IonCol size="12" size-md="6">
+              <IonCol size="12">
                 <IonItem lines="full">
                   <IonLabel position="stacked">Filter by Monitoring Site</IonLabel>
                   <IonSelect
@@ -167,23 +156,6 @@ export const AdminSensorDataViewer: React.FC = () => {
                   </IonSelect>
                 </IonItem>
               </IonCol>
-              <IonCol size="12" size-md="6">
-                <IonItem lines="full">
-                  <IonLabel position="stacked">Filter by Grid Cell ID</IonLabel>
-                  <IonSelect
-                    value={selectedCellFilter}
-                    placeholder="All Cells"
-                    onIonChange={e => setSelectedCellFilter(e.detail.value)}
-                  >
-                    <IonSelectOption value="all">All Grid Cells</IonSelectOption>
-                    {['A1', 'A2', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'D1', 'D2'].map(c => (
-                      <IonSelectOption key={c} value={c}>
-                        Grid Cell {c}
-                      </IonSelectOption>
-                    ))}
-                  </IonSelect>
-                </IonItem>
-              </IonCol>
             </IonRow>
           </IonGrid>
         </IonCardContent>
@@ -195,10 +167,10 @@ export const AdminSensorDataViewer: React.FC = () => {
           <IonCardContent>
             <IonIcon icon={mapOutline} style={{ fontSize: '52px', color: '#94a3b8', marginBottom: '12px' }} />
             <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontWeight: 'bold', fontSize: '18px' }}>
-              No Spatial Map & Grid Data Available
+              No Spatial Map Data Available
             </h3>
             <p style={{ margin: '0 auto', color: '#64748b', fontSize: '14px', maxWidth: '460px', lineHeight: '1.5' }}>
-              No monitoring sites or sensor readings have been added yet. Add a monitoring site or submit inspection readings to display the interactive spatial grid map.
+              No monitoring sites or sensor readings have been added yet. Add a monitoring site or submit inspection readings to display the interactive spatial map.
             </p>
           </IonCardContent>
         </IonCard>
@@ -206,14 +178,13 @@ export const AdminSensorDataViewer: React.FC = () => {
         <IonCard style={{ margin: '0 0 24px 0', borderRadius: '12px', overflow: 'hidden' }}>
           <IonCardHeader style={{ paddingBottom: '8px' }}>
             <IonCardTitle style={{ fontSize: '16px', fontWeight: 'bold' }}>
-              Interactive Spatial Map & Grid Readings
+              Interactive Spatial Map & Odor Dispersion
             </IonCardTitle>
           </IonCardHeader>
           <IonCardContent style={{ padding: '0 16px 16px 16px' }}>
-            <SiteGridMap
-              centerLat={activeSiteObj?.current_latitude ?? activeSiteObj?.latitude ?? 14.5995}
-              centerLng={activeSiteObj?.current_longitude ?? activeSiteObj?.longitude ?? 120.9842}
-              siteName={activeSiteObj?.site_name || 'All Sites'}
+            <FullMapView
+              centerLat={activeSiteObj?.current_latitude ?? activeSiteObj?.latitude ?? 8.3683}
+              centerLng={activeSiteObj?.current_longitude ?? activeSiteObj?.longitude ?? 124.8637}
               readings={mapMarkers}
               height="440px"
             />
@@ -252,15 +223,8 @@ export const AdminSensorDataViewer: React.FC = () => {
                         </IonBadge>
 
                         {record.is_pending_sync && <PendingSyncBadge />}
-
-                        {record.grid_cell_id && (
-                          <IonChip color="primary" style={{ height: '24px', fontSize: '12px', margin: 0 }}>
-                            Cell: {record.grid_cell_id}
-                          </IonChip>
-                        )}
                       </div>
 
-                      {/* Photo Thumbnail if available */}
                       {record.photo_url ? (
                         <div
                           style={{
@@ -363,7 +327,6 @@ export const AdminSensorDataViewer: React.FC = () => {
                 <IonCardContent>
                   <h4 style={{ margin: '0 0 12px 0', fontWeight: 'bold' }}>Embedded EXIF Metadata</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px' }}>
-                    <div><b>Grid Cell ID:</b> {selectedPhotoRecord.grid_cell_id || 'N/A'}</div>
                     <div><b>Ammonia Level:</b> {selectedPhotoRecord.ammonia} ppm</div>
                     <div><b>Latitude:</b> {selectedPhotoRecord.latitude?.toFixed(6) || 'N/A'}</div>
                     <div><b>Longitude:</b> {selectedPhotoRecord.longitude?.toFixed(6) || 'N/A'}</div>
