@@ -418,3 +418,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Address / Location Description</IonLabel>
             <IonInput
               value={form.address}
+              onIonChange={e => setForm({ ...form, address: e.detail.value! })}
+              placeholder="e.g. Brgy. San Pedro, Silang, Cavite"
+            />
+          </IonItem>
+
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>
+              Area Coverage: {parseFloat(form.area_size_hectares) || 1.0} Hectares
+            </IonLabel>
+            <IonInput
+              type="number"
+              step="0.1"
+              min="0.1"
+              max="100"
+              value={form.area_size_hectares}
+              onIonChange={e => updateForm({ area_size_hectares: e.detail.value! })}
+            />
+            <IonRange
+              min={0.1}
+              max={20}
+              step={0.1}
+              value={parseFloat(form.area_size_hectares) || 1.0}
+              onIonChange={e => updateForm({ area_size_hectares: String(e.detail.value) })}
+              style={{ padding: '8px 0' }}
+            />
+          </IonItem>
+
+          {/* Real-time Map Polygon Preview */}
+          <div style={{ marginTop: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🗺️ Live Coverage Polygon Preview
+            </span>
+            <PolygonPreview
+              center={[form.current_latitude, form.current_longitude]}
+              areaHectares={parseFloat(form.area_size_hectares) || 1.0}
