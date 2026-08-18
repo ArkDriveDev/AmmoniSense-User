@@ -68,3 +68,38 @@ ALTER INDEX idx_livestock_locations_grid_cell RENAME TO idx_site_locations_grid_
 
 -- ============================================
 -- RENAME TRIGGERS AND FUNCTIONS
+-- ============================================
+
+-- Drop old trigger
+DROP TRIGGER IF EXISTS update_livestock_current_location_trigger ON public.site_locations;
+
+-- Drop old function
+DROP FUNCTION IF EXISTS update_livestock_current_location();
+
+-- Create new function with updated names
+CREATE OR REPLACE FUNCTION update_site_current_location()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.monitoring_sites 
+  SET 
+    current_latitude = NEW.latitude,
+    current_longitude = NEW.longitude,
+    current_grid_cell_id = NEW.grid_cell_id
+  WHERE id = NEW.site_id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create new trigger
+CREATE TRIGGER update_site_current_location_trigger
+AFTER INSERT ON public.site_locations
+FOR EACH ROW
+EXECUTE FUNCTION update_site_current_location();
+
+
+-- ============================================
+-- UPDATE RLS POLICIES (Drop old, create new)
+-- ============================================
+
+-- Drop old policies on site_owners
