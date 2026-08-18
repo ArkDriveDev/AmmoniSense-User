@@ -274,18 +274,18 @@ export default function UserMap() {
       } catch (lsErr) {
         console.warn('Error reading localStorage offline_sites:', lsErr);
       }
-            is_pending_sync: false,
-          }))
-          .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
-      }
-    } catch (err) {
-      console.warn('Error fetching sensor data:', err);
-    }
 
-    try {
-      const queue = await offlineStorage.getQueue();
-      const offlineReadings: ReadingMarkerData[] = queue
-        .filter((q) => q.type === 'SENSOR_READING')
+      // Deduplicate all offline records by id
+      const offlineMap = new Map<string | number, SiteMarkerData>();
+      [...idbOfflineFormatted, ...queuedOfflineFormatted, ...lsOfflineFormatted].forEach((item) => {
+        if (!onlineCodes.has(item.site_code)) {
+          offlineMap.set(item.id, item);
+        }
+      });
+      offlineFormatted = Array.from(offlineMap.values());
+    } catch (err) {
+      console.error('Error loading offline sites for map:', err);
+    }
         .map((q) => ({
           id: q.id,
           ammonia: q.payload.ammonia || 0,
