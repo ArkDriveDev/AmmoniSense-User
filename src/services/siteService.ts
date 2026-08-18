@@ -33,3 +33,38 @@ export const registerSiteWithPhoto = async (
       const { data: newOwner, error: ownerErr } = await supabase
         .from('site_owners')
         .insert([
+          {
+            owner_name: ownerName,
+            email: ownerEmail,
+            created_by: user.id,
+          },
+        ])
+        .select('*')
+        .single();
+
+      if (ownerErr || !newOwner) {
+        throw new Error('Failed to create site owner record: ' + (ownerErr?.message || 'Error'));
+      }
+      createdOwner = newOwner;
+    }
+
+    // 2. Insert into monitoring_sites (no grid cells)
+    const sitePayload = {
+      site_code: payload.site_code,
+      site_name: payload.site_name,
+      site_type: payload.site_type,
+      owner_id: createdOwner.id,
+      current_latitude: payload.latitude,
+      current_longitude: payload.longitude,
+      address: payload.address || payload.site_name,
+      area_size_hectares: payload.area_size_hectares || 1.0,
+      notes: payload.notes || null,
+      created_by: user.id,
+      updated_by: user.id,
+      is_active: true,
+    };
+
+    const { data: newSite, error: siteErr } = await supabase
+      .from('monitoring_sites')
+      .insert([sitePayload])
+      .select('*')
