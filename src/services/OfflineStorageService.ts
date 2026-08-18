@@ -243,3 +243,38 @@ class OfflineStorageService {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(PHOTO_STORE, 'readonly');
       const store = tx.objectStore(PHOTO_STORE);
+      const req = store.get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async removePhoto(id: string): Promise<void> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      const store = tx.objectStore(PHOTO_STORE);
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // ==========================================
+  // INDEXEDDB OFFLINE SITES HELPERS
+  // ==========================================
+
+  async saveOfflineSite(site: OfflineSite): Promise<OfflineSite> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_SITES_STORE);
+      const req = store.put(site);
+      req.onsuccess = () => resolve(site);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getOfflineSites(): Promise<OfflineSite[]> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
