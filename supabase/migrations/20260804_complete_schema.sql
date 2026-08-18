@@ -173,3 +173,23 @@ DROP POLICY IF EXISTS "Inspector can view livestock_locations" ON public.livesto
 CREATE POLICY "Inspector can view livestock_locations" ON public.livestock_locations FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Inspector can insert livestock_locations" ON public.livestock_locations;
 CREATE POLICY "Inspector can insert livestock_locations" ON public.livestock_locations FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'environmental_inspector'));
+
+-- DEVICES
+DROP POLICY IF EXISTS "MENRO Admin full access devices" ON public.devices;
+CREATE POLICY "MENRO Admin full access devices" ON public.devices FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+DROP POLICY IF EXISTS "Inspector can view devices" ON public.devices;
+CREATE POLICY "Inspector can view devices" ON public.devices FOR SELECT USING (true);
+
+-- SENSOR_DATA
+DROP POLICY IF EXISTS "MENRO Admin full access sensor_data" ON public.sensor_data;
+CREATE POLICY "MENRO Admin full access sensor_data" ON public.sensor_data FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+DROP POLICY IF EXISTS "Inspector can view all sensor_data" ON public.sensor_data;
+CREATE POLICY "Inspector can view all sensor_data" ON public.sensor_data FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Inspector can insert sensor_data" ON public.sensor_data;
+CREATE POLICY "Inspector can insert sensor_data" ON public.sensor_data FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'environmental_inspector'));
+DROP POLICY IF EXISTS "Inspector can update own sensor_data" ON public.sensor_data;
+CREATE POLICY "Inspector can update own sensor_data" ON public.sensor_data FOR UPDATE USING (submitted_by = auth.uid());
+
+-- ACTIVITY_LOGS
+DROP POLICY IF EXISTS "MENRO Admin full access activity_logs" ON public.activity_logs;
+CREATE POLICY "MENRO Admin full access activity_logs" ON public.activity_logs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
