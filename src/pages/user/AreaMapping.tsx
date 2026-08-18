@@ -173,3 +173,38 @@ export default function AreaMapping() {
               </IonCard>
             ) : (
               <IonGrid style={{ padding: 0 }}>
+                <IonRow>
+                  {odorZones.map((z, idx) => (
+                    <IonCol key={z.id || idx} size="12" size-md="6">
+                      <IonCard className="premium-card" style={{ margin: '0 0 12px 0' }}>
+                        <IonCardContent style={{ padding: '14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <IonBadge style={{ background: z.severity_level === 'CRITICAL' ? '#EF4444' : '#F97316', fontSize: '10px', fontWeight: 800, marginBottom: '6px' }}>
+                                🟧 ODOR ZONE ({z.severity_level})
+                              </IonBadge>
+                              <h4 style={{ margin: '2px 0 4px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{z.zone_name}</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
+                                Ammonia NH₃: <b>{z.ammonia_ppm || 0} ppm</b> • Vertices: {z.coordinates?.length || 0} points
+                              </p>
+                            </div>
+                            {z.is_pending_sync && (
+                              <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
+                            )}
+                          </div>
+                        </IonCardContent>
+                      </IonCard>
+                    </IonCol>
+                  ))}
+
+                  {communityPolygons.map((c, idx) => (
+                    <IonCol key={c.id || idx} size="12" size-md="6">
+                      <IonCard className="premium-card" style={{ margin: '0 0 12px 0' }}>
+                        <IonCardContent style={{ padding: '14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <IonBadge style={{ background: '#2DD36F', color: '#ffffff', fontSize: '10px', fontWeight: 800, marginBottom: '6px' }}>
+                                🟩 COMMUNITY ({c.community_type})
+                              </IonBadge>
+                              <h4 style={{ margin: '2px 0 4px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{c.community_name}</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
