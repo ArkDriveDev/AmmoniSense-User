@@ -243,3 +243,38 @@ export default function UserMap() {
         const lsStr = localStorage.getItem('offline_sites');
         if (lsStr) {
           const lsArr = JSON.parse(lsStr);
+          if (Array.isArray(lsArr)) {
+            const validLsArr = lsArr.filter((os: any) => !os.isDeleted && !onlineCodes.has(os.site_code));
+            if (validLsArr.length !== lsArr.length) {
+              localStorage.setItem('offline_sites', JSON.stringify(validLsArr));
+            }
+
+            lsOfflineFormatted = validLsArr.map((os: any) => {
+              const coords = resolveSiteCoords(
+                os.current_latitude ?? os.latitude,
+                os.current_longitude ?? os.longitude
+              );
+              return {
+                id: os.id || `ls_${Date.now()}`,
+                site_code: os.site_code || 'LS_OFFLINE',
+                site_name: os.site_name || 'Offline Site',
+                site_type: os.site_type || 'Agricultural',
+                address: os.address || os.site_name,
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
+                owner_name: os.owner?.owner_name || 'Inspector Owner',
+                photo_url: os.site_photo_thumbnail || os.site_photo_url,
+                isOffline: true,
+                is_pending_sync: true,
+              };
+            });
+          }
+        }
+      } catch (lsErr) {
+        console.warn('Error reading localStorage offline_sites:', lsErr);
+      }
+
+      // Deduplicate all offline records by id
+      const offlineMap = new Map<string | number, SiteMarkerData>();
+      [...idbOfflineFormatted, ...queuedOfflineFormatted, ...lsOfflineFormatted].forEach((item) => {
