@@ -418,18 +418,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 onIonChange={e => setSelectedSiteId(e.detail.value)}
               >
                 {sites.map(site => (
-      if (selectedSiteId) fetchPreviousReadings(selectedSiteId);
-      if (onSuccess) onSuccess();
-    } catch (err: any) {
-      console.warn('Network error or offline mode during inspection submit, queueing item:', err);
+                  <IonSelectOption key={site.id} value={site.id}>
+                    {site.site_name} ({site.site_code})
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
 
-      let photoStoreId: string | undefined = undefined;
-      if (photoRecord?.dataUrl) {
-        photoStoreId = await offlineStorage.savePhoto(photoRecord.dataUrl);
-      }
-
-      await offlineStorage.enqueueItem('SENSOR_READING', {
-        device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
+            <IonButton
+              fill="outline"
+              size="small"
+              color="primary"
+              onClick={() => setShowCreateSiteModal(true)}
         ammonia: parseFloat(ammonia) || 0,
         temperature: parseFloat(temperature) || 0,
         humidity: parseFloat(humidity) || 0,
