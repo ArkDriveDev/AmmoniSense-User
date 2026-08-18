@@ -466,18 +466,18 @@ export default function UserMap() {
       setShowToast(true);
     } finally {
       setLocating(false);
-            style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '16px',
-              boxShadow: '0 4px 20px rgba(15, 60, 92, 0.18)',
-              padding: '2px 8px',
-              border: '1px solid rgba(226, 232, 240, 0.8)',
-            }}
-          >
-            <IonSearchbar
-              value={searchText}
-              onIonInput={(e) => setSearchText(e.detail.value!)}
+    }
+  };
+
+  const closeBottomSheet = () => {
+    setSelectedSite(null);
+    setSelectedReading(null);
+    setSelectedPhotoTag(null);
+  };
+
+  return (
+    <IonPage>
+      <IonHeader className="ion-no-border">
               placeholder="Search site name, code, or address..."
               showClearButton="always"
               style={{ '--background': 'transparent', '--box-shadow': 'none', padding: 0 }}
