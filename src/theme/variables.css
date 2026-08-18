@@ -103,3 +103,38 @@
    ========================================================================== */
 
 /* Global Ion Card Override */
+ion-card,
+.premium-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 8px 32px rgba(26, 54, 93, 0.12),
+    0 2px 8px rgba(26, 54, 93, 0.06) !important;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+  overflow: hidden;
+}
+
+ion-card:hover,
+.premium-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 12px 48px rgba(26, 54, 93, 0.16),
+    0 4px 12px rgba(26, 54, 93, 0.08) !important;
+  border-color: rgba(29, 93, 155, 0.3) !important;
+}
+
+/* Premium Card with Gradient Accent Border */
+.premium-card-accent {
+  border-left: 5px solid #1D5D9B !important;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), 
+                    linear-gradient(to bottom, #1D5D9B, #008B74);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* Stats Card - Glass Effect */
+.stats-card {
+  background: rgba(255, 255, 255, 0.85) !important;
