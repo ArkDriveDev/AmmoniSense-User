@@ -73,21 +73,21 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
         poly.bindPopup(`
           <div style="font-family: sans-serif; padding: 4px;">
             <strong style="color: #059669; font-size: 14px;">${iconEmoji} ${comm.community_name}</strong>
-            weight: 1.5,
-          }).bindPopup(`
-            <div style="font-family: sans-serif; padding: 4px;">
-              <strong style="color: #ca8a04; font-size: 13px;">⚡ Moderate Odor Caution Zone</strong>
-              <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-                <b>Ammonia NH₃:</b> ${nh3} ppm<br/>
-                <b>Plume Radius:</b> 150 meters
-              </div>
+            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
+              <b>Type:</b> ${comm.community_type} Zone<br/>
+              <b>Est. Population:</b> ${(comm.estimated_population || 0).toLocaleString()} Residents
             </div>
-          `);
-          odorLayerGroup.addLayer(yellowPlume);
-        }
+          </div>
+        `);
+
+        commGroup.addLayer(poly);
       });
     }
 
+    return () => {
+      map.removeLayer(odorGroup);
+      map.removeLayer(commGroup);
+    };
     return () => {
       map.removeLayer(odorLayerGroup);
     };
