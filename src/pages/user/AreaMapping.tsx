@@ -218,3 +218,22 @@ export default function AreaMapping() {
                         </IonCardContent>
                       </IonCard>
                     </IonCol>
+                  ))}
+                </IonRow>
+              </IonGrid>
+            )}
+          </div>
+        </IonGrid>
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMsg}
+          duration={3500}
+          color={toastColor}
+          position="bottom"
+        />
+      </IonContent>
+    </IonPage>
+  );
+}
