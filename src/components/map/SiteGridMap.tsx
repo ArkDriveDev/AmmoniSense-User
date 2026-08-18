@@ -116,24 +116,3 @@ export const SiteGridMap: React.FC<SiteGridMapProps> = ({
       mapRef.current.setView([centerLat, centerLng], currentZoom);
     }
   }, [centerLat, centerLng]);
-
-  // Draw Grid Overlay & Previous Readings
-  useEffect(() => {
-    if (!mapRef.current || !gridLayerGroupRef.current || !markersLayerGroupRef.current) return;
-
-    const gridGroup = gridLayerGroupRef.current;
-    const markersGroup = markersLayerGroupRef.current;
-
-    gridGroup.clearLayers();
-    markersGroup.clearLayers();
-
-    // 1. Calculate Grid Cells
-    // Adjust cell size dynamically based on zoom level
-    let effectiveCellMeters = cellSizeMeters;
-    if (currentZoom < 16) {
-      effectiveCellMeters = cellSizeMeters * 2;
-    } else if (currentZoom >= 19) {
-      effectiveCellMeters = cellSizeMeters / 2;
-    }
-
-    const { latOffset, lngOffset } = metersToLatLngOffset(effectiveCellMeters, centerLat);
