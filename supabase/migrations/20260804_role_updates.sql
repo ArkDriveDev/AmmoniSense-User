@@ -33,3 +33,28 @@ CREATE POLICY "MENRO Admin full access livestock"
       SELECT 1 FROM public.profiles
       WHERE id = auth.uid()
       AND role = 'menro_admin'
+    )
+  );
+
+-- Environmental Inspector select policy on livestock
+CREATE POLICY "Environmental Inspector read livestock"
+  ON public.livestock FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+      AND role = 'environmental_inspector'
+    )
+  );
+
+-- Sensor data policy for Environmental Inspector
+DROP POLICY IF EXISTS "Environmental Inspector insert sensor data" ON public.sensor_data;
+CREATE POLICY "Environmental Inspector insert sensor data"
+  ON public.sensor_data FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+      AND role = 'environmental_inspector'
+    )
+  );
