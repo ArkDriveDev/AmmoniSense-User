@@ -202,17 +202,17 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
           address: os.address,
           current_latitude: os.current_latitude,
           current_longitude: os.current_longitude,
-        .eq('site_id', siteId);
+          isOffline: true,
+        }));
+      } catch (e) {}
 
-      if (data && data.length > 0) {
-        setDevices(data);
-        setSelectedDeviceUid(data[0].device_uid);
-      } else {
-        setDevices([]);
-        setSelectedDeviceUid('ESP32-AMMONIA-NODE-01');
+      const allSites = [...offlineSitesList, ...onlineSites];
+      if (allSites.length > 0) {
+        setSites(allSites);
+        setSelectedSiteId(allSites[0].id);
       }
     } catch (err) {
-      console.error('Error fetching devices:', err);
+      console.error('Error fetching sites:', err);
     }
   };
 
