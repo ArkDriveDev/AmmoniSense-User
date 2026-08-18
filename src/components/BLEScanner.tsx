@@ -138,3 +138,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
             BLE Central Scanner
           </IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={onClose} style={{ color: '#ffffff' }}>
+              <IonIcon icon={closeOutline} />
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F8FAFC' }}>
+        {/* Banner */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.95), rgba(29, 93, 155, 0.9))',
+            borderRadius: '16px',
+            padding: '16px',
+            color: '#ffffff',
+            marginBottom: '12px',
+            boxShadow: '0 6px 20px rgba(15, 60, 92, 0.2)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
