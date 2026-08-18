@@ -58,10 +58,6 @@ interface MonitoringSite {
 }
 
 interface SensorSubmissionFormProps {
-  longitude?: number;
-}
-
-interface SensorSubmissionFormProps {
   onSuccess?: () => void;
 }
 
@@ -70,6 +66,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [sites, setSites] = useState<MonitoringSite[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
   const [selectedSite, setSelectedSite] = useState<MonitoringSite | null>(null);
+  const [devices, setDevices] = useState<{ id: number; device_uid: string }[]>([]);
+  const [selectedDeviceUid, setSelectedDeviceUid] = useState<string>('');
+
+  // 3-Step State (No Grid Cells)
   const [devices, setDevices] = useState<{ id: number; device_uid: string }[]>([]);
   const [selectedDeviceUid, setSelectedDeviceUid] = useState<string>('');
 
