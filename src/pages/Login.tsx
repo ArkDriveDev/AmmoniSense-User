@@ -137,3 +137,39 @@ export default function Login() {
                         onIonChange={(e) => setPassword(e.detail.value!)}
                       />
                     </IonItem>
+
+                    <IonButton
+                      className="btn-ammoni btn-primary"
+                      expand="block"
+                      onClick={login}
+                      disabled={loading}
+                      style={{ marginTop: '24px' }}
+                    >
+                      {loading ? (
+                        <>
+                          <IonSpinner name="crescent" />
+                          &nbsp;Logging in...
+                        </>
+                      ) : (
+                        'Sign In to Dashboard'
+                      )}
+                    </IonButton>
+
+                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                      <IonText color="medium">
+                        <p style={{ fontSize: '14px' }}>
+                          Don't have an inspector account?{' '}
+                          <span 
+                            style={{ color: '#1D5D9B', fontWeight: '700', cursor: 'pointer' }}
+                            onClick={() => navigate('/register')}
+                          >
+                            Register
+                          </span>
+                        </p>
+                      </IonText>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
