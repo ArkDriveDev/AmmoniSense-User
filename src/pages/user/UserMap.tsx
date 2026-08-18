@@ -488,3 +488,38 @@ export default function UserMap() {
               onClick={(e) => {
                 setPopoverEvent(e.nativeEvent);
                 setShowLayerPopover(true);
+              }}
+              style={{ color: '#ffffff' }}
+            >
+              <IonIcon icon={layersOutline} slot="icon-only" />
+            </IonButton>
+            <IonButton onClick={loadMapData} style={{ color: '#ffffff' }}>
+              <IonIcon icon={refreshOutline} slot="icon-only" />
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent style={{ position: 'relative' }}>
+        {/* Floating Top Search Bar */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            right: '12px',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: '16px',
+              boxShadow: '0 4px 20px rgba(15, 60, 92, 0.18)',
+              padding: '2px 8px',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
+            }}
+          >
+            <IonSearchbar
+              value={searchText}
