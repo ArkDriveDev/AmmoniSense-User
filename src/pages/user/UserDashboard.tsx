@@ -138,3 +138,38 @@ export default function UserDashboard() {
                     <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>Device Health Breakdown</h3>
                   </div>
                   <div style={{ height: '200px' }}>
+                    <DeviceStatusChart data={chartData.deviceStatus} />
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+
+            <IonCol size="12" size-md="6">
+              <IonCard className="premium-card premium-card-accent">
+                <IonCardContent style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <IonIcon icon={checkmarkDoneCircleOutline} style={{ color: '#1D5D9B', fontSize: '22px' }} />
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>Regulatory Telemetry Overview</h3>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 14px',
+                      background: 'rgba(248, 250, 252, 0.8)',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0'
+                    }}>
+                      <span style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>Latest Ammonia Level</span>
+                      <span className={`status-badge ${stats.latestAmmonia > 50 ? 'danger' : stats.latestAmmonia > 25 ? 'warning' : 'safe'}`}>
+                        <span className="pulse-dot"></span>
+                        {stats.latestAmmonia.toFixed(1)} ppm
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
