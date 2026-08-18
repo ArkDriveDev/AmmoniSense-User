@@ -82,7 +82,6 @@ export const registerSiteWithPhoto = async (
       longitude: payload.longitude,
       address: payload.address || payload.site_name,
       recorded_by: user.id,
-      recorded_by: user.id,
       notes: `Initial registration location recorded via ${payload.gps_source || 'GPS'}.`,
     };
 
@@ -94,6 +93,7 @@ export const registerSiteWithPhoto = async (
 
     if (locErr) {
       console.warn('Notice writing to site_locations:', locErr.message);
+    }
     }
     createdLocation = newLoc || locationPayload;
 
