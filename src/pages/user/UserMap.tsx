@@ -383,3 +383,38 @@ export default function UserMap() {
           .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
       }
     } catch (err) {
+      console.warn('Error fetching inspection photo tags:', err);
+    }
+
+    try {
+      const queue = await offlineStorage.getQueue();
+      const offlinePhotoTags: PhotoTagMarkerData[] = queue
+        .filter((q) => q.type === 'SENSOR_READING' && q.payload?.photo_url)
+        .map((q) => ({
+          id: q.id,
+          latitude: q.payload.latitude || 8.3683,
+          longitude: q.payload.longitude || 124.8637,
+          photo_url: q.payload.photo_url,
+          grid_cell_id: q.payload.grid_cell_id,
+          site_id: q.payload.site_id || null,
+          site_name: 'Offline Inspection Tag',
+          is_used: false,
+          uploaded_at: q.timestamp,
+          is_pending_sync: true,
+        }))
+        .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
+
+      setPhotoTags([...offlinePhotoTags, ...serverPhotoTags]);
+    } catch (e) {
+      console.error('Error reading offline photo tags queue:', e);
+      setPhotoTags(serverPhotoTags);
+    }
+  };
+
+  // Filter photo tags by search query
+  const filteredPhotoTags = photoTags.filter((tag) => {
+    if (!searchText.trim()) return true;
+    const query = searchText.toLowerCase();
+    return (
+      tag.site_name?.toLowerCase().includes(query) ||
+      tag.id.toString().includes(query)
