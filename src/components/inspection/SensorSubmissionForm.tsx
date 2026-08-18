@@ -598,18 +598,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
             <div style={{
               backgroundColor: btConnected ? '#f0fdf4' : '#f8fafc',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#f8fafc',
-                margin: '16px 0'
-              }}>
-                <IonIcon icon={cameraOutline} style={{ fontSize: '48px', color: '#94a3b8', marginBottom: '8px' }} />
-                <IonButton color="primary" onClick={handleStep1_TakePhoto} disabled={step1Loading}>
-                  {step1Loading ? (
+              border: `1px solid ${btConnected ? '#86efac' : '#cbd5e1'}`,
+              borderRadius: '8px',
+              padding: '16px',
+              textAlign: 'center',
+              marginBottom: '16px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <IonButton color="tertiary" onClick={handleStep2_ConnectBluetooth} disabled={btConnecting}>
+                  {btConnecting ? (
                     <>
                       <IonSpinner name="crescent" />
-                      &nbsp;Capturing & Uploading...
+                      &nbsp;Connecting BLE...
                     </>
                   ) : (
                     '📷 Take Inspection Photo'
