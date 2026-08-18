@@ -33,3 +33,37 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
         const color = isCritical ? '#ef4444' : isHigh ? '#f97316' : '#eab308';
 
         const poly = L.polygon(zone.coordinates, {
+          color: color,
+          weight: 2.5,
+          dashArray: '6, 6',
+          fillColor: color,
+          fillOpacity: 0.35,
+        });
+
+        poly.bindPopup(`
+          <div style="font-family: sans-serif; padding: 4px;">
+            <strong style="color: ${color}; font-size: 14px;">🟧 ${zone.zone_name}</strong>
+            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
+              <b>Severity Level:</b> ${zone.severity_level}<br/>
+              <b>Ammonia NH₃:</b> ${zone.ammonia_ppm || 0} ppm<br/>
+              <b>Polygon Vertices:</b> ${zone.coordinates.length} points
+            </div>
+          </div>
+        `);
+
+        odorGroup.addLayer(poly);
+      });
+    }
+
+    // 2. Render Vulnerable Community Polygons (🟩 Green)
+    if (showCommunities) {
+      communityPolygons.forEach((comm) => {
+        if (!comm.coordinates || comm.coordinates.length < 3) return;
+
+        const poly = L.polygon(comm.coordinates, {
+          color: '#10b981',
+          weight: 2.5,
+          dashArray: '4, 4',
+          fillColor: '#2dd36f',
+          fillOpacity: 0.25,
+        });
