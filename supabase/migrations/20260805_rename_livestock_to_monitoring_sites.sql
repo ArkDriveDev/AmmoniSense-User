@@ -137,3 +137,39 @@ DROP POLICY IF EXISTS "MHO Admin full access livestock_locations" ON public.site
 DROP POLICY IF EXISTS "MENRO Admin full access livestock_locations" ON public.site_locations;
 DROP POLICY IF EXISTS "Inspector can view livestock_locations" ON public.site_locations;
 DROP POLICY IF EXISTS "Inspector can insert livestock_locations" ON public.site_locations;
+
+-- Create new policies on site_locations
+CREATE POLICY "MENRO Admin full access site_locations"
+  ON public.site_locations FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+
+CREATE POLICY "Inspector can view site_locations"
+  ON public.site_locations FOR SELECT
+  USING (true);
+
+CREATE POLICY "Inspector can insert site_locations"
+  ON public.site_locations FOR INSERT
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'environmental_inspector'));
+
+
+-- Drop old policies on devices
+DROP POLICY IF EXISTS "MHO Admin full access devices" ON public.devices;
+DROP POLICY IF EXISTS "MENRO Admin full access devices" ON public.devices;
+DROP POLICY IF EXISTS "Inspector can view devices" ON public.devices;
+
+-- Create new policies on devices
+CREATE POLICY "MENRO Admin full access devices"
+  ON public.devices FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'menro_admin'));
+
+CREATE POLICY "Inspector can view devices"
+  ON public.devices FOR SELECT
+  USING (true);
+
+
+-- Drop old policies on sensor_data
+DROP POLICY IF EXISTS "MHO Admin full access sensor_data" ON public.sensor_data;
+DROP POLICY IF EXISTS "MENRO Admin full access sensor_data" ON public.sensor_data;
+DROP POLICY IF EXISTS "Inspector can view all sensor_data" ON public.sensor_data;
+DROP POLICY IF EXISTS "Inspector can insert sensor_data" ON public.sensor_data;
+DROP POLICY IF EXISTS "Inspector can update own sensor_data" ON public.sensor_data;
