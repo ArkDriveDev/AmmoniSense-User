@@ -68,3 +68,38 @@ const Register: React.FC = () => {
       setShowToast(true);
       return false;
     }
+
+    return true;
+  };
+
+  const handleOpenVerificationModal = () => {
+    if (!validateForm()) return;
+    setShowVerificationModal(true);
+  };
+
+  const doRegister = async () => {
+    setShowVerificationModal(false);
+    setLoading(true);
+
+    try {
+      // ============================================
+      // STEP 1: Create auth user
+      // ============================================
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            full_name: form.full_name,
+            role: 'environmental_inspector'
+          }
+        }
+      });
+
+      if (authError) {
+        if (authError.message.includes('already registered')) {
+          setToastMessage('This email is already registered. Please login.');
+          setToastColor('warning');
+          setShowToast(true);
+          setLoading(false);
+          return;
