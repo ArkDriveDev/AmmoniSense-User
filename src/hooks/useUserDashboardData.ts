@@ -103,3 +103,38 @@ export function useUserDashboardData() {
       setLoading(false);
     }
   };
+
+  const processChartData = (sensorData: any[], devices: any[]) => {
+    const grouped: Record<string, number[]> = {};
+    sensorData.forEach((item) => {
+      const date = new Date(item.created_at).toLocaleDateString();
+      if (!grouped[date]) grouped[date] = [];
+      grouped[date].push(item.ammonia || 0);
+    });
+
+    const labels = Object.keys(grouped).slice(-7);
+    const values = labels.map((key) => {
+      const avg = grouped[key].reduce((a, b) => a + b, 0) / grouped[key].length;
+      return Math.round(avg);
+    });
+
+    const active = devices.filter(d => d.status === 'ACTIVE').length;
+    const inactive = devices.filter(d => d.status === 'INACTIVE').length;
+    const pending = devices.filter(d => d.status === 'PENDING' || !d.status).length;
+
+    return {
+      ammoniaTrend: {
+        labels: labels.length > 0 ? labels : ['No Data'],
+        datasets: [{
+          label: 'Ammonia (ppm)',
+          data: values.length > 0 ? values : [0],
+          borderColor: '#3880ff',
+          backgroundColor: 'rgba(56, 128, 255, 0.2)',
+          fill: true,
+          tension: 0.4,
+        }],
+      },
+      deviceStatus: {
+        labels: ['ACTIVE', 'INACTIVE', 'PENDING'],
+        datasets: [{
+          data: [active, inactive, pending],
