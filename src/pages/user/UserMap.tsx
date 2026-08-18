@@ -46,6 +46,11 @@ import { useNavigate } from 'react-router-dom';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 
 // Default Center Coordinates: Manolo Fortich Municipality
+const MANOLO_FORTICH_CENTER = { lat: 8.3683, lng: 124.8637, zoom: 13 };
+
+const IS_IN_MANOLO_FORTICH = (lat?: number, lng?: number): boolean => {
+  if (!lat || !lng) return false;
+  return lat >= 8.2200 && lat <= 8.5000 && lng >= 124.7000 && lng <= 125.0200;
 };
 
 export default function UserMap() {
@@ -53,11 +58,6 @@ export default function UserMap() {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
-  const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
-  const [photoTags, setPhotoTags] = useState<PhotoTagMarkerData[]>([]);
-
-  // Search input
-  const [searchText, setSearchText] = useState<string>('');
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
