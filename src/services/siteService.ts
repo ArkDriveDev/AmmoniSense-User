@@ -68,3 +68,38 @@ export const registerSiteWithPhoto = async (
       .from('monitoring_sites')
       .insert([sitePayload])
       .select('*')
+      .single();
+
+    if (siteErr || !newSite) {
+      throw new Error('Failed to register monitoring site: ' + (siteErr?.message || 'Error'));
+    }
+    createdSite = newSite;
+
+    // 3. Insert initial location record in site_locations
+    const locationPayload = {
+      site_id: createdSite.id,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      address: payload.address || payload.site_name,
+      recorded_by: user.id,
+      notes: `Initial registration location recorded via ${payload.gps_source || 'GPS'}.`,
+    };
+
+    const { data: newLoc, error: locErr } = await supabase
+      .from('site_locations')
+      .insert([locationPayload])
+      .select('*')
+      .single();
+
+    if (locErr) {
+      console.warn('Notice writing to site_locations:', locErr.message);
+    }
+    createdLocation = newLoc || locationPayload;
+
+    // 4. Link & update inspection_photo if provided
+    if (payload.photo_record_id || payload.photo_url) {
+      if (payload.photo_record_id) {
+        const { data: updatedPhoto } = await supabase
+          .from('inspection_photos')
+          .update({
+            site_id: createdSite.id,
