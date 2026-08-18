@@ -298,18 +298,18 @@ export default function UserMap() {
     console.log('📍 Total sites loaded for map display:', finalSites.length, finalSites);
     setSites(finalSites);
   };
-          is_pending_sync: true,
-        }))
-        .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
 
-      setReadings([...offlineReadings, ...serverReadings]);
-    } catch (e) {
-      console.error('Error reading offline queue:', e);
-      setReadings(serverReadings);
-    }
-  };
+  const fetchReadings = async () => {
+    let serverReadings: ReadingMarkerData[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('sensor_data')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
 
-  const fetchPhotoTags = async () => {
+      if (!error && data) {
+        serverReadings = data
     let serverPhotoTags: PhotoTagMarkerData[] = [];
     try {
       const { data, error } = await supabase
