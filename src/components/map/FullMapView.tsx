@@ -278,3 +278,38 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   useEffect(() => {
     if (!mapRef.current || !sitesLayerGroupRef.current) return;
     const sitesGroup = sitesLayerGroupRef.current;
+    sitesGroup.clearLayers();
+
+    if (!showSitesLayer) return;
+
+    sites.forEach((site) => {
+      const lat = typeof site.latitude === 'number' ? site.latitude : (site as any).current_latitude;
+      const lng = typeof site.longitude === 'number' ? site.longitude : (site as any).current_longitude;
+
+      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
+
+      const isOffline = Boolean(site.isOffline || site.is_pending_sync);
+      const color = isOffline ? '#ef4444' : '#22c55e'; // 🔴 Red for offline/unsubmitted, 🟢 Green for online/submitted
+      const pinEmoji = isOffline ? '🔴' : '🟢';
+
+      const customIcon = L.divIcon({
+        className: 'site-pin-marker',
+        html: `
+          <div style="
+            position: relative;
+            width: 34px;
+            height: 34px;
+            background: ${color};
+            border: 2.5px solid #ffffff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+          ">
+            <div style="
+              transform: rotate(45deg);
+              color: #ffffff;
+              font-size: 15px;
