@@ -166,18 +166,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         setCellLng(siteLng);
       }
       fetchDevicesForSite(selectedSiteId);
+    }
+  }, [selectedSiteId]);
 
-      let onlineSites: any[] = [];
-      const { data, error } = await query;
-      if (!error && data) {
-        onlineSites = data;
-      }
+  const fetchSites = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) return;
 
-      let offlineSitesList: any[] = [];
-      try {
-        const offlineRecords = await offlineStorage.getOfflineSites();
-        offlineSitesList = offlineRecords.map(os => ({
-          id: os.id,
+      const { data: owners } = await supabase
+        .from('site_owners')
+        .select('id')
           site_name: `${os.site_name} (🔴 Offline)`,
           address: os.address,
           current_latitude: os.current_latitude,
