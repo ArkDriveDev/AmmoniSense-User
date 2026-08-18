@@ -137,3 +137,39 @@ class SyncService {
       case 'SITE_REGISTRATION':
         await this.syncSiteRegistration(item);
         break;
+
+      case 'DEVICE_TAG':
+        await this.syncDeviceTag(item);
+        break;
+
+      default:
+        throw new Error(`Unknown queue item type: ${item.type}`);
+    }
+  }
+
+  private async syncSensorReading(item: QueueItem): Promise<void> {
+    const payload = { ...item.payload };
+
+    // 1. Upload photo if present in photo_store
+    if (item.photoStoreId && !payload.photo_url) {
+      const storedPhoto = await offlineStorage.getPhoto(item.photoStoreId);
+      if (storedPhoto?.dataUrl) {
+        const publicUrl = await this.uploadDataUrlToSupabase(storedPhoto.dataUrl);
+        if (publicUrl) {
+          payload.photo_url = publicUrl;
+        }
+      }
+    }
+
+    // 2. Insert into sensor_data table
+    const { data: inserted, error } = await supabase
+      .from('sensor_data')
+      .insert([payload])
+      .select('id')
+      .single();
+
+    if (error) {
+      throw new Error(`sensor_data insert error: ${error.message}`);
+    }
+
+    // 3. Mark photo as used in inspection_photos table if payload has photo_url
