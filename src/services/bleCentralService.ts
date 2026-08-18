@@ -78,3 +78,23 @@ class BLECentralService {
       };
     }
   }
+
+  public getState(): BLECentralState {
+    return this.currentState;
+  }
+
+  public getActiveDevice(): BLECentralDevice | null {
+    return this.activeDevice;
+  }
+
+  public getDiscoveredDevices(): BLECentralDevice[] {
+    return this.discoveredDevices;
+  }
+
+  public setState(state: BLECentralState) {
+    this.currentState = state;
+    this.stateListeners.forEach((fn) => fn(state));
+  }
+
+  public onTelemetry(listener: BLECentralTelemetryListener): () => void {
+    this.telemetryListeners.push(listener);
