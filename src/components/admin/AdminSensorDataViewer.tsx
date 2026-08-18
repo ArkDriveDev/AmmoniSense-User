@@ -208,3 +208,38 @@ export const AdminSensorDataViewer: React.FC = () => {
         </IonCard>
       ) : (
         <IonGrid style={{ padding: 0 }}>
+          <IonRow>
+            {records.map(record => {
+              const isDanger = record.ammonia > 50;
+              const isWarning = record.ammonia > 25 && record.ammonia <= 50;
+
+              return (
+                <IonCol key={record.id} size="12" size-md="6" size-lg="4">
+                  <IonCard style={{ height: '100%', margin: 0, borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <IonCardContent style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
+                        <IonBadge color={isDanger ? 'danger' : isWarning ? 'warning' : 'success'}>
+                          NH₃: {record.ammonia?.toFixed(1) || '0'} ppm
+                        </IonBadge>
+
+                        {record.is_pending_sync && <PendingSyncBadge />}
+                      </div>
+
+                      {record.photo_url ? (
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: '100%',
+                            height: '140px',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            marginTop: '8px',
+                            marginBottom: '10px',
+                            cursor: 'pointer',
+                            backgroundColor: '#0f172a'
+                          }}
+                          onClick={() => {
+                            setSelectedPhotoRecord(record);
+                            setShowPhotoModal(true);
+                          }}
+                        >
