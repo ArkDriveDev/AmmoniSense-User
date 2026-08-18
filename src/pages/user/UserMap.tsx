@@ -790,18 +790,18 @@ export default function UserMap() {
                     </div>
                   </div>
                 </div>
-                />
-                <b>Monitoring Sites</b> (Pins)
-              </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showReadingsLayer}
-                  onChange={(e) => setShowReadingsLayer(e.target.checked)}
-                />
-                <b>Sensor Readings</b> (Dots)
-              </label>
+                {selectedPhotoTag.photo_url && (
+                  <div style={{ width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' }}>
+                    <img src={selectedPhotoTag.photo_url} alt="Inspection Photo Tag" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedPhotoTag.site_name || 'Inspection Site'}</strong>
+                  </div>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                 <input
