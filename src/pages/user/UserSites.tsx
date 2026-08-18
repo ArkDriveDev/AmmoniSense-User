@@ -173,3 +173,38 @@ export default function UserSites() {
                 fontWeight: 700,
                 marginRight: '8px'
               }}
+            >
+              <IonIcon icon={addOutline} slot="start" />
+              New Site
+            </IonButton>
+            <IonButton onClick={fetchSites} style={{ color: '#ffffff' }}>
+              <IonIcon icon={refreshOutline} />
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent />
+        </IonRefresher>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', marginTop: '60px' }}>
+            <IonSpinner name="crescent" color="primary" />
+            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading monitoring sites...</p>
+          </div>
+        ) : sites.length === 0 ? (
+          <div style={{ textAlign: 'center', marginTop: '60px' }}>
+            <IonCard className="premium-card" style={{ maxWidth: '440px', margin: '0 auto', padding: '24px' }}>
+              <IonCardContent>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
+                  background: 'rgba(29, 93, 155, 0.1)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px'
+                }}>
