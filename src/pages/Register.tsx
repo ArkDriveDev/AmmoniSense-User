@@ -243,3 +243,38 @@ const Register: React.FC = () => {
                     fill="outline"
                     type="password"
                     placeholder="Confirm your password"
+                    value={form.confirm_password}
+                    onIonChange={(e) => setForm({ ...form, confirm_password: e.detail.value! })}
+                    style={{ marginBottom: '16px' }}
+                  >
+                    <IonInputPasswordToggle slot="end" />
+                  </IonInput>
+
+                  <IonButton
+                    expand="block"
+                    onClick={handleOpenVerificationModal}
+                    disabled={loading}
+                    style={{ marginTop: '16px' }}
+                  >
+                    {loading ? (
+                      <>
+                        <IonSpinner name="crescent" />
+                        &nbsp;Creating...
+                      </>
+                    ) : (
+                      'Register'
+                    )}
+                  </IonButton>
+
+                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                    <IonText color="medium">
+                      <p>
+                        Already have an account?{' '}
+                        <span 
+                          style={{ color: 'var(--ion-color-primary)', cursor: 'pointer' }}
+                          onClick={() => navigate('/login')}
+                        >
+                          Sign in
+                        </span>
+                      </p>
+                    </IonText>
