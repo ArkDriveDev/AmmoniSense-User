@@ -158,3 +158,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
         weight: 2.5,
         fillColor: color,
         fillOpacity: 0.25,
+        dashArray: '5, 5',
+      }).addTo(map);
+
+      polygonRef.current = poly;
+      calculateSurfaceArea(vertices);
+    } else if (vertices.length === 2) {
+      const line = L.polyline(vertices, {
+        color: color,
+        weight: 2,
+        dashArray: '4, 4',
+      }).addTo(map);
+
+      polylineRef.current = line;
+      setSurfaceAreaHa(0);
+    } else {
+      setSurfaceAreaHa(0);
+    }
+  }, [vertices, drawingMode]);
+
+  // Calculate polygon surface area in hectares
