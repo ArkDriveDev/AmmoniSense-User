@@ -18,3 +18,23 @@ import {
   IonRefresher,
   IonRefresherContent
 } from '@ionic/react';
+import {
+  shapesOutline,
+  refreshOutline,
+  checkmarkCircleOutline,
+  warningOutline,
+  trashOutline,
+  layersOutline
+} from 'ionicons/icons';
+import PolygonDrawer from '../../components/map/PolygonDrawer';
+import { OdorZone, CommunityPolygon } from '../../types/site';
+import {
+  fetchOdorZones,
+  saveOdorZone,
+  fetchCommunityPolygons,
+  saveCommunityPolygon
+} from '../../services/siteService';
+
+export default function AreaMapping() {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
