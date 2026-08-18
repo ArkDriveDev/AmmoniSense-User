@@ -313,3 +313,32 @@ class BLECentralService {
       throw new Error('Device not paired or Web Bluetooth instance missing.');
     }
   }
+
+  /**
+   * Broadcast telemetry data to all tabs/windows via BroadcastChannel
+   */
+  public broadcastTelemetry(reading: BLECentralReading) {
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({
+        type: 'BLE_CENTRAL_TELEMETRY',
+        payload: reading,
+      });
+    }
+  }
+
+  public disconnect() {
+    if (this.gattServer && this.gattServer.connected) {
+      this.gattServer.disconnect();
+    }
+    if (this.activeDevice) {
+      this.activeDevice.connected = false;
+    }
+    this.activeDevice = null;
+    this.gattServer = null;
+    this.bluetoothDevice = null;
+    this.setState('disconnected');
+  }
+}
+
+export const bleCentralService = new BLECentralService();
+export default bleCentralService;
