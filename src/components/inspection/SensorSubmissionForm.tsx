@@ -816,33 +816,3 @@ export default SensorSubmissionForm;
           </IonCardContent>
         </IonCard>
       )}
-
-      <IonToast
-        isOpen={showToast}
-        onDidDismiss={() => setShowToast(false)}
-        message={toastMsg}
-        duration={4500}
-        color={toastColor}
-        position="bottom"
-      />
-
-      <CreateSiteModal
-        isOpen={showCreateSiteModal}
-        onClose={() => setShowCreateSiteModal(false)}
-        onSiteCreated={(newSite) => {
-          fetchSites();
-          if (newSite?.id) {
-            setSelectedSiteId(newSite.id);
-          }
-        }}
-      />
-
-      <BLESimulatorModal
-        isOpen={showBLESimulatorModal}
-        onClose={() => setShowBLESimulatorModal(false)}
-      />
-    </div>
-  );
-};
-
-export default SensorSubmissionForm;
