@@ -278,3 +278,14 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
       if (siteErr) {
         throw new Error('Failed to delete monitoring site from Supabase: ' + siteErr.message);
       }
+    } catch (err) {
+      console.error('Error deleting site from Supabase:', err);
+      throw err;
+    }
+  }
+
+  // 3. Notify all listeners (UserMap, UserSites, etc.) via custom event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('site_deleted', { detail: { siteId: strId } }));
+  }
+};
