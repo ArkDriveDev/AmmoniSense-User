@@ -119,23 +119,3 @@ export const BLESimulatorModal: React.FC<BLESimulatorModalProps> = ({
         {/* Glassmorphism Header Banner */}
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.95), rgba(29, 93, 155, 0.9))',
-            borderRadius: '16px',
-            padding: '18px',
-            color: '#ffffff',
-            marginBottom: '20px',
-            boxShadow: '0 8px 24px rgba(15, 60, 92, 0.25)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.15)'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8 }}>
-                SIMULATED BLE TRANSMITTER
-              </span>
-              <h3 style={{ margin: '4px 0 0 0', fontWeight: 800, fontSize: '18px' }}>{deviceUid}</h3>
-            </div>
-            <IonBadge style={{ background: severity.bg, color: severity.color, padding: '6px 12px', fontSize: '11px', fontWeight: 700 }}>
-              {severity.label}
-            </IonBadge>
