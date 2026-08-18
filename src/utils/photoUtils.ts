@@ -487,3 +487,31 @@ export const captureSitePhoto = async (
     ])
     .select('*')
     .single();
+
+  const photoRecord: InspectionPhotoRecord = dbError || !inserted
+    ? {
+        id: Date.now(),
+        photo_url: photoUrlToSave,
+        latitude,
+        longitude,
+        site_id: null,
+        is_used: true,
+        is_site_photo: true,
+        sensor_data_id: null,
+        uploaded_by: userId,
+        uploaded_at: new Date().toISOString(),
+        dataUrl: finalDataUrl,
+      }
+    : {
+        ...inserted,
+        dataUrl: finalDataUrl,
+      };
+
+  return {
+    photoRecord,
+    dataUrl: finalDataUrl,
+    latitude,
+    longitude,
+    gpsSource,
+  };
+};
