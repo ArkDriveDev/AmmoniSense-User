@@ -38,3 +38,23 @@ import {
 export default function AreaMapping() {
   const [loading, setLoading] = useState<boolean>(true);
   const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
+  const [communityPolygons, setCommunityPolygons] = useState<CommunityPolygon[]>([]);
+
+  // Toast State
+  const [toastMsg, setToastMsg] = useState<string>('');
+  const [showToast, setShowToast] = useState<boolean>(false);
+  const [toastColor, setToastColor] = useState<string>('success');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [zones, comms] = await Promise.all([
+        fetchOdorZones(),
+        fetchCommunityPolygons(),
+      ]);
+      setOdorZones(zones);
+      setCommunityPolygons(comms);
