@@ -208,3 +208,38 @@ class OfflineStorageService {
           const putReq = store.put(item);
           putReq.onsuccess = () => resolve();
           putReq.onerror = () => reject(putReq.error);
+        } else {
+          resolve();
+        }
+      };
+      getReq.onerror = () => reject(getReq.error);
+    });
+  }
+
+  // ==========================================
+  // INDEXEDDB PHOTO HELPERS
+  // ==========================================
+
+  async savePhoto(dataUrl: string): Promise<string> {
+    const db = await this.initDB();
+    const photoId = `photo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const record: StoredPhoto = {
+      id: photoId,
+      dataUrl,
+      timestamp: new Date().toISOString(),
+    };
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      const store = tx.objectStore(PHOTO_STORE);
+      const req = store.add(record);
+      req.onsuccess = () => resolve(photoId);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getPhoto(id: string): Promise<StoredPhoto | null> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(PHOTO_STORE, 'readonly');
+      const store = tx.objectStore(PHOTO_STORE);
