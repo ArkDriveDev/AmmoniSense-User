@@ -33,3 +33,38 @@ export default function AppRouter() {
       />
 
       <Route
+        path="/map"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <UserMap />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/spatial-map" element={<Navigate to="/map" replace />} />
+
+      <Route
+        path="/area-mapping"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <AreaMapping />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ble-sensor"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <UserBLESensor />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="/my-piggeries" element={<Navigate to="/monitoring-sites" replace />} />
+      <Route
