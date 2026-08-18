@@ -873,3 +873,38 @@ export default function UserMap() {
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showPhotoTagsLayer}
+                  onChange={(e) => setShowPhotoTagsLayer(e.target.checked)}
+                />
+                <b>Step 1 Photo Tags</b> (📷 Pins)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showBoundaryLayer}
+                  onChange={(e) => setShowBoundaryLayer(e.target.checked)}
+                />
+                <b>Manolo Fortich Boundary</b>
+              </label>
+            </div>
+          </div>
+        </IonPopover>
+
+        {/* LEGEND MODAL */}
+        <IonModal isOpen={showLegend} onDidDismiss={() => setShowLegend(false)}>
+          <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
+              <IonButton fill="clear" onClick={() => setShowLegend(false)}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </div>
+
+            <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
+                Monitoring Site Pins
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
