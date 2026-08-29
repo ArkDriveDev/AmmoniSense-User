@@ -188,7 +188,7 @@ const Register: React.FC = () => {
                     fill="outline"
                     placeholder="Enter your full name"
                     value={form.full_name}
-                    onIonChange={(e) => setForm({ ...form, full_name: e.detail.value! })}
+                    onIonInput={(e) => setForm({ ...form, full_name: e.detail.value || '' })}
                     style={{ marginBottom: '16px' }}
                   />
 
@@ -199,7 +199,7 @@ const Register: React.FC = () => {
                     type="email"
                     placeholder="youremail@example.com"
                     value={form.email}
-                    onIonChange={(e) => setForm({ ...form, email: e.detail.value! })}
+                    onIonInput={(e) => setForm({ ...form, email: e.detail.value || '' })}
                     style={{ marginBottom: '16px' }}
                   />
 
@@ -210,7 +210,7 @@ const Register: React.FC = () => {
                     type="tel"
                     placeholder="Enter your phone number"
                     value={form.phone}
-                    onIonChange={(e) => setForm({ ...form, phone: e.detail.value! })}
+                    onIonInput={(e) => setForm({ ...form, phone: e.detail.value || '' })}
                     style={{ marginBottom: '16px' }}
                   />
 
@@ -220,7 +220,7 @@ const Register: React.FC = () => {
                     fill="outline"
                     placeholder="Enter your organization name"
                     value={form.organization_name}
-                    onIonChange={(e) => setForm({ ...form, organization_name: e.detail.value! })}
+                    onIonInput={(e) => setForm({ ...form, organization_name: e.detail.value || '' })}
                     style={{ marginBottom: '16px' }}
                   />
 
@@ -231,7 +231,7 @@ const Register: React.FC = () => {
                     type="password"
                     placeholder="Enter password (min 6 chars)"
                     value={form.password}
-                    onIonChange={(e) => setForm({ ...form, password: e.detail.value! })}
+                    onIonInput={(e) => setForm({ ...form, password: e.detail.value || '' })}
                     style={{ marginBottom: '16px' }}
                   >
                     <IonInputPasswordToggle slot="end" />
@@ -244,7 +244,7 @@ const Register: React.FC = () => {
                     type="password"
                     placeholder="Confirm your password"
                     value={form.confirm_password}
-                    onIonChange={(e) => setForm({ ...form, confirm_password: e.detail.value! })}
+                    onIonInput={(e) => setForm({ ...form, confirm_password: e.detail.value || '' })}
                     style={{ marginBottom: '16px' }}
                   >
                     <IonInputPasswordToggle slot="end" />
