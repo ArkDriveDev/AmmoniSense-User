@@ -67,14 +67,14 @@ interface FullMapViewProps {
   height?: string;
 }
 
-// Manolo Fortich Bounding Box Restriction
+// Strict Manolo Fortich Bounding Box Restriction
 export const MANOLO_FORTICH_BOUNDS: L.LatLngBoundsExpression = [
   [8.2200, 124.7000], // South-West
   [8.5000, 125.0200]  // North-East
 ];
 
 // Manolo Fortich Municipal Boundary Polygon
-const MANOLO_FORTICH_BOUNDARY: [number, number][] = [
+export const MANOLO_FORTICH_BOUNDARY: [number, number][] = [
   [8.4650, 124.7800],
   [8.4800, 124.8500],
   [8.4600, 124.9200],
@@ -91,13 +91,13 @@ const MANOLO_FORTICH_BOUNDARY: [number, number][] = [
 const WORLD_MASK_RING: [number, number][] = [
   [90, -180],
   [90, 180],
-  [-90, -180],
+  [-90, 180],
   [-90, -180],
 ];
 
-// Brand Color for all Site Pins
+// Brand Colors
 export const SITE_BRAND_COLOR = '#1D5D9B';
-export const PHOTO_TAG_BRAND_COLOR = '#8b5cf6'; // Purple for photo tags
+export const PHOTO_TAG_BRAND_COLOR = '#8b5cf6';
 
 export const getAmmoniaColor = (ammonia: number): string => {
   if (ammonia > 20) return '#ef4444'; // Critical Red (>20 PPM)
@@ -128,7 +128,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   onSelectPhotoTag,
   centerLat = 8.3683,
   centerLng = 124.8637,
-  zoom = 13,
+  zoom = 12.5,
   userLocation = null,
   height = '100%',
 }) => {
@@ -142,7 +142,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   const photoTagsLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const userLocLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
-  // Initialize Map Instance with Strict Bounds
+  // Initialize Map Instance with Strict Manolo Fortich Restriction
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -154,10 +154,13 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     const map = L.map(mapContainerRef.current, {
       center: [centerLat, centerLng],
       zoom: zoom,
-      minZoom: 11,
+      minZoom: 12, // Strict zoom-out lock to Manolo Fortich only
       maxZoom: 18,
+      zoomSnap: 0.5,
+      zoomDelta: 0.5,
       maxBounds: MANOLO_FORTICH_BOUNDS,
-      maxBoundsViscosity: 1.0, // Strictly prevent panning outside bounds
+      maxBoundsViscosity: 1.0, // 100% solid boundary barrier - prevents panning outside
+      bounceAtZoomLimits: false,
       zoomControl: false,
     });
 
@@ -176,6 +179,11 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     mapRef.current = map;
     setMapInstance(map);
 
+    // Initial resize trigger
+    setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, 200);
+
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -185,14 +193,42 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     };
   }, []);
 
-  // Update Center
+  // ResizeObserver for Mobile Responsiveness
+  useEffect(() => {
+    if (!mapInstance || !mapContainerRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    });
+
+    resizeObserver.observe(mapContainerRef.current);
+
+    const handleWindowResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener('orientationchange', handleWindowResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+      window.removeEventListener('orientationchange', handleWindowResize);
+    };
+  }, [mapInstance]);
+
+  // Update Center if requested
   useEffect(() => {
     if (mapRef.current) {
       mapRef.current.setView([centerLat, centerLng], zoom);
     }
   }, [centerLat, centerLng, zoom]);
 
-  // Render User GPS Marker if within bounds
+  // Render User GPS Marker
   useEffect(() => {
     if (!mapRef.current || !userLocLayerGroupRef.current) return;
     const userGroup = userLocLayerGroupRef.current;
@@ -222,7 +258,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     }
   }, [userLocation]);
 
-  // Render Municipal Boundary & Outer Mask Layer
+  // Render Municipal Boundary & Inverted Mask (Only Manolo Fortich is shown)
   useEffect(() => {
     if (!mapRef.current || !boundaryLayerGroupRef.current) return;
     const boundaryGroup = boundaryLayerGroupRef.current;
@@ -234,23 +270,23 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
         color: '#0f3c5c',
         weight: 2,
         fillColor: '#0f172a',
-        fillOpacity: 0.65, // Mask out outside regions so ONLY Manolo Fortich is highlighted
+        fillOpacity: 0.85, // Mask outside regions so ONLY Manolo Fortich is shown
         interactive: false,
       });
 
-      // 2. Bright Boundary Line for Manolo Fortich
+      // 2. Boundary Line for Manolo Fortich
       const polygon = L.polygon(MANOLO_FORTICH_BOUNDARY, {
         color: '#10b981',
-        weight: 3,
+        weight: 3.5,
         dashArray: '8, 6',
         fillColor: '#2dd36f',
-        fillOpacity: 0.05,
+        fillOpacity: 0.04,
       });
 
       const labelIcon = L.divIcon({
         className: 'boundary-label-marker',
         html: `<div style="
-          background: rgba(15, 60, 92, 0.92);
+          background: rgba(15, 60, 92, 0.95);
           color: white;
           padding: 4px 12px;
           border-radius: 14px;
@@ -258,7 +294,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
           font-size: 11px;
           letter-spacing: 0.5px;
           box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-          border: 1px solid rgba(255,255,255,0.2);
+          border: 1px solid rgba(255,255,255,0.25);
           backdrop-filter: blur(4px);
           white-space: nowrap;
         ">🏛️ Manolo Fortich Municipality</div>`,
@@ -274,7 +310,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     }
   }, [showBoundaryLayer]);
 
-  // Render Site Markers: 🔴 Red Pin for Unsubmitted/Offline, 🟢 Green Pin for Submitted/Online
+  // Render Site Markers
   useEffect(() => {
     if (!mapRef.current || !sitesLayerGroupRef.current) return;
     const sitesGroup = sitesLayerGroupRef.current;
@@ -283,73 +319,51 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     if (!showSitesLayer) return;
 
     sites.forEach((site) => {
-      const lat = typeof site.latitude === 'number' ? site.latitude : (site as any).current_latitude;
-      const lng = typeof site.longitude === 'number' ? site.longitude : (site as any).current_longitude;
-
-      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
-
-      const isOffline = Boolean(site.isOffline || site.is_pending_sync);
-      const color = isOffline ? '#ef4444' : '#22c55e'; // 🔴 Red for offline/unsubmitted, 🟢 Green for online/submitted
-      const pinEmoji = isOffline ? '🔴' : '🟢';
+      const pinColor = site.isOffline ? '#EF4444' : '#1D5D9B';
+      const isPending = site.is_pending_sync || site.isOffline;
 
       const customIcon = L.divIcon({
-        className: 'site-pin-marker',
+        className: 'custom-site-marker',
         html: `
           <div style="
             position: relative;
-            width: 34px;
-            height: 34px;
-            background: ${color};
-            border: 2.5px solid #ffffff;
+            background: ${pinColor};
+            width: 32px;
+            height: 32px;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
+            border: 2.5px solid #ffffff;
             box-shadow: 0 4px 12px rgba(0,0,0,0.35);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
           ">
-            <div style="
+            <span style="
               transform: rotate(45deg);
-              color: #ffffff;
               font-size: 15px;
-              font-weight: bold;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            ">
-              ${pinEmoji}
-            </div>
+              color: white;
+            ">🏢</span>
+            ${isPending ? `
+              <span style="
+                position: absolute;
+                top: -4px;
+                right: -4px;
+                width: 12px;
+                height: 12px;
+                background-color: #f59e0b;
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 4px rgba(0,0,0,0.4);
+              "></span>
+            ` : ''}
           </div>
         `,
-        iconSize: [34, 34],
-        iconAnchor: [17, 34],
-        popupAnchor: [0, -34],
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
       });
 
-      if (isOffline) {
-        const pulseCircle = L.circle([lat, lng], {
-          radius: 120,
-          fillColor: '#ef4444',
-          fillOpacity: 0.25,
-          stroke: false,
-        });
-        sitesGroup.addLayer(pulseCircle);
-      }
-
-      const popupContent = `
-        <div style="font-family: sans-serif; padding: 4px; min-width: 140px;">
-          <strong style="font-size: 14px; color: #0f172a; display: block; margin-bottom: 2px;">${site.site_name}</strong>
-          ${isOffline 
-            ? '<div style="color: #ef4444; font-weight: bold; font-size: 12px; margin-bottom: 4px;">⏳ Pending Submission (Offline)</div>' 
-            : '<div style="color: #22c55e; font-weight: bold; font-size: 12px; margin-bottom: 4px;">✅ Synced Online Site</div>'
-          }
-          <div style="font-size: 12px; color: #475569;">${site.address || 'Manolo Fortich, Bukidnon'}</div>
-        </div>
-      `;
-
-      const marker = L.marker([lat, lng], { icon: customIcon });
-      marker.bindPopup(popupContent);
+      const marker = L.marker([site.latitude, site.longitude], { icon: customIcon });
 
       marker.on('click', () => {
         if (onSelectSite) onSelectSite(site);
@@ -359,7 +373,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     });
   }, [sites, showSitesLayer, onSelectSite]);
 
-  // Render Sensor Reading Dots (Layer 2)
+  // Render Reading Markers
   useEffect(() => {
     if (!mapRef.current || !readingsLayerGroupRef.current) return;
     const readingsGroup = readingsLayerGroupRef.current;
@@ -368,38 +382,59 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     if (!showReadingsLayer) return;
 
     readings.forEach((reading) => {
-      if (!reading.latitude || !reading.longitude) return;
-
       const color = getAmmoniaColor(reading.ammonia);
+      const isPending = reading.is_pending_sync;
 
-      const circleMarker = L.circleMarker([reading.latitude, reading.longitude], {
-        radius: 10,
-        fillColor: color,
-        color: '#ffffff',
-        weight: 2.5,
-        opacity: 1,
-        fillOpacity: 0.85,
+      const readingIcon = L.divIcon({
+        className: 'custom-reading-marker',
+        html: `
+          <div style="
+            position: relative;
+            background: ${color};
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            white-space: nowrap;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+          ">
+            <span>⚡ ${reading.ammonia.toFixed(1)}</span>
+            <span style="font-size: 8px; opacity: 0.85;">PPM</span>
+            ${isPending ? `
+              <span style="
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 10px;
+                height: 10px;
+                background-color: #f59e0b;
+                border: 2px solid white;
+                border-radius: 50%;
+              "></span>
+            ` : ''}
+          </div>
+        `,
+        iconSize: [60, 24],
+        iconAnchor: [30, 12],
       });
 
-      if (reading.ammonia > 20) {
-        const pulse = L.circle([reading.latitude, reading.longitude], {
-          radius: 100,
-          fillColor: '#ef4444',
-          fillOpacity: 0.2,
-          stroke: false,
-        });
-        readingsGroup.addLayer(pulse);
-      }
+      const marker = L.marker([reading.latitude, reading.longitude], { icon: readingIcon });
 
-      circleMarker.on('click', () => {
+      marker.on('click', () => {
         if (onSelectReading) onSelectReading(reading);
       });
 
-      readingsGroup.addLayer(circleMarker);
+      readingsGroup.addLayer(marker);
     });
   }, [readings, showReadingsLayer, onSelectReading]);
 
-  // Render Photo Tag Markers (Layer 3 - Step 1 Inspection Photos)
+  // Render Photo Tag Markers
   useEffect(() => {
     if (!mapRef.current || !photoTagsLayerGroupRef.current) return;
     const photoGroup = photoTagsLayerGroupRef.current;
@@ -408,53 +443,67 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     if (!showPhotoTagsLayer) return;
 
     photoTags.forEach((tag) => {
-      if (!tag.latitude || !tag.longitude) return;
+      const isPending = tag.is_pending_sync;
+      let photoIcon: L.DivIcon;
 
-      const isPending = tag.is_pending_sync || !tag.is_used;
-      const markerColor = isPending ? '#8b5cf6' : '#6366f1'; // Purple/Indigo pin for photo tags
-
-      const photoIcon = L.divIcon({
-        className: 'photo-tag-marker',
-        html: `
-          <div style="
-            position: relative;
-            width: 32px;
-            height: 32px;
-            background: ${markerColor};
-            border: 2.5px solid #ffffff;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-          ">
+      if (tag.photo_url) {
+        photoIcon = L.divIcon({
+          className: 'custom-photo-thumb-marker',
+          html: `
             <div style="
-              transform: rotate(45deg);
-              color: #ffffff;
-              font-size: 14px;
-              font-weight: bold;
+              position: relative;
+              width: 38px;
+              height: 38px;
+              border-radius: 50%;
+              border: 3px solid #8b5cf6;
+              box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+              background: #0f172a;
+              overflow: hidden;
+              cursor: pointer;
+            ">
+              <img src="${tag.photo_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Site Tag" />
+              ${isPending ? `
+                <span style="
+                  position: absolute;
+                  top: 0;
+                  right: 0;
+                  width: 10px;
+                  height: 10px;
+                  background-color: #f59e0b;
+                  border: 2px solid white;
+                  border-radius: 50%;
+                "></span>
+              ` : ''}
+            </div>
+          `,
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
+        });
+      } else {
+        photoIcon = L.divIcon({
+          className: 'custom-photo-icon-marker',
+          html: `
+            <div style="
+              position: relative;
+              background: #8b5cf6;
+              width: 30px;
+              height: 30px;
+              border-radius: 50%;
+              border: 2px solid #ffffff;
+              box-shadow: 0 3px 10px rgba(0,0,0,0.3);
               display: flex;
               align-items: center;
               justify-content: center;
+              color: white;
+              font-size: 15px;
+              cursor: pointer;
             ">
               📷
             </div>
-          </div>
-        `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-      });
-
-      if (isPending) {
-        const pulseCircle = L.circle([tag.latitude, tag.longitude], {
-          radius: 90,
-          fillColor: '#8b5cf6',
-          fillOpacity: 0.2,
-          stroke: false,
+          `,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
         });
-        photoGroup.addLayer(pulseCircle);
       }
 
       const marker = L.marker([tag.latitude, tag.longitude], { icon: photoIcon });
