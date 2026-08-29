@@ -21,24 +21,31 @@ import {
 import {
   shapesOutline,
   refreshOutline,
-  checkmarkCircleOutline,
-  warningOutline,
-  trashOutline,
-  layersOutline
+  layersOutline,
+  businessOutline,
+  analyticsOutline
 } from 'ionicons/icons';
 import PolygonDrawer from '../../components/map/PolygonDrawer';
-import { OdorZone, CommunityPolygon } from '../../types/site';
+import { OdorZone } from '../../types/site';
+import { supabase } from '../../services/supabase';
 import {
   fetchOdorZones,
   saveOdorZone,
-  fetchCommunityPolygons,
-  saveCommunityPolygon
+  fetchZoneReadingStats
 } from '../../services/siteService';
+
+interface SiteOption {
+  id: number;
+  site_name: string;
+  site_code?: string;
+  current_latitude?: number;
+  current_longitude?: number;
+}
 
 export default function AreaMapping() {
   const [loading, setLoading] = useState<boolean>(true);
   const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
-  const [communityPolygons, setCommunityPolygons] = useState<CommunityPolygon[]>([]);
+  const [sites, setSites] = useState<SiteOption[]>([]);
 
   // Toast State
   const [toastMsg, setToastMsg] = useState<string>('');
@@ -52,12 +59,35 @@ export default function AreaMapping() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [zones, comms] = await Promise.all([
+      const [zones, sitesRes, stats] = await Promise.all([
         fetchOdorZones(),
-        fetchCommunityPolygons(),
+        supabase.from('monitoring_sites').select('id, site_name, site_code, current_latitude, current_longitude'),
+        fetchZoneReadingStats(),
       ]);
-      setOdorZones(zones);
-      setCommunityPolygons(comms);
+
+      const sitesList: SiteOption[] = sitesRes.data || [];
+      setSites(sitesList);
+
+      // Merge stats map
+      const statsMap = new Map<string | number, any>();
+      (stats || []).forEach((st: any) => {
+        if (st.zone_id || st.id) {
+          statsMap.set(st.zone_id || st.id, st);
+        }
+      });
+
+      const enrichedZones = (zones || []).map((z) => {
+        const zoneStat = z.id ? statsMap.get(z.id) : null;
+        return {
+          ...z,
+          reading_count: zoneStat?.reading_count ?? z.reading_count ?? 0,
+          avg_ammonia: zoneStat?.avg_ammonia ?? z.avg_ammonia,
+          max_ammonia: zoneStat?.max_ammonia ?? z.max_ammonia,
+          min_ammonia: zoneStat?.min_ammonia ?? z.min_ammonia,
+        };
+      });
+
+      setOdorZones(enrichedZones);
     } catch (err: any) {
       console.error('Error loading spatial polygon data:', err);
     } finally {
@@ -87,28 +117,11 @@ export default function AreaMapping() {
     }
   };
 
-  const handleSaveCommunity = async (comm: CommunityPolygon) => {
-    try {
-      const saved = await saveCommunityPolygon(comm);
-      setCommunityPolygons((prev) => [saved, ...prev]);
-      setToastMsg(`🟩 Community Polygon "${comm.community_name}" saved successfully!`);
-      setToastColor('success');
-      setShowToast(true);
-    } catch (err: any) {
-      console.warn('Error saving community polygon, saving locally:', err);
-      const localComm = { ...comm, id: `local_${Date.now()}`, is_pending_sync: true };
-      setCommunityPolygons((prev) => [localComm, ...prev]);
-      setToastMsg(`📶 Saved Community Polygon locally for auto-sync.`);
-      setToastColor('warning');
-      setShowToast(true);
-    }
-  };
-
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Spatial Polygon & Area Mapping</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>Odor Zone Area Mapping</IonTitle>
           <IonButton slot="end" fill="clear" onClick={loadData} style={{ color: '#ffffff' }}>
             <IonIcon icon={refreshOutline} />
           </IonButton>
@@ -136,38 +149,38 @@ export default function AreaMapping() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <IonIcon icon={shapesOutline} style={{ fontSize: '28px', color: '#60A5FA' }} />
               <div>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: '17px' }}>Polygon Area Mapping</h3>
+                <h3 style={{ margin: 0, fontWeight: 800, fontSize: '17px' }}>Site Odor Zone Mapping</h3>
                 <p style={{ margin: '2px 0 0 0', fontSize: '12px', opacity: 0.85 }}>
-                  Draw spatial boundaries for Odor Plume Dispersion Zones and Vulnerable Communities. No grid cells required.
+                  Draw ONE Odor Zone polygon per site. Sensor readings inside the boundary automatically correlate to the zone.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Interactive Polygon Drawer */}
+          {/* Interactive Odor Zone Polygon Drawer */}
           <PolygonDrawer
+            sites={sites}
             onSaveOdorZone={handleSaveOdorZone}
-            onSaveCommunity={handleSaveCommunity}
             height="440px"
           />
 
-          {/* Saved Spatial Polygons Summary List */}
+          {/* Saved Odor Zones Summary List */}
           <div style={{ marginTop: '24px' }}>
             <h4 style={{ fontWeight: 800, color: '#0F172A', fontSize: '16px', marginBottom: '12px' }}>
-              Saved Spatial Polygons ({odorZones.length + communityPolygons.length})
+              Saved Odor Zones ({odorZones.length})
             </h4>
 
             {loading ? (
               <div style={{ textAlign: 'center', padding: '30px' }}>
                 <IonSpinner name="crescent" color="primary" />
-                <p style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Loading spatial polygons...</p>
+                <p style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Loading odor zones...</p>
               </div>
-            ) : odorZones.length === 0 && communityPolygons.length === 0 ? (
+            ) : odorZones.length === 0 ? (
               <IonCard className="premium-card" style={{ margin: 0, padding: '20px', textAlign: 'center' }}>
                 <IonCardContent>
                   <IonIcon icon={layersOutline} style={{ fontSize: '36px', color: '#94A3B8', marginBottom: '8px' }} />
                   <p style={{ margin: 0, color: '#64748B', fontWeight: 600, fontSize: '14px' }}>
-                    No spatial polygons saved yet. Tap points on the map above to draw Odor Zones or Community boundaries!
+                    No Odor Zones saved yet. Select a site and tap points on the map above to draw its impact boundary!
                   </p>
                 </IonCardContent>
               </IonCard>
@@ -180,38 +193,31 @@ export default function AreaMapping() {
                         <IonCardContent style={{ padding: '14px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                              <IonBadge style={{ background: z.severity_level === 'CRITICAL' ? '#EF4444' : '#F97316', fontSize: '10px', fontWeight: 800, marginBottom: '6px' }}>
-                                🟧 ODOR ZONE ({z.severity_level})
-                              </IonBadge>
-                              <h4 style={{ margin: '2px 0 4px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{z.zone_name}</h4>
-                              <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
-                                Ammonia NH₃: <b>{z.ammonia_ppm || 0} ppm</b> • Vertices: {z.coordinates?.length || 0} points
-                              </p>
+                              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                <IonBadge style={{ background: '#F97316', color: '#ffffff', fontSize: '10px', fontWeight: 800 }}>
+                                  🟧 ODOR ZONE
+                                </IonBadge>
+                                {z.site_name && (
+                                  <IonBadge color="light" style={{ color: '#0F3C5C', fontSize: '10px', fontWeight: 700 }}>
+                                    <IonIcon icon={businessOutline} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
+                                    {z.site_name}
+                                  </IonBadge>
+                                )}
+                              </div>
+                              <h4 style={{ margin: '2px 0 6px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{z.zone_name}</h4>
+                              <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6' }}>
+                                {z.area_size_hectares ? <span>Area: <b>{z.area_size_hectares} ha</b> • </span> : null}
+                                <span>Vertices: <b>{z.coordinates?.length || 0} pts</b></span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                                  <IonIcon icon={analyticsOutline} style={{ color: '#1D5D9B' }} />
+                                  <span>Readings: <b>{z.reading_count || 0}</b></span>
+                                  {z.avg_ammonia !== undefined && z.avg_ammonia !== null && (
+                                    <span>(Avg: <b>{Number(z.avg_ammonia).toFixed(1)} ppm</b>)</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                             {z.is_pending_sync && (
-                              <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
-                            )}
-                          </div>
-                        </IonCardContent>
-                      </IonCard>
-                    </IonCol>
-                  ))}
-
-                  {communityPolygons.map((c, idx) => (
-                    <IonCol key={c.id || idx} size="12" size-md="6">
-                      <IonCard className="premium-card" style={{ margin: '0 0 12px 0' }}>
-                        <IonCardContent style={{ padding: '14px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <IonBadge style={{ background: '#2DD36F', color: '#ffffff', fontSize: '10px', fontWeight: 800, marginBottom: '6px' }}>
-                                🟩 COMMUNITY ({c.community_type})
-                              </IonBadge>
-                              <h4 style={{ margin: '2px 0 4px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{c.community_name}</h4>
-                              <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
-                                Population: <b>{(c.estimated_population || 0).toLocaleString()} residents</b>
-                              </p>
-                            </div>
-                            {c.is_pending_sync && (
                               <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
                             )}
                           </div>
