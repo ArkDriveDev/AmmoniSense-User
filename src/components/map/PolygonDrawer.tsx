@@ -12,27 +12,28 @@ import {
   IonSelect,
   IonSelectOption,
   IonBadge,
-  IonChip
+  IonTextarea
 } from '@ionic/react';
 import {
   shapesOutline,
   refreshOutline,
   checkmarkCircleOutline,
-  closeCircleOutline,
   trashOutline,
   saveOutline,
-  addOutline
+  businessOutline
 } from 'ionicons/icons';
 import { MANOLO_FORTICH_BOUNDS } from './FullMapView';
-import { OdorZone, CommunityPolygon } from '../../types/site';
+import { OdorZone } from '../../types/site';
+import { toGeoJSONPolygon, calculatePolygonAreaHectares, calculatePolygonCenter } from '../../utils/spatialUtils';
 
 interface PolygonDrawerProps {
   centerLat?: number;
   centerLng?: number;
   zoom?: number;
   height?: string;
+  selectedSiteId?: number | null;
+  sites?: Array<{ id: number; site_name: string; site_code?: string }>;
   onSaveOdorZone?: (zone: OdorZone) => void;
-  onSaveCommunity?: (community: CommunityPolygon) => void;
 }
 
 export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
@@ -40,8 +41,9 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
   centerLng = 124.8637,
   zoom = 14,
   height = '420px',
+  selectedSiteId: initialSiteId = null,
+  sites = [],
   onSaveOdorZone,
-  onSaveCommunity,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -51,20 +53,23 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
 
   // Draw State
   const [vertices, setVertices] = useState<[number, number][]>([]);
-  const [drawingMode, setDrawingMode] = useState<'odor_zone' | 'community'>('odor_zone');
 
   // Odor Zone Form State
-  const [zoneName, setZoneName] = useState<string>('Odor Impact Zone A');
-  const [severityLevel, setSeverityLevel] = useState<'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL'>('HIGH');
-  const [ammoniaPpm, setAmmoniaPpm] = useState<string>('24.5');
-
-  // Community Form State
-  const [communityName, setCommunityName] = useState<string>('Poblacion Community');
-  const [communityType, setCommunityType] = useState<'Residential' | 'School' | 'Hospital' | 'Commercial' | 'Agricultural'>('Residential');
-  const [population, setPopulation] = useState<string>('1200');
+  const [siteId, setSiteId] = useState<number | null>(initialSiteId || (sites.length > 0 ? sites[0].id : null));
+  const [zoneName, setZoneName] = useState<string>('Odor Impact Zone 1');
+  const [notes, setNotes] = useState<string>('');
 
   // Computed Surface Area (Hectares)
   const [surfaceAreaHa, setSurfaceAreaHa] = useState<number>(0);
+
+  // Sync initialSiteId when prop changes
+  useEffect(() => {
+    if (initialSiteId !== undefined && initialSiteId !== null) {
+      setSiteId(initialSiteId);
+    } else if (!siteId && sites.length > 0) {
+      setSiteId(sites[0].id);
+    }
+  }, [initialSiteId, sites]);
 
   // Initialize Leaflet Map Instance
   useEffect(() => {
@@ -85,7 +90,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap | MENRO Polygon Drawer',
+      attribution: '&copy; OpenStreetMap | AmmoniSense Odor Zone Drawer',
       maxZoom: 20,
     }).addTo(map);
 
@@ -99,7 +104,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     };
   }, []);
 
-  // Update map click handler to capture polygon vertices
+  // Map click handler to capture polygon vertices
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
@@ -135,7 +140,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       polygonRef.current = null;
     }
 
-    const color = drawingMode === 'odor_zone' ? '#f97316' : '#22c55e'; // Orange for Odor Zone, Green for Community
+    const color = '#f97316'; // Odor Zone Orange
 
     // Render vertex markers
     vertices.forEach((pt, index) => {
@@ -162,7 +167,9 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       }).addTo(map);
 
       polygonRef.current = poly;
-      calculateSurfaceArea(vertices);
+      const geojson = toGeoJSONPolygon(vertices);
+      const area = calculatePolygonAreaHectares(geojson);
+      setSurfaceAreaHa(area);
     } else if (vertices.length === 2) {
       const line = L.polyline(vertices, {
         color: color,
@@ -175,32 +182,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     } else {
       setSurfaceAreaHa(0);
     }
-  }, [vertices, drawingMode]);
-
-  // Calculate polygon surface area in hectares
-  const calculateSurfaceArea = (pts: [number, number][]) => {
-    if (pts.length < 3) return;
-    // Simple Shoelace formula converted to approximate square meters / hectares
-    let area = 0;
-    const R = 6378137; // Earth radius in meters
-    const degToRad = Math.PI / 180;
-
-    for (let i = 0; i < pts.length; i++) {
-      const p1 = pts[i];
-      const p2 = pts[(i + 1) % pts.length];
-
-      const x1 = p1[1] * degToRad * R * Math.cos(p1[0] * degToRad);
-      const y1 = p1[0] * degToRad * R;
-      const x2 = p2[1] * degToRad * R * Math.cos(p2[0] * degToRad);
-      const y2 = p2[0] * degToRad * R;
-
-      area += x1 * y2 - x2 * y1;
-    }
-
-    const areaSqMeters = Math.abs(area / 2);
-    const areaHa = areaSqMeters / 10000;
-    setSurfaceAreaHa(parseFloat(areaHa.toFixed(2)));
-  };
+  }, [vertices]);
 
   const handleUndo = () => {
     setVertices((prev) => prev.slice(0, prev.length - 1));
@@ -217,68 +199,54 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       return;
     }
 
-    if (drawingMode === 'odor_zone') {
-      const zone: OdorZone = {
-        zone_name: zoneName || 'Odor Impact Zone',
-        severity_level: severityLevel,
-        ammonia_ppm: parseFloat(ammoniaPpm) || 0,
-        coordinates: vertices,
-      };
-      if (onSaveOdorZone) onSaveOdorZone(zone);
-    } else {
-      const comm: CommunityPolygon = {
-        community_name: communityName || 'Community Zone',
-        community_type: communityType,
-        estimated_population: parseInt(population, 10) || 0,
-        coordinates: vertices,
-      };
-      if (onSaveCommunity) onSaveCommunity(comm);
+    if (!siteId) {
+      alert('Please select a monitoring site for this odor zone.');
+      return;
     }
 
-    handleClear();
+    try {
+      const polygonGeojson = toGeoJSONPolygon(vertices);
+      const center = calculatePolygonCenter(polygonGeojson);
+      const area = calculatePolygonAreaHectares(polygonGeojson);
+
+      const zone: OdorZone = {
+        site_id: siteId,
+        zone_name: zoneName.trim() || 'Odor Impact Zone',
+        polygon_geojson: polygonGeojson,
+        center_latitude: center?.lat || null,
+        center_longitude: center?.lng || null,
+        area_size_hectares: area,
+        coordinates: vertices,
+        notes: notes.trim() || null,
+      };
+
+      if (onSaveOdorZone) onSaveOdorZone(zone);
+      handleClear();
+    } catch (err: any) {
+      alert('Error creating polygon: ' + err.message);
+    }
   };
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      {/* Drawer Mode Switcher & Tools */}
+      {/* Top Header Card */}
       <IonCard className="premium-card" style={{ margin: '0 0 12px 0', padding: '12px' }}>
         <IonCardContent style={{ padding: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <IonChip
-                color={drawingMode === 'odor_zone' ? 'warning' : 'medium'}
-                outline={drawingMode !== 'odor_zone'}
-                onClick={() => {
-                  setDrawingMode('odor_zone');
-                  handleClear();
-                }}
-                style={{ fontWeight: 700, cursor: 'pointer' }}
-              >
-                🟧 Odor Zone Polygon
-              </IonChip>
-              <IonChip
-                color={drawingMode === 'community' ? 'success' : 'medium'}
-                outline={drawingMode !== 'community'}
-                onClick={() => {
-                  setDrawingMode('community');
-                  handleClear();
-                }}
-                style={{ fontWeight: 700, cursor: 'pointer' }}
-              >
-                🟩 Community Polygon
-              </IonChip>
-            </div>
-
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonBadge style={{ background: '#f97316', color: '#ffffff', fontSize: '12px', fontWeight: 700 }}>
+                🟧 Odor Zone Boundary
+              </IonBadge>
               <IonBadge style={{ background: '#E2E8F0', color: '#334155', fontSize: '11px', fontWeight: 700 }}>
                 {vertices.length} Vertices
               </IonBadge>
-              {surfaceAreaHa > 0 && (
-                <IonBadge style={{ background: 'rgba(29, 93, 155, 0.12)', color: '#1D5D9B', fontSize: '11px', fontWeight: 700 }}>
-                  Area: {surfaceAreaHa} ha
-                </IonBadge>
-              )}
             </div>
+
+            {surfaceAreaHa > 0 && (
+              <IonBadge style={{ background: 'rgba(249, 115, 22, 0.15)', color: '#c2410c', fontSize: '12px', fontWeight: 800 }}>
+                Estimated Area: {surfaceAreaHa} ha
+              </IonBadge>
+            )}
           </div>
         </IonCardContent>
       </IonCard>
@@ -303,7 +271,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
           boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
           border: '1px solid rgba(255,255,255,0.2)'
         }}>
-          📍 Tap map to add polygon boundary points ({vertices.length}/3+ needed)
+          📍 Tap map to add odor zone vertices ({vertices.length}/3+ points)
         </div>
 
         {/* Drawing Action Buttons (Undo / Clear) */}
@@ -318,66 +286,56 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
         </div>
       </div>
 
-      {/* Polygon Meta Form Controls */}
+      {/* Odor Zone Meta Form Controls */}
       <IonCard className="premium-card" style={{ margin: '12px 0 0 0', padding: '14px' }}>
         <IonCardContent style={{ padding: '0' }}>
-          {drawingMode === 'odor_zone' ? (
-            <div>
-              <IonItem lines="full" style={{ marginBottom: '8px' }}>
-                <IonLabel position="stacked" style={{ fontWeight: 700 }}>Odor Zone Name</IonLabel>
-                <IonInput value={zoneName} onIonChange={(e) => setZoneName(e.detail.value!)} placeholder="e.g. Silang Odor Plume Zone 1" />
-              </IonItem>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <IonItem lines="full" style={{ flex: 1 }}>
-                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Severity Level</IonLabel>
-                  <IonSelect value={severityLevel} onIonChange={(e) => setSeverityLevel(e.detail.value)}>
-                    <IonSelectOption value="LOW">LOW CAUTION (0-5 ppm)</IonSelectOption>
-                    <IonSelectOption value="MODERATE">MODERATE (5-10 ppm)</IonSelectOption>
-                    <IonSelectOption value="HIGH">HIGH WARNING (10-20 ppm)</IonSelectOption>
-                    <IonSelectOption value="CRITICAL">CRITICAL HAZARD (&gt;20 ppm)</IonSelectOption>
-                  </IonSelect>
-                </IonItem>
-                <IonItem lines="full" style={{ flex: 1 }}>
-                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Ammonia NH₃ (ppm)</IonLabel>
-                  <IonInput type="number" value={ammoniaPpm} onIonChange={(e) => setAmmoniaPpm(e.detail.value!)} />
-                </IonItem>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <IonItem lines="full" style={{ marginBottom: '8px' }}>
-                <IonLabel position="stacked" style={{ fontWeight: 700 }}>Community Name</IonLabel>
-                <IonInput value={communityName} onIonChange={(e) => setCommunityName(e.detail.value!)} placeholder="e.g. Tankulan Residential District" />
-              </IonItem>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <IonItem lines="full" style={{ flex: 1 }}>
-                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Community Type</IonLabel>
-                  <IonSelect value={communityType} onIonChange={(e) => setCommunityType(e.detail.value)}>
-                    <IonSelectOption value="Residential">Residential</IonSelectOption>
-                    <IonSelectOption value="School">School / Elementary</IonSelectOption>
-                    <IonSelectOption value="Hospital">Hospital / Health Center</IonSelectOption>
-                    <IonSelectOption value="Commercial">Commercial District</IonSelectOption>
-                    <IonSelectOption value="Agricultural">Agricultural Zone</IonSelectOption>
-                  </IonSelect>
-                </IonItem>
-                <IonItem lines="full" style={{ flex: 1 }}>
-                  <IonLabel position="stacked" style={{ fontWeight: 700 }}>Est. Population</IonLabel>
-                  <IonInput type="number" value={population} onIonChange={(e) => setPopulation(e.detail.value!)} />
-                </IonItem>
-              </div>
-            </div>
+          {sites.length > 0 && (
+            <IonItem lines="full" style={{ marginBottom: '8px' }}>
+              <IonIcon icon={businessOutline} slot="start" color="primary" />
+              <IonLabel position="stacked" style={{ fontWeight: 700 }}>Monitoring Site</IonLabel>
+              <IonSelect
+                value={siteId}
+                placeholder="Select Site"
+                onIonChange={(e) => setSiteId(e.detail.value)}
+              >
+                {sites.map((s) => (
+                  <IonSelectOption key={s.id} value={s.id}>
+                    {s.site_name} {s.site_code ? `(${s.site_code})` : ''}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
           )}
+
+          <IonItem lines="full" style={{ marginBottom: '8px' }}>
+            <IonLabel position="stacked" style={{ fontWeight: 700 }}>Odor Zone Name</IonLabel>
+            <IonInput
+              value={zoneName}
+              onIonChange={(e) => setZoneName(e.detail.value!)}
+              placeholder="e.g. Silang Odor Plume Zone 1"
+            />
+          </IonItem>
+
+          <IonItem lines="full" style={{ marginBottom: '8px' }}>
+            <IonLabel position="stacked" style={{ fontWeight: 700 }}>Notes / Description (Optional)</IonLabel>
+            <IonTextarea
+              value={notes}
+              onIonChange={(e) => setNotes(e.detail.value!)}
+              placeholder="e.g. Covers downstream perimeter of composting unit"
+              rows={2}
+            />
+          </IonItem>
 
           <IonButton
             expand="block"
-            color={drawingMode === 'odor_zone' ? 'warning' : 'success'}
+            color="warning"
             size="large"
             onClick={handleSaveShape}
-            disabled={vertices.length < 3}
+            disabled={vertices.length < 3 || !siteId}
             style={{ marginTop: '14px', fontWeight: 700 }}
           >
             <IonIcon icon={saveOutline} slot="start" />
-            Save {drawingMode === 'odor_zone' ? '🟧 Odor Zone Polygon' : '🟩 Community Polygon'}
+            Save 🟧 Odor Zone Polygon
           </IonButton>
         </IonCardContent>
       </IonCard>
