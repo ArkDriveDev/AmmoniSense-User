@@ -504,7 +504,7 @@ export default function UserMap() {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent style={{ position: 'relative' }}>
+      <IonContent fullscreen style={{ '--overflow': 'hidden', position: 'relative', width: '100%', height: '100%' }}>
         {/* Floating Top Search Bar */}
         <div
           style={{
