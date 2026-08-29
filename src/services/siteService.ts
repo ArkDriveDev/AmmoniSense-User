@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
-import { CreateSitePayload, SiteRegistrationResult, OdorZone, CommunityPolygon } from '../types/site';
+import { CreateSitePayload, SiteRegistrationResult, OdorZone } from '../types/site';
 import offlineStorage from './OfflineStorageService';
+import { fromGeoJSONPolygon } from '../utils/spatialUtils';
 
 /**
  * Register Monitoring Site with photo & GPS without grid cells.
@@ -161,16 +162,50 @@ export const registerSiteWithPhoto = async (
  * Fetch all Odor Zones from Supabase
  */
 export const fetchOdorZones = async (): Promise<OdorZone[]> => {
-  const { data, error } = await supabase
-    .from('odor_zones')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    // Attempt fetching with joined site name
+    const { data, error } = await supabase
+      .from('odor_zones')
+      .select('*, monitoring_sites(site_name)')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.warn('Supabase fetch odor_zones notice:', error.message);
+    if (error) {
+      console.warn('Supabase fetch odor_zones notice:', error.message);
+      return [];
+    }
+
+    return (data || []).map((zone: any) => {
+      const coords = zone.polygon_geojson ? fromGeoJSONPolygon(zone.polygon_geojson) : zone.coordinates || [];
+      return {
+        ...zone,
+        site_name: zone.monitoring_sites?.site_name || zone.site_name,
+        coordinates: coords,
+      };
+    });
+  } catch (err: any) {
+    console.error('Error fetching odor zones:', err);
     return [];
   }
-  return data || [];
+};
+
+/**
+ * Fetch Odor Zone Reading Statistics view
+ */
+export const fetchZoneReadingStats = async (): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('zone_reading_stats')
+      .select('*');
+
+    if (error) {
+      console.warn('Supabase fetch zone_reading_stats notice:', error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err: any) {
+    console.warn('Error fetching zone_reading_stats:', err);
+    return [];
+  }
 };
 
 /**
@@ -181,67 +216,32 @@ export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
   const userId = userData.user?.id || null;
 
   const payload = {
-    site_id: zone.site_id || null,
+    site_id: zone.site_id,
     zone_name: zone.zone_name,
-    severity_level: zone.severity_level,
-    ammonia_ppm: zone.ammonia_ppm,
-    coordinates: zone.coordinates,
+    polygon_geojson: zone.polygon_geojson,
+    center_latitude: zone.center_latitude || null,
+    center_longitude: zone.center_longitude || null,
+    area_size_hectares: zone.area_size_hectares || null,
+    notes: zone.notes || null,
     created_by: userId,
   };
 
   const { data, error } = await supabase
     .from('odor_zones')
     .insert([payload])
-    .select('*')
+    .select('*, monitoring_sites(site_name)')
     .single();
 
   if (error) {
     throw new Error('Supabase save odor_zones error: ' + error.message);
   }
-  return data;
-};
 
-/**
- * Fetch all Community Polygons from Supabase
- */
-export const fetchCommunityPolygons = async (): Promise<CommunityPolygon[]> => {
-  const { data, error } = await supabase
-    .from('community_polygons')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.warn('Supabase fetch community_polygons notice:', error.message);
-    return [];
-  }
-  return data || [];
-};
-
-/**
- * Save new Community Polygon to Supabase
- */
-export const saveCommunityPolygon = async (poly: CommunityPolygon): Promise<CommunityPolygon> => {
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id || null;
-
-  const payload = {
-    community_name: poly.community_name,
-    community_type: poly.community_type,
-    estimated_population: poly.estimated_population,
-    coordinates: poly.coordinates,
-    created_by: userId,
+  const coords = data.polygon_geojson ? fromGeoJSONPolygon(data.polygon_geojson) : data.coordinates || [];
+  return {
+    ...data,
+    site_name: data.monitoring_sites?.site_name || data.site_name,
+    coordinates: coords,
   };
-
-  const { data, error } = await supabase
-    .from('community_polygons')
-    .insert([payload])
-    .select('*')
-    .single();
-
-  if (error) {
-    throw new Error('Supabase save community_polygons error: ' + error.message);
-  }
-  return data;
 };
 
 /**
