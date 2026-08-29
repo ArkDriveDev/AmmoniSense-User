@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   IonPage, 
   IonContent, 
@@ -7,14 +7,14 @@ import {
   IonTitle, 
   IonText, 
   IonItem, 
-  IonIcon,
-  IonToast,
-  IonSpinner,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonCard,
-  IonCardContent
+  IonIcon, 
+  IonToast, 
+  IonSpinner, 
+  IonGrid, 
+  IonRow, 
+  IonCol, 
+  IonCard, 
+  IonCardContent 
 } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -29,8 +29,33 @@ export default function Login() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const login = async () => {
-    if (!email || !password) {
+  // Clear any stale/corrupt session on mount to prevent 400 race conditions on Android
+  useEffect(() => {
+    const clearStaleSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          const { error } = await supabase.auth.getUser();
+          if (error) {
+            await supabase.auth.signOut();
+            offlineStorage.clearSession();
+          }
+        }
+      } catch (e) {
+        console.warn('Notice clearing stale auth session:', e);
+      }
+    };
+    clearStaleSession();
+  }, []);
+
+  const login = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (loading) return;
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password;
+
+    if (!trimmedEmail || !trimmedPassword) {
       setToastMessage('Please enter email and password');
       setShowToast(true);
       return;
@@ -40,8 +65,8 @@ export default function Login() {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: trimmedEmail,
+        password: trimmedPassword,
       });
 
       if (error) {
@@ -54,16 +79,15 @@ export default function Login() {
       // Save persistent offline session
       if (data?.session) {
         offlineStorage.saveSession(data.session, {
-          email: data.session.user?.email || email,
+          email: data.session.user?.email || trimmedEmail,
           id: data.session.user?.id,
         });
       }
 
-      navigate('/dashboard');
-
-    } catch (err) {
+      navigate('/dashboard', { replace: true });
+    } catch (err: any) {
       console.error('Login error:', err);
-      setToastMessage('An unexpected error occurred');
+      setToastMessage(err?.message || 'An unexpected error occurred');
       setShowToast(true);
     } finally {
       setLoading(false);
@@ -118,42 +142,46 @@ export default function Login() {
                       </IonText>
                     </div>
 
-                    <IonItem className="premium-input-item" lines="none">
-                      <IonIcon icon={mailOutline} slot="start" style={{ color: '#1D5D9B' }} />
-                      <IonInput
-                        type="email"
-                        placeholder="Inspector Email"
-                        value={email}
-                        onIonChange={(e) => setEmail(e.detail.value!)}
-                      />
-                    </IonItem>
+                    <form onSubmit={login}>
+                      <IonItem className="premium-input-item" lines="none">
+                        <IonIcon icon={mailOutline} slot="start" style={{ color: '#1D5D9B' }} />
+                        <IonInput
+                          type="email"
+                          placeholder="Inspector Email"
+                          value={email}
+                          onIonInput={(e) => setEmail(e.detail.value || '')}
+                          required
+                        />
+                      </IonItem>
 
-                    <IonItem className="premium-input-item" lines="none" style={{ marginTop: '12px' }}>
-                      <IonIcon icon={lockClosedOutline} slot="start" style={{ color: '#1D5D9B' }} />
-                      <IonInput
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onIonChange={(e) => setPassword(e.detail.value!)}
-                      />
-                    </IonItem>
+                      <IonItem className="premium-input-item" lines="none" style={{ marginTop: '12px' }}>
+                        <IonIcon icon={lockClosedOutline} slot="start" style={{ color: '#1D5D9B' }} />
+                        <IonInput
+                          type="password"
+                          placeholder="Password"
+                          value={password}
+                          onIonInput={(e) => setPassword(e.detail.value || '')}
+                          required
+                        />
+                      </IonItem>
 
-                    <IonButton
-                      className="btn-ammoni btn-primary"
-                      expand="block"
-                      onClick={login}
-                      disabled={loading}
-                      style={{ marginTop: '24px' }}
-                    >
-                      {loading ? (
-                        <>
-                          <IonSpinner name="crescent" />
-                          &nbsp;Logging in...
-                        </>
-                      ) : (
-                        'Sign In to Dashboard'
-                      )}
-                    </IonButton>
+                      <IonButton
+                        type="submit"
+                        className="btn-ammoni btn-primary"
+                        expand="block"
+                        disabled={loading}
+                        style={{ marginTop: '24px' }}
+                      >
+                        {loading ? (
+                          <>
+                            <IonSpinner name="crescent" />
+                            &nbsp;Logging in...
+                          </>
+                        ) : (
+                          'Sign In to Dashboard'
+                        )}
+                      </IonButton>
+                    </form>
 
                     <div style={{ textAlign: 'center', marginTop: '20px' }}>
                       <IonText color="medium">
