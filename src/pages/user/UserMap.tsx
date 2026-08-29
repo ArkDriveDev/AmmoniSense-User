@@ -30,8 +30,8 @@ import {
 
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
-import { fetchOdorZones, fetchCommunityPolygons, deleteSite } from '../../services/siteService';
-import { OdorZone, CommunityPolygon } from '../../types/site';
+import { fetchOdorZones, deleteSite } from '../../services/siteService';
+import { OdorZone } from '../../types/site';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
@@ -61,7 +61,6 @@ export default function UserMap() {
   const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
   const [photoTags, setPhotoTags] = useState<PhotoTagMarkerData[]>([]);
   const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
-  const [communityPolygons, setCommunityPolygons] = useState<CommunityPolygon[]>([]);
 
   // Search input
   const [searchText, setSearchText] = useState<string>('');
@@ -126,14 +125,10 @@ export default function UserMap() {
 
   const loadPolygons = async () => {
     try {
-      const [zones, comms] = await Promise.all([
-        fetchOdorZones(),
-        fetchCommunityPolygons()
-      ]);
+      const zones = await fetchOdorZones();
       setOdorZones(zones);
-      setCommunityPolygons(comms);
     } catch (e) {
-      console.warn('Error loading polygons in UserMap:', e);
+      console.warn('Error loading odor zones in UserMap:', e);
     }
   };
 
@@ -557,7 +552,6 @@ export default function UserMap() {
             showBoundaryLayer={showBoundaryLayer}
             showOdorZonesLayer={showOdorZonesLayer}
             odorZones={odorZones}
-            communityPolygons={communityPolygons}
             centerLat={mapCenter.lat}
             centerLng={mapCenter.lng}
             zoom={mapCenter.zoom}
@@ -987,8 +981,8 @@ export default function UserMap() {
                   <b>High Odor Zone</b> (Moderate NH₃ plume boundary)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#10b981' }}></span>
-                  <b>Vulnerable Community</b> (Schools, Hospitals, Residential)
+                  <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#eab308' }}></span>
+                  <b>Monitored Odor Zone</b> (Low / Ambient boundary)
                 </div>
               </div>
             </IonCard>
