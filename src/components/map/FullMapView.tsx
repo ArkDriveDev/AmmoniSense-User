@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import OdorZonePolygonLayer from './OdorZonePolygonLayer';
-import { OdorZone, CommunityPolygon } from '../../types/site';
+import { OdorZone } from '../../types/site';
 
 export interface SiteMarkerData {
   id: string | number;
@@ -52,7 +52,6 @@ interface FullMapViewProps {
   readings?: ReadingMarkerData[];
   photoTags?: PhotoTagMarkerData[];
   odorZones?: OdorZone[];
-  communityPolygons?: CommunityPolygon[];
   showSitesLayer?: boolean;
   showReadingsLayer?: boolean;
   showPhotoTagsLayer?: boolean;
@@ -119,7 +118,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   readings = [],
   photoTags = [],
   odorZones = [],
-  communityPolygons = [],
   showSitesLayer = true,
   showReadingsLayer = true,
   showPhotoTagsLayer = true,
@@ -475,7 +473,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
       <OdorZonePolygonLayer
         map={mapInstance}
         odorZones={odorZones}
-        communityPolygons={communityPolygons}
         showOdorZones={showOdorZonesLayer}
       />
     </div>
