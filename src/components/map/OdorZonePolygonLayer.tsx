@@ -1,52 +1,54 @@
 import React, { useEffect } from 'react';
 import L from 'leaflet';
-import { OdorZone, CommunityPolygon } from '../../types/site';
+import { OdorZone } from '../../types/site';
+import { fromGeoJSONPolygon } from '../../utils/spatialUtils';
 
 interface OdorZonePolygonLayerProps {
   map: L.Map | null;
   odorZones?: OdorZone[];
-  communityPolygons?: CommunityPolygon[];
   showOdorZones?: boolean;
-  showCommunities?: boolean;
 }
 
 export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
   map,
   odorZones = [],
-  communityPolygons = [],
   showOdorZones = true,
-  showCommunities = true,
 }) => {
   useEffect(() => {
     if (!map) return;
 
     const odorGroup = L.layerGroup().addTo(map);
-    const commGroup = L.layerGroup().addTo(map);
 
-    // 1. Render Odor Zone Polygons (🟧 Orange / Red)
     if (showOdorZones) {
       odorZones.forEach((zone) => {
-        if (!zone.coordinates || zone.coordinates.length < 3) return;
+        const coords = zone.coordinates && zone.coordinates.length >= 3
+          ? zone.coordinates
+          : (zone.polygon_geojson ? fromGeoJSONPolygon(zone.polygon_geojson) : []);
 
-        const isCritical = zone.severity_level === 'CRITICAL';
-        const isHigh = zone.severity_level === 'HIGH';
-        const color = isCritical ? '#ef4444' : isHigh ? '#f97316' : '#eab308';
+        if (!coords || coords.length < 3) return;
 
-        const poly = L.polygon(zone.coordinates, {
+        const avgPpm = zone.avg_ammonia ?? zone.ammonia_ppm ?? 0;
+        const color = avgPpm > 20 ? '#ef4444' : avgPpm > 10 ? '#f97316' : '#eab308';
+
+        const poly = L.polygon(coords, {
           color: color,
           weight: 2.5,
           dashArray: '6, 6',
           fillColor: color,
-          fillOpacity: 0.35,
+          fillOpacity: 0.3,
         });
 
         poly.bindPopup(`
-          <div style="font-family: sans-serif; padding: 4px;">
-            <strong style="color: ${color}; font-size: 14px;">🟧 ${zone.zone_name}</strong>
-            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-              <b>Severity Level:</b> ${zone.severity_level}<br/>
-              <b>Ammonia NH₃:</b> ${zone.ammonia_ppm || 0} ppm<br/>
-              <b>Polygon Vertices:</b> ${zone.coordinates.length} points
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px; min-width: 180px;">
+            <div style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">🟧 ODOR IMPACT ZONE</div>
+            <strong style="color: #0F172A; font-size: 15px; display: block; margin: 2px 0 6px 0;">${zone.zone_name}</strong>
+            <div style="font-size: 12px; color: #334155; line-height: 1.5;">
+              ${zone.site_name ? `<b>Site:</b> ${zone.site_name}<br/>` : ''}
+              <b>Area:</b> ${zone.area_size_hectares ? `${zone.area_size_hectares} ha` : 'Calculated'}<br/>
+              <b>Readings:</b> ${zone.reading_count !== undefined ? zone.reading_count : 0} readings<br/>
+              ${zone.avg_ammonia !== undefined ? `<b>Avg NH₃:</b> ${zone.avg_ammonia.toFixed(1)} ppm<br/>` : ''}
+              ${zone.max_ammonia !== undefined ? `<b>Max NH₃:</b> ${zone.max_ammonia.toFixed(1)} ppm<br/>` : ''}
+              ${zone.notes ? `<i>${zone.notes}</i>` : ''}
             </div>
           </div>
         `);
@@ -55,40 +57,10 @@ export const OdorZonePolygonLayer: React.FC<OdorZonePolygonLayerProps> = ({
       });
     }
 
-    // 2. Render Vulnerable Community Polygons (🟩 Green)
-    if (showCommunities) {
-      communityPolygons.forEach((comm) => {
-        if (!comm.coordinates || comm.coordinates.length < 3) return;
-
-        const poly = L.polygon(comm.coordinates, {
-          color: '#10b981',
-          weight: 2.5,
-          dashArray: '4, 4',
-          fillColor: '#2dd36f',
-          fillOpacity: 0.25,
-        });
-
-        const iconEmoji = comm.community_type === 'School' ? '🏫' : comm.community_type === 'Hospital' ? '🏥' : '🏡';
-
-        poly.bindPopup(`
-          <div style="font-family: sans-serif; padding: 4px;">
-            <strong style="color: #059669; font-size: 14px;">${iconEmoji} ${comm.community_name}</strong>
-            <div style="margin-top: 4px; font-size: 12px; color: #475569;">
-              <b>Type:</b> ${comm.community_type} Zone<br/>
-              <b>Est. Population:</b> ${(comm.estimated_population || 0).toLocaleString()} Residents
-            </div>
-          </div>
-        `);
-
-        commGroup.addLayer(poly);
-      });
-    }
-
     return () => {
       map.removeLayer(odorGroup);
-      map.removeLayer(commGroup);
     };
-  }, [map, odorZones, communityPolygons, showOdorZones, showCommunities]);
+  }, [map, odorZones, showOdorZones]);
 
   return null;
 };
