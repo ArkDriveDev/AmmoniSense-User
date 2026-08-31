@@ -149,28 +149,62 @@ class BLECentralService {
    */
   public parse12ByteFloat32DataView(dataView: DataView, deviceId: string, deviceName: string, rssi?: number): BLECentralReading | null {
     try {
-      if (dataView.byteLength < 12) {
-        console.warn(`BLE DataView buffer length (${dataView.byteLength} bytes) is less than expected 12 bytes.`);
-        return null;
+      // 1. Try 12-byte Float32 Little-Endian
+      if (dataView.byteLength >= 12) {
+        const ammonia = dataView.getFloat32(0, true);
+        const temperature = dataView.getFloat32(4, true);
+        const humidity = dataView.getFloat32(8, true);
+
+        if (!isNaN(ammonia) && !isNaN(temperature) && !isNaN(humidity)) {
+          return {
+            device_id: deviceId,
+            device_name: deviceName,
+            ammonia_ppm: parseFloat(ammonia.toFixed(2)),
+            temperature_c: parseFloat(temperature.toFixed(1)),
+            humidity_pct: parseFloat(humidity.toFixed(1)),
+            battery_pct: 100,
+            rssi: rssi || -60,
+            timestamp: new Date().toISOString(),
+          };
+        }
       }
 
-      // Read IEEE 754 Float32 values in little-endian byte order
-      const ammonia = dataView.getFloat32(0, true);
-      const temperature = dataView.getFloat32(4, true);
-      const humidity = dataView.getFloat32(8, true);
+      // 2. Try UTF-8 string fallback (JSON or CSV from broadcasting phone)
+      try {
+        const decoder = new TextDecoder('utf-8');
+        const text = decoder.decode(dataView.buffer).trim();
+        if (text.startsWith('{') && text.endsWith('}')) {
+          const parsed = JSON.parse(text);
+          return {
+            device_id: deviceId,
+            device_name: deviceName,
+            ammonia_ppm: Number(parsed.ammonia_ppm ?? parsed.ammonia ?? parsed.ppm ?? 0),
+            temperature_c: Number(parsed.temperature_c ?? parsed.temperature ?? parsed.temp ?? 25),
+            humidity_pct: Number(parsed.humidity_pct ?? parsed.humidity ?? parsed.hum ?? 60),
+            battery_pct: Number(parsed.battery_pct ?? 100),
+            rssi: rssi || -60,
+            timestamp: new Date().toISOString(),
+          };
+        } else if (text.includes(',')) {
+          const parts = text.split(',').map((v) => parseFloat(v.trim()));
+          if (parts.length >= 1 && !isNaN(parts[0])) {
+            return {
+              device_id: deviceId,
+              device_name: deviceName,
+              ammonia_ppm: parts[0] || 0,
+              temperature_c: parts[1] !== undefined && !isNaN(parts[1]) ? parts[1] : 25,
+              humidity_pct: parts[2] !== undefined && !isNaN(parts[2]) ? parts[2] : 60,
+              battery_pct: 100,
+              rssi: rssi || -60,
+              timestamp: new Date().toISOString(),
+            };
+          }
+        }
+      } catch (_) {}
 
-      return {
-        device_id: deviceId,
-        device_name: deviceName,
-        ammonia_ppm: parseFloat(ammonia.toFixed(2)),
-        temperature_c: parseFloat(temperature.toFixed(1)),
-        humidity_pct: parseFloat(humidity.toFixed(1)),
-        battery_pct: 100,
-        rssi: rssi || -60,
-        timestamp: new Date().toISOString(),
-      };
+      return null;
     } catch (err) {
-      console.error('Failed to parse 12-byte Float32 DataView:', err);
+      console.error('Failed to parse BLE DataView:', err);
       return null;
     }
   }
@@ -406,6 +440,48 @@ class BLECentralService {
 
         await BluetoothLowEnergy.discoverServices({ deviceId: device.id }).catch(() => {});
 
+        let targetServiceUuid = BLECentralService.SERVICE_UUID;
+        let targetCharUuid = BLECentralService.CHARACTERISTIC_UUID;
+
+        try {
+          const { services } = await BluetoothLowEnergy.getServices({ deviceId: device.id });
+          console.log('[BLE Central] Discovered services on device:', services);
+
+          if (services && services.length > 0) {
+            // Find service matching 'ffd0' or exact UUID
+            let matchedService = services.find((s) =>
+              s.uuid.toLowerCase().includes('ffd0') || s.uuid.toLowerCase() === BLECentralService.SERVICE_UUID.toLowerCase()
+            );
+
+            if (!matchedService) {
+              matchedService = services.find((s) =>
+                !s.uuid.toLowerCase().startsWith('00001800') &&
+                !s.uuid.toLowerCase().startsWith('00001801') &&
+                !s.uuid.toLowerCase().startsWith('0000180a') &&
+                !s.uuid.toLowerCase().startsWith('0000180f') &&
+                s.characteristics && s.characteristics.length > 0
+              ) || services[0];
+            }
+
+            if (matchedService) {
+              targetServiceUuid = matchedService.uuid;
+              const matchedChar = matchedService.characteristics?.find((c) =>
+                c.uuid.toLowerCase().includes('ffd1') || c.uuid.toLowerCase() === BLECentralService.CHARACTERISTIC_UUID.toLowerCase()
+              ) || matchedService.characteristics?.find((c) =>
+                c.properties?.notify || c.properties?.indicate
+              ) || matchedService.characteristics?.[0];
+
+              if (matchedChar) {
+                targetCharUuid = matchedChar.uuid;
+              }
+            }
+          }
+        } catch (getServErr) {
+          console.warn('[BLE Central] Could not query getServices list, using default UUIDs:', getServErr);
+        }
+
+        console.log(`[BLE Central] Subscribing to Service ${targetServiceUuid}, Characteristic ${targetCharUuid}`);
+
         await BluetoothLowEnergy.addListener('characteristicChanged', (event) => {
           if (event.deviceId === device.id && event.value) {
             const buffer = new Uint8Array(event.value).buffer;
@@ -420,8 +496,8 @@ class BLECentralService {
 
         await BluetoothLowEnergy.startCharacteristicNotifications({
           deviceId: device.id,
-          service: BLECentralService.SERVICE_UUID,
-          characteristic: BLECentralService.CHARACTERISTIC_UUID,
+          service: targetServiceUuid,
+          characteristic: targetCharUuid,
         });
 
         this.setState('streaming');
