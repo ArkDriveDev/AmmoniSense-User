@@ -41,6 +41,7 @@ import FullMapView, {
   getAmmoniaColor,
   getAmmoniaSeverityLabel
 } from '../../components/map/FullMapView';
+import MapLegend from '../../components/map/MapLegend';
 import { Geolocation } from '@capacitor/geolocation';
 import { useNavigate } from 'react-router-dom';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
@@ -571,6 +572,9 @@ export default function UserMap() {
             }}
           />
         )}
+
+        {/* Spatial Map Legend Overlay */}
+        <MapLegend isOpen={showLegend} onClose={() => setShowLegend(false)} />
 
         {/* Floating Right Control Action Buttons */}
         <div
