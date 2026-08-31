@@ -395,22 +395,22 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
             font-weight: 800;
             font-size: 11px;
             padding: 3px 8px;
-            border-radius: 12px;
+            border-radius: 14px;
             border: 2px solid #ffffff;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.35);
             white-space: nowrap;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 3px;
           ">
-            <span>⚡ ${reading.ammonia.toFixed(1)}</span>
-            <span style="font-size: 8px; opacity: 0.85;">PPM</span>
+            <span>📍 ${reading.ammonia.toFixed(1)}</span>
+            <span style="font-size: 8px; opacity: 0.9;">PPM</span>
             ${isPending ? `
               <span style="
                 position: absolute;
-                top: -5px;
-                right: -5px;
+                top: -4px;
+                right: -4px;
                 width: 10px;
                 height: 10px;
                 background-color: #f59e0b;
@@ -420,11 +420,14 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
             ` : ''}
           </div>
         `,
-        iconSize: [60, 24],
-        iconAnchor: [30, 12],
+        iconSize: [64, 26],
+        iconAnchor: [32, 13],
       });
 
-      const marker = L.marker([reading.latitude, reading.longitude], { icon: readingIcon });
+      const marker = L.marker([reading.latitude, reading.longitude], {
+        icon: readingIcon,
+        zIndexOffset: 1000,
+      });
 
       marker.on('click', () => {
         if (onSelectReading) onSelectReading(reading);
