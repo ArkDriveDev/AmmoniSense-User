@@ -287,14 +287,43 @@ class BLECentralService {
       throw new Error(permStatus.errorMsg || 'BLE permissions or hardware disabled.');
     }
 
+    this.setState('scanning');
+
+    // NATIVE ANDROID DIRECT BLE SCANNING
     if (Capacitor.isNativePlatform()) {
       try {
-        BluetoothLowEnergy.shimWebBluetooth();
-      } catch (e) {
-        console.warn('Failed to ensure shimWebBluetooth:', e);
+        this.discoveredDevices = [];
+        await BluetoothLowEnergy.removeAllListeners();
+        
+        await BluetoothLowEnergy.addListener('deviceScanned', (event) => {
+          const dev = event.device;
+          const devName = dev.name || 'ESP32 Ammonia Node';
+          const newDevice: BLECentralDevice = {
+            id: dev.deviceId,
+            name: devName,
+            rssi: dev.rssi ?? -60,
+            connected: false,
+          };
+          const exists = this.discoveredDevices.find((d) => d.id === newDevice.id);
+          if (!exists) {
+            this.discoveredDevices.push(newDevice);
+            this.notifyDeviceListeners([...this.discoveredDevices]);
+          }
+        });
+
+        await BluetoothLowEnergy.startScan({ timeout: 10000 });
+
+        // Wait a short window or return discovered list
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await BluetoothLowEnergy.stopScan().catch(() => {});
+        this.setState('disconnected');
+        return this.discoveredDevices;
+      } catch (nativeScanErr: any) {
+        console.warn('Native BLE scan error, trying web shim fallback:', nativeScanErr);
       }
     }
 
+    // WEB / BROWSER FALLBACK
     const nav = typeof navigator !== 'undefined' ? (navigator as any) : null;
     const bt = nav?.bluetooth;
 
@@ -302,8 +331,6 @@ class BLECentralService {
       this.setState('disconnected');
       throw new Error('Bluetooth is not supported or initialized on this device. Please grant Bluetooth permissions.');
     }
-
-    this.setState('scanning');
 
     try {
       let device: any;
@@ -370,6 +397,44 @@ class BLECentralService {
     this.activeDevice = device;
     this.setState('connecting');
 
+    // NATIVE ANDROID DIRECT GATT CONNECTION
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await BluetoothLowEnergy.stopScan().catch(() => {});
+        await BluetoothLowEnergy.connect({ deviceId: device.id });
+        this.setState('subscribing');
+
+        await BluetoothLowEnergy.discoverServices({ deviceId: device.id }).catch(() => {});
+
+        await BluetoothLowEnergy.addListener('characteristicChanged', (event) => {
+          if (event.deviceId === device.id && event.value) {
+            const buffer = new Uint8Array(event.value).buffer;
+            const dataView = new DataView(buffer);
+            const reading = this.parse12ByteFloat32DataView(dataView, device.id, device.name, device.rssi);
+            if (reading) {
+              this.notifyTelemetryListeners(reading);
+              this.broadcastTelemetry(reading);
+            }
+          }
+        });
+
+        await BluetoothLowEnergy.startCharacteristicNotifications({
+          deviceId: device.id,
+          service: BLECentralService.SERVICE_UUID,
+          characteristic: BLECentralService.CHARACTERISTIC_UUID,
+        });
+
+        this.setState('streaming');
+        device.connected = true;
+        return;
+      } catch (nativeGattErr: any) {
+        console.error('Native GATT hardware connection failed:', nativeGattErr);
+        this.setState('disconnected');
+        throw nativeGattErr;
+      }
+    }
+
+    // WEB BROWSER GATT CONNECTION
     if (this.bluetoothDevice && this.bluetoothDevice.id === device.id) {
       try {
         const server = await this.bluetoothDevice.gatt.connect();
