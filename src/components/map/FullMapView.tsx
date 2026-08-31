@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import OdorZonePolygonLayer from './OdorZonePolygonLayer';
+import OdorZoneLayer from './OdorZoneLayer';
 import { OdorZone } from '../../types/site';
 
 export interface SiteMarkerData {
@@ -522,7 +522,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   return (
     <div style={{ position: 'relative', width: '100%', height, overflow: 'hidden' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', zIndex: 1 }} />
-      <OdorZonePolygonLayer
+      <OdorZoneLayer
         map={mapInstance}
         odorZones={odorZones}
         showOdorZones={showOdorZonesLayer}
