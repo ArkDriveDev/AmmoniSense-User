@@ -33,8 +33,7 @@ import {
   personCircleOutline,
   closeOutline,
   menuOutline,
-  mapOutline,
-  shapesOutline
+  mapOutline
 } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 
@@ -174,18 +173,6 @@ export default function UserLayout({ children }: any) {
               >
                 <IonIcon icon={mapOutline} slot="start" color={isActive('/map') || isActive('/spatial-map') ? 'light' : 'primary'} />
                 <IonLabel>Spatial Map</IonLabel>
-              </IonItem>
-            </IonMenuToggle>
-
-            <IonMenuToggle menu="user-menu" autoHide={false}>
-              <IonItem
-                button
-                onClick={() => handleNavigate('/area-mapping')}
-                color={isActive('/area-mapping') ? 'primary' : undefined}
-                style={isActive('/area-mapping') ? { borderLeft: '4px solid #1D5D9B', fontWeight: 'bold' } : {}}
-              >
-                <IonIcon icon={shapesOutline} slot="start" color={isActive('/area-mapping') ? 'light' : 'warning'} />
-                <IonLabel>Odor Zone Mapping</IonLabel>
               </IonItem>
             </IonMenuToggle>
 
