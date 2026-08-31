@@ -126,6 +126,7 @@ export default function UserMap() {
   const loadPolygons = async () => {
     try {
       const zones = await fetchOdorZones();
+      console.log('🟧 Total odor zones loaded for map display:', zones.length, zones);
       setOdorZones(zones);
     } catch (e) {
       console.warn('Error loading odor zones in UserMap:', e);
