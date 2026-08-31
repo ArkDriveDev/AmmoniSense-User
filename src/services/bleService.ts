@@ -95,9 +95,17 @@ class BLEService {
    * Scan and connect to actual Bluetooth Low Energy ESP32 Device
    */
   public async scanAndConnect(): Promise<BLEReading | null> {
-    const nav = navigator as any;
-    if (!nav.bluetooth) {
-      console.warn('Web Bluetooth is not supported in this browser environment.');
+    if (Capacitor.isNativePlatform()) {
+      try {
+        BluetoothLowEnergy.shimWebBluetooth();
+      } catch (e) {
+        console.warn('Failed to shim Web Bluetooth:', e);
+      }
+    }
+
+    const nav = typeof navigator !== 'undefined' ? (navigator as any) : null;
+    if (!nav?.bluetooth || typeof nav.bluetooth.requestDevice !== 'function') {
+      console.warn('Web Bluetooth is not supported or initialized in this environment.');
       this.setState('disconnected');
       return null;
     }

@@ -287,14 +287,56 @@ class BLECentralService {
       throw new Error(permStatus.errorMsg || 'BLE permissions or hardware disabled.');
     }
 
-    const nav = navigator as any;
+    if (Capacitor.isNativePlatform()) {
+      try {
+        BluetoothLowEnergy.shimWebBluetooth();
+      } catch (e) {
+        console.warn('Failed to ensure shimWebBluetooth:', e);
+      }
+    }
+
+    const nav = typeof navigator !== 'undefined' ? (navigator as any) : null;
+    const bt = nav?.bluetooth;
+
+    if (!bt || typeof bt.requestDevice !== 'function') {
+      this.setState('disconnected');
+      throw new Error('Bluetooth is not supported or initialized on this device. Please grant Bluetooth permissions.');
+    }
+
     this.setState('scanning');
 
     try {
-      const device = await nav.bluetooth.requestDevice({
-        filters: [{ services: [BLECentralService.SERVICE_UUID] }],
-        optionalServices: [BLECentralService.SERVICE_UUID, 'generic_access'],
-      });
+      let device: any;
+      try {
+        device = await bt.requestDevice({
+          filters: [
+            { services: [BLECentralService.SERVICE_UUID] },
+            { namePrefix: 'ESP32' },
+            { namePrefix: 'AmmoniSense' },
+            { namePrefix: 'Ammonia' },
+            { namePrefix: 'Sensor' },
+            { namePrefix: 'Node' },
+            { namePrefix: 'BLE' },
+          ],
+          optionalServices: [
+            BLECentralService.SERVICE_UUID,
+            '0000181a-0000-1000-8000-00805f9b34fb',
+            'generic_access',
+          ],
+        });
+      } catch (filterErr: any) {
+        if (filterErr.name === 'NotFoundError' || filterErr.message?.includes('cancelled') || filterErr.message?.includes('User cancelled')) {
+          throw filterErr;
+        }
+        device = await bt.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [
+            BLECentralService.SERVICE_UUID,
+            '0000181a-0000-1000-8000-00805f9b34fb',
+            'generic_access',
+          ],
+        });
+      }
 
       const centralDevice: BLECentralDevice = {
         id: device.id || `BLE-${Math.floor(1000 + Math.random() * 9000)}`,
