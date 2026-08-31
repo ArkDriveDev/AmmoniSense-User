@@ -9,7 +9,9 @@
  *   Bytes 8-11: Humidity (%)
  */
 
+import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 
 export interface BLEPermissionStatus {
   bluetoothScanGranted: boolean;
@@ -64,6 +66,20 @@ class BLECentralService {
 
   constructor() {
     this.initBroadcastChannel();
+    this.initNativeBLE();
+  }
+
+  private initNativeBLE() {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        BluetoothLowEnergy.shimWebBluetooth();
+        BluetoothLowEnergy.initialize({ mode: 'central' }).catch((err) => {
+          console.warn('BLE central init notice:', err);
+        });
+      } catch (e) {
+        console.warn('Failed to shim Web Bluetooth:', e);
+      }
+    }
   }
 
   private initBroadcastChannel() {
@@ -175,19 +191,61 @@ class BLECentralService {
       canScan: true,
     };
 
-    const nav = navigator as any;
+    if (Capacitor.isNativePlatform()) {
+      this.initNativeBLE();
 
-    // 1. Check Web Bluetooth API availability
+      // 1. Native BLE Permissions
+      try {
+        const blePerm = await BluetoothLowEnergy.requestPermissions();
+        status.bluetoothScanGranted = blePerm.bluetooth === 'granted';
+        status.bluetoothConnectGranted = blePerm.bluetooth === 'granted';
+        if (blePerm.bluetooth !== 'granted') {
+          status.canScan = false;
+          status.errorMsg = 'Nearby Devices / Bluetooth permission was denied. Please grant Bluetooth permission to scan.';
+        }
+      } catch (bleErr) {
+        console.warn('BLE native permission check notice:', bleErr);
+      }
+
+      // 2. Native Bluetooth Enabled Check
+      try {
+        const btState = await BluetoothLowEnergy.isEnabled();
+        status.bluetoothEnabled = btState.enabled;
+        if (!btState.enabled) {
+          status.canScan = false;
+          status.errorMsg = 'Bluetooth is turned off. Please turn on Bluetooth on your device.';
+        }
+      } catch (btErr) {
+        console.warn('BLE isEnabled notice:', btErr);
+      }
+
+      // 3. Location Permission & Services for BLE scanning
+      try {
+        const geoPerm = await Geolocation.requestPermissions();
+        status.locationGranted = geoPerm.location === 'granted';
+        if (geoPerm.location !== 'granted') {
+          status.canScan = false;
+          status.errorMsg = 'Location permission is required for Bluetooth scanning on Android.';
+        }
+      } catch (geoErr) {
+        console.warn('Location permission check notice:', geoErr);
+      }
+
+      return status;
+    }
+
+    // Web Browser fallback
+    const nav = navigator as any;
     if (!nav.bluetooth) {
       status.bluetoothScanGranted = false;
       status.bluetoothConnectGranted = false;
       status.bluetoothEnabled = false;
       status.canScan = false;
-      status.errorMsg = 'Web Bluetooth API is not supported in this browser environment.';
+      status.errorMsg = 'Web Bluetooth API is not supported in this browser. Please use Chrome/Edge or run on Android app.';
       return status;
     }
 
-    // 2. Check & Request Location Permissions via Capacitor Geolocation
+    // Check & Request Location Permissions via Capacitor Geolocation
     try {
       const geoStatus = await Geolocation.checkPermissions();
       if (geoStatus.location !== 'granted') {
@@ -202,7 +260,7 @@ class BLECentralService {
       console.warn('Capacitor Geolocation permission check notice:', geoErr);
     }
 
-    // 3. Check hardware Bluetooth availability
+    // Check hardware Bluetooth availability
     try {
       if (nav.bluetooth.getAvailability) {
         const available = await nav.bluetooth.getAvailability();
@@ -223,6 +281,15 @@ class BLECentralService {
    * Open Android App Settings prompt for missing permissions
    */
   public async openSettings(): Promise<void> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await BluetoothLowEnergy.openAppSettings();
+        return;
+      } catch (err) {
+        console.warn('openAppSettings error:', err);
+      }
+    }
+
     if (typeof window !== 'undefined') {
       alert(
         '⚠️ BLE & Location Permissions Required\n\n' +
