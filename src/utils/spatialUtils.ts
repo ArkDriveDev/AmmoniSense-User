@@ -32,14 +32,43 @@ export function toGeoJSONPolygon(latLngs: [number, number][]): Polygon {
 export function fromGeoJSONPolygon(geojson: any): [number, number][] {
   if (!geojson) return [];
 
+  let data = geojson;
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  if (Array.isArray(data)) {
+    if (data.length === 0) return [];
+    // If array of objects: { lat, lng } or { latitude, longitude }
+    if (typeof data[0] === 'object' && !Array.isArray(data[0])) {
+      return data
+        .map((p: any) => {
+          const lat = p.lat ?? p.latitude;
+          const lng = p.lng ?? p.longitude;
+          return (typeof lat === 'number' && typeof lng === 'number') ? [lat, lng] as [number, number] : null;
+        })
+        .filter((p): p is [number, number] => p !== null);
+    }
+    // If array of [lat, lng]
+    if (Array.isArray(data[0])) {
+      // If coordinates are [lng, lat] from GeoJSON ring (first point is array with 2 numbers)
+      if (data[0].length >= 2 && typeof data[0][0] === 'number') {
+        // Assume [lat, lng] unless nested in GeoJSON
+        return data as [number, number][];
+      }
+    }
+    return data as [number, number][];
+  }
+
   let coordinates: any[] = [];
-  if (geojson.type === 'Polygon' && Array.isArray(geojson.coordinates)) {
-    coordinates = geojson.coordinates[0] || [];
-  } else if (geojson.type === 'Feature' && geojson.geometry?.type === 'Polygon') {
-    coordinates = geojson.geometry.coordinates[0] || [];
-  } else if (Array.isArray(geojson)) {
-    // If already array of coords
-    return geojson;
+  if (data.type === 'Polygon' && Array.isArray(data.coordinates)) {
+    coordinates = data.coordinates[0] || [];
+  } else if (data.type === 'Feature' && data.geometry?.type === 'Polygon') {
+    coordinates = data.geometry.coordinates[0] || [];
   }
 
   return coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
