@@ -176,76 +176,58 @@ class BLECentralService {
   }
 
   /**
-   * Auto-request ALL permissions required for BLE scanning:
-   * - BLE permissions (BLUETOOTH_SCAN, BLUETOOTH_CONNECT)
-   * - Location permissions (ACCESS_FINE_LOCATION)
-   * - Check if Bluetooth & Location services are enabled
+   * Phase 1: Initialize BLE & check availability/permissions
    */
-  public async checkAndRequestPermissions(): Promise<BLEPermissionStatus> {
-    const status: BLEPermissionStatus = {
-      bluetoothScanGranted: true,
-      bluetoothConnectGranted: true,
-      locationGranted: true,
-      bluetoothEnabled: true,
-      locationEnabled: true,
-      canScan: true,
-    };
-
+  public async phase1_Initialize(): Promise<{ available: boolean; enabled: boolean; errorMsg?: string }> {
     if (Capacitor.isNativePlatform()) {
       this.initNativeBLE();
-
-      // 1. Native BLE Permissions
       try {
+        const isAvail = await BluetoothLowEnergy.isAvailable();
+        if (!isAvail.available) {
+          return { available: false, enabled: false, errorMsg: 'Bluetooth Low Energy hardware not available on this device.' };
+        }
+
+        const isEn = await BluetoothLowEnergy.isEnabled();
+        if (!isEn.enabled) {
+          return { available: true, enabled: false, errorMsg: 'Bluetooth is turned off. Please turn on Bluetooth on your device.' };
+        }
+
         const blePerm = await BluetoothLowEnergy.requestPermissions();
-        status.bluetoothScanGranted = blePerm.bluetooth === 'granted';
-        status.bluetoothConnectGranted = blePerm.bluetooth === 'granted';
         if (blePerm.bluetooth !== 'granted') {
-          status.canScan = false;
-          status.errorMsg = 'Nearby Devices / Bluetooth permission was denied. Please grant Bluetooth permission to scan.';
+          return { available: true, enabled: true, errorMsg: 'Nearby Devices (Bluetooth) permission was denied.' };
         }
-      } catch (bleErr) {
-        console.warn('BLE native permission check notice:', bleErr);
-      }
 
-      // 2. Native Bluetooth Enabled Check
-      try {
-        const btState = await BluetoothLowEnergy.isEnabled();
-        status.bluetoothEnabled = btState.enabled;
-        if (!btState.enabled) {
-          status.canScan = false;
-          status.errorMsg = 'Bluetooth is turned off. Please turn on Bluetooth on your device.';
-        }
-      } catch (btErr) {
-        console.warn('BLE isEnabled notice:', btErr);
+        return { available: true, enabled: true };
+      } catch (err: any) {
+        return { available: false, enabled: false, errorMsg: err?.message || 'BLE Init error' };
       }
-
-      // 3. Location Permission & Services for BLE scanning
-      try {
-        const geoPerm = await Geolocation.requestPermissions();
-        status.locationGranted = geoPerm.location === 'granted';
-        if (geoPerm.location !== 'granted') {
-          status.canScan = false;
-          status.errorMsg = 'Location permission is required for Bluetooth scanning on Android.';
-        }
-      } catch (geoErr) {
-        console.warn('Location permission check notice:', geoErr);
-      }
-
-      return status;
     }
 
-    // Web Browser fallback
     const nav = navigator as any;
     if (!nav.bluetooth) {
-      status.bluetoothScanGranted = false;
-      status.bluetoothConnectGranted = false;
-      status.bluetoothEnabled = false;
-      status.canScan = false;
-      status.errorMsg = 'Web Bluetooth API is not supported in this browser. Please use Chrome/Edge or run on Android app.';
-      return status;
+      return { available: false, enabled: false, errorMsg: 'Web Bluetooth API is not supported in this browser environment.' };
     }
+    return { available: true, enabled: true };
+  }
 
-    // Check & Request Location Permissions via Capacitor Geolocation
+  /**
+   * Phase 2: Check & Request Location Permissions for Scanning
+   */
+  public async phase2_CheckScanRequirements(): Promise<BLEPermissionStatus> {
+    const initRes = await this.phase1_Initialize();
+    const status: BLEPermissionStatus = {
+      bluetoothScanGranted: initRes.available && !initRes.errorMsg,
+      bluetoothConnectGranted: initRes.available && !initRes.errorMsg,
+      locationGranted: true,
+      bluetoothEnabled: initRes.enabled,
+      locationEnabled: true,
+      canScan: initRes.available && initRes.enabled && !initRes.errorMsg,
+      errorMsg: initRes.errorMsg,
+    };
+
+    if (!status.canScan) return status;
+
+    // Check & request Location
     try {
       const geoStatus = await Geolocation.checkPermissions();
       if (geoStatus.location !== 'granted') {
@@ -253,28 +235,21 @@ class BLECentralService {
         if (requested.location !== 'granted') {
           status.locationGranted = false;
           status.canScan = false;
-          status.errorMsg = 'Location permission (ACCESS_FINE_LOCATION) was denied. Location Services are required for Android BLE scanning.';
+          status.errorMsg = 'Location permission is required for Bluetooth scanning on Android.';
         }
       }
     } catch (geoErr) {
-      console.warn('Capacitor Geolocation permission check notice:', geoErr);
-    }
-
-    // Check hardware Bluetooth availability
-    try {
-      if (nav.bluetooth.getAvailability) {
-        const available = await nav.bluetooth.getAvailability();
-        status.bluetoothEnabled = available;
-        if (!available) {
-          status.canScan = false;
-          status.errorMsg = 'Bluetooth hardware is turned off or unavailable. Please enable Bluetooth on your device.';
-        }
-      }
-    } catch (btErr) {
-      console.warn('Bluetooth availability check notice:', btErr);
+      console.warn('Geolocation check notice:', geoErr);
     }
 
     return status;
+  }
+
+  /**
+   * Auto-request ALL permissions required for BLE scanning:
+   */
+  public async checkAndRequestPermissions(): Promise<BLEPermissionStatus> {
+    return this.phase2_CheckScanRequirements();
   }
 
   /**
@@ -302,11 +277,10 @@ class BLECentralService {
   }
 
   /**
-   * Scan for actual hardware BLE devices advertising Service 0000ffd0-0000-1000-8000-00805f9b34fb
-   * Automatically requests all permissions first.
+   * Phase 2 (Execution): Scan for actual hardware BLE devices
    */
   public async scanForDevices(): Promise<BLECentralDevice[]> {
-    const permStatus = await this.checkAndRequestPermissions();
+    const permStatus = await this.phase2_CheckScanRequirements();
     if (!permStatus.canScan) {
       console.warn('BLE scan prevented by permission/hardware check:', permStatus.errorMsg);
       this.setState('disconnected');
@@ -342,9 +316,15 @@ class BLECentralService {
   }
 
   /**
-   * Connect to actual hardware BLE Central Device and subscribe to 12-byte Float32 GATT Characteristic notifications
+   * Phase 3 (Connect) & Phase 4 (Data Transfer): Connect and subscribe to telemetry notifications
    */
   public async connectAndSubscribe(device: BLECentralDevice): Promise<void> {
+    // Phase 3: Verify permissions prior to GATT connect
+    const verifyPerms = await this.phase1_Initialize();
+    if (!verifyPerms.enabled || verifyPerms.errorMsg) {
+      throw new Error(verifyPerms.errorMsg || 'Bluetooth permission or hardware not ready.');
+    }
+
     this.activeDevice = device;
     this.setState('connecting');
 
@@ -354,6 +334,7 @@ class BLECentralService {
         this.gattServer = server;
         this.setState('subscribing');
 
+        // Phase 4: Data Transfer & Notifications
         const service = await server.getPrimaryService(BLECentralService.SERVICE_UUID);
         const characteristic = await service.getCharacteristic(BLECentralService.CHARACTERISTIC_UUID);
 
