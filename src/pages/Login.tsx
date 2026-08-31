@@ -19,6 +19,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import offlineStorage from '../services/OfflineStorageService';
+import nativePermissionsService from '../services/nativePermissionsService';
 import { mailOutline, lockClosedOutline, leafOutline } from 'ionicons/icons';
 
 export default function Login() {
@@ -83,6 +84,11 @@ export default function Login() {
           id: data.session.user?.id,
         });
       }
+
+      // Proactively request native permissions (Location, Camera, BLE, Notifications)
+      nativePermissionsService.requestAllPermissions().catch((pErr) => {
+        console.warn('Post-login permissions notice:', pErr);
+      });
 
       navigate('/dashboard', { replace: true });
     } catch (err: any) {

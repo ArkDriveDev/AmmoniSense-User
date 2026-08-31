@@ -22,6 +22,7 @@ import { menuController } from '@ionic/core';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import offlineStorage from '../services/OfflineStorageService';
+import nativePermissionsService from '../services/nativePermissionsService';
 import SyncStatusBanner from '../components/common/SyncStatusBanner';
 import {
   homeOutline,
@@ -45,6 +46,7 @@ export default function UserLayout({ children }: any) {
 
   useEffect(() => {
     fetchUserProfile();
+    nativePermissionsService.initBLEShim();
   }, []);
 
   const fetchUserProfile = async () => {
