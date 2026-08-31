@@ -1,7 +1,5 @@
-/**
- * BLE Service for AmmoniSense
- * Supports Web Bluetooth API for live hardware ESP32 node connections
- */
+import { Capacitor } from '@capacitor/core';
+import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 
 export interface BLEReading {
   device_uid: string;
@@ -37,6 +35,20 @@ class BLEService {
 
   constructor() {
     this.initBroadcastChannel();
+    this.initNativeBLE();
+  }
+
+  private initNativeBLE() {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        BluetoothLowEnergy.shimWebBluetooth();
+        BluetoothLowEnergy.initialize({ mode: 'central' }).catch((err) => {
+          console.warn('BLE legacy service init notice:', err);
+        });
+      } catch (e) {
+        console.warn('Failed to shim Web Bluetooth:', e);
+      }
+    }
   }
 
   private initBroadcastChannel() {
