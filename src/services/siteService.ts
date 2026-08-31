@@ -175,7 +175,9 @@ export const fetchOdorZones = async (): Promise<OdorZone[]> => {
     }
 
     return (data || []).map((zone: any) => {
-      const coords = zone.polygon_geojson ? fromGeoJSONPolygon(zone.polygon_geojson) : zone.coordinates || [];
+      const coords = zone.coordinates
+        ? fromGeoJSONPolygon(zone.coordinates)
+        : (zone.polygon_geojson ? fromGeoJSONPolygon(zone.polygon_geojson) : []);
       return {
         ...zone,
         site_name: zone.monitoring_sites?.site_name || zone.site_name,
