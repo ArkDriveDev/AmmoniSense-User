@@ -83,10 +83,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [cellLng, setCellLng] = useState<number>(124.8637);
 
   // STEP 2 State: Sensor Bluetooth Readings
-  const [ammonia, setAmmonia] = useState<string>('24.5');
-  const [temperature, setTemperature] = useState<string>('28.5');
-  const [humidity, setHumidity] = useState<string>('68.0');
-  const [battery, setBattery] = useState<string>('92.0');
+  const [ammonia, setAmmonia] = useState<string>('');
+  const [temperature, setTemperature] = useState<string>('');
+  const [humidity, setHumidity] = useState<string>('');
+  const [battery, setBattery] = useState<string>('');
   const [btConnecting, setBtConnecting] = useState<boolean>(false);
   const [btConnected, setBtConnected] = useState<boolean>(false);
   const [bleRssi, setBleRssi] = useState<number | null>(null);
@@ -109,9 +109,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     // Check for draft BLE Central reading from UserBLESensor page
     const draftBLE = offlineStorage.getDraft<BLECentralReading>('draft_ble_central_reading');
     if (draftBLE) {
-      setAmmonia(draftBLE.ammonia_ppm.toString());
-      setTemperature(draftBLE.temperature_c.toString());
-      setHumidity(draftBLE.humidity_pct.toString());
+      if (draftBLE.ammonia_ppm !== undefined) setAmmonia(draftBLE.ammonia_ppm.toString());
+      if (draftBLE.temperature_c !== undefined) setTemperature(draftBLE.temperature_c.toString());
+      if (draftBLE.humidity_pct !== undefined) setHumidity(draftBLE.humidity_pct.toString());
+      if (draftBLE.battery_pct !== undefined) setBattery(draftBLE.battery_pct.toString());
       if (draftBLE.device_name || draftBLE.device_id) {
         setSelectedDeviceUid(draftBLE.device_name || draftBLE.device_id);
       }
@@ -121,9 +122,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
     // Subscribe to BLE Central 12-byte Float32 telemetry
     const unsubCentral = bleCentralService.onTelemetry((telemetry: BLECentralReading) => {
-      setAmmonia(telemetry.ammonia_ppm.toString());
-      setTemperature(telemetry.temperature_c.toString());
-      setHumidity(telemetry.humidity_pct.toString());
+      if (telemetry.ammonia_ppm !== undefined) setAmmonia(telemetry.ammonia_ppm.toString());
+      if (telemetry.temperature_c !== undefined) setTemperature(telemetry.temperature_c.toString());
+      if (telemetry.humidity_pct !== undefined) setHumidity(telemetry.humidity_pct.toString());
+      if (telemetry.battery_pct !== undefined) setBattery(telemetry.battery_pct.toString());
       if (telemetry.device_name || telemetry.device_id) {
         setSelectedDeviceUid(telemetry.device_name || telemetry.device_id);
       }
@@ -655,8 +657,9 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               <IonLabel position="stacked">Ammonia (NH₃) Reading (ppm)</IonLabel>
               <IonInput
                 type="number"
+                placeholder="e.g. 0.00 (waiting for BLE...)"
                 value={ammonia}
-                onIonChange={e => setAmmonia(e.detail.value!)}
+                onIonChange={e => setAmmonia(e.detail.value || '')}
               />
             </IonItem>
 
@@ -664,19 +667,34 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               <IonCol size="4">
                 <IonItem lines="full">
                   <IonLabel position="stacked">Temp (°C)</IonLabel>
-                  <IonInput type="number" value={temperature} onIonChange={e => setTemperature(e.detail.value!)} />
+                  <IonInput
+                    type="number"
+                    placeholder="-- °C"
+                    value={temperature}
+                    onIonChange={e => setTemperature(e.detail.value || '')}
+                  />
                 </IonItem>
               </IonCol>
               <IonCol size="4">
                 <IonItem lines="full">
                   <IonLabel position="stacked">Humidity (%)</IonLabel>
-                  <IonInput type="number" value={humidity} onIonChange={e => setHumidity(e.detail.value!)} />
+                  <IonInput
+                    type="number"
+                    placeholder="-- %"
+                    value={humidity}
+                    onIonChange={e => setHumidity(e.detail.value || '')}
+                  />
                 </IonItem>
               </IonCol>
               <IonCol size="4">
                 <IonItem lines="full">
                   <IonLabel position="stacked">Battery (%)</IonLabel>
-                  <IonInput type="number" value={battery} onIonChange={e => setBattery(e.detail.value!)} />
+                  <IonInput
+                    type="number"
+                    placeholder="-- %"
+                    value={battery}
+                    onIonChange={e => setBattery(e.detail.value || '')}
+                  />
                 </IonItem>
               </IonCol>
             </IonRow>
@@ -702,7 +720,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               <div><b>Site:</b> {selectedSite?.site_name || 'N/A'}</div>
               <div><b>Device:</b> {selectedDeviceUid}</div>
               <div><b>GPS:</b> {cellLat.toFixed(5)}°, {cellLng.toFixed(5)}°</div>
-              <div><b>Ammonia NH₃:</b> <IonBadge color={parseFloat(ammonia) > 40 ? 'warning' : 'success'}>{ammonia} ppm</IonBadge></div>
+              <div><b>Ammonia NH₃:</b> {ammonia ? <IonBadge color={parseFloat(ammonia) > 40 ? 'warning' : 'success'}>{ammonia} ppm</IonBadge> : <span style={{ color: '#94a3b8' }}>None</span>}</div>
               <div><b>Photo Linked:</b> {photoRecord ? `Photo #${photoRecord.id}` : 'None'}</div>
             </div>
 
