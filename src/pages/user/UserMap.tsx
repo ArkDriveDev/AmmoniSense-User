@@ -68,6 +68,7 @@ export default function UserMap() {
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
+  const [showSitePolygonsLayer, setShowSitePolygonsLayer] = useState<boolean>(true);
   const [showReadingsLayer, setShowReadingsLayer] = useState<boolean>(true);
   const [showPhotoTagsLayer, setShowPhotoTagsLayer] = useState<boolean>(true);
   const [showBoundaryLayer, setShowBoundaryLayer] = useState<boolean>(true);
@@ -162,6 +163,7 @@ export default function UserMap() {
             address: s.address,
             latitude: coords.latitude,
             longitude: coords.longitude,
+            area_size_hectares: s.area_size_hectares ? Number(s.area_size_hectares) : 1.0,
             grid_cell_id: s.current_grid_cell_id || 'A1',
             owner_name: s.site_owners?.owner_name || s.owner_name || 'Inspector Owner',
             photo_url: s.site_photo_thumbnail || s.site_photo_url,
@@ -198,6 +200,7 @@ export default function UserMap() {
             address: os.address || os.site_name,
             latitude: coords.latitude,
             longitude: coords.longitude,
+            area_size_hectares: os.area_size_hectares ? Number(os.area_size_hectares) : 1.0,
             grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
             owner_name: os.owner?.owner_name || 'Inspector Owner',
             photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
@@ -227,6 +230,7 @@ export default function UserMap() {
               address: p.address || p.site_name,
               latitude: coords.latitude,
               longitude: coords.longitude,
+              area_size_hectares: p.area_size_hectares ? Number(p.area_size_hectares) : 1.0,
               grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
               owner_name: 'Inspector Owner',
               photo_url: p.site_photo_url || p.photo_url,
@@ -263,6 +267,7 @@ export default function UserMap() {
                 address: os.address || os.site_name,
                 latitude: coords.latitude,
                 longitude: coords.longitude,
+                area_size_hectares: os.area_size_hectares ? Number(os.area_size_hectares) : 1.0,
                 grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
                 owner_name: os.owner?.owner_name || 'Inspector Owner',
                 photo_url: os.site_photo_thumbnail || os.site_photo_url,
@@ -549,6 +554,7 @@ export default function UserMap() {
             readings={filteredReadings}
             photoTags={filteredPhotoTags}
             showSitesLayer={showSitesLayer}
+            showSitePolygonsLayer={showSitePolygonsLayer}
             showReadingsLayer={showReadingsLayer}
             showPhotoTagsLayer={showPhotoTagsLayer}
             showBoundaryLayer={showBoundaryLayer}
@@ -666,8 +672,10 @@ export default function UserMap() {
                     <strong style={{ color: '#0f172a' }}>{selectedSite.owner_name}</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Municipality</span>
-                    <strong style={{ color: '#0f172a' }}>Manolo Fortich</strong>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coverage Area</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {selectedSite.area_size_hectares ? `${selectedSite.area_size_hectares} Ha (${Math.round(selectedSite.area_size_hectares * 10000).toLocaleString()} m²)` : '1.00 Ha (10,000 m²)'}
+                    </strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coordinates</span>
@@ -874,6 +882,15 @@ export default function UserMap() {
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
+                  checked={showSitePolygonsLayer}
+                  onChange={(e) => setShowSitePolygonsLayer(e.target.checked)}
+                />
+                <b>Site Area Coverage</b> (Polygons)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
                   checked={showReadingsLayer}
                   onChange={(e) => setShowReadingsLayer(e.target.checked)}
                 />
@@ -922,12 +939,16 @@ export default function UserMap() {
 
             <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
-                Monitoring Site Pins
+                Monitoring Sites & Area Coverage
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
-                  <b>Monitoring Site</b> (Synced Brand Marker)
+                  <b>Monitoring Site Pin</b> (Registered Facility Location)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: 'rgba(29, 93, 155, 0.2)', border: '1.5px dashed #1D5D9B' }}></span>
+                  <b>Site Area Coverage</b> (Hectares Footprint Polygon)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ef4444' }}></span>
