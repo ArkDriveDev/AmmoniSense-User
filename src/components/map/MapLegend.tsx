@@ -42,6 +42,11 @@ export const MapLegend: React.FC<MapLegendProps> = ({ isOpen, onClose }) => {
           <span><b>Odor Impact Zone</b> (Polygon)</span>
         </div>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '14px', height: '14px', borderRadius: '3px', background: 'rgba(29, 93, 155, 0.2)', border: '1.5px dashed #1D5D9B' }} />
+          <span><b>Site Area Coverage</b> (Polygon)</span>
+        </div>
+
         <div style={{ borderTop: '1px solid #f1f5f9', margin: '3px 0' }} />
         <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ammonia Levels (PPM)</span>
 
