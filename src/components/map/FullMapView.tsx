@@ -12,6 +12,7 @@ export interface SiteMarkerData {
   address?: string;
   latitude: number;
   longitude: number;
+  area_size_hectares?: number;
   owner_name?: string;
   photo_url?: string;
   status?: string;
@@ -53,6 +54,7 @@ interface FullMapViewProps {
   photoTags?: PhotoTagMarkerData[];
   odorZones?: OdorZone[];
   showSitesLayer?: boolean;
+  showSitePolygonsLayer?: boolean;
   showReadingsLayer?: boolean;
   showPhotoTagsLayer?: boolean;
   showBoundaryLayer?: boolean;
@@ -119,6 +121,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   photoTags = [],
   odorZones = [],
   showSitesLayer = true,
+  showSitePolygonsLayer = true,
   showReadingsLayer = true,
   showPhotoTagsLayer = true,
   showBoundaryLayer = true,
@@ -137,6 +140,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   const boundaryLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const sitePolygonsLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const sitesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const readingsLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const photoTagsLayerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -171,6 +175,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     }).addTo(map);
 
     boundaryLayerGroupRef.current = L.layerGroup().addTo(map);
+    sitePolygonsLayerGroupRef.current = L.layerGroup().addTo(map);
     sitesLayerGroupRef.current = L.layerGroup().addTo(map);
     readingsLayerGroupRef.current = L.layerGroup().addTo(map);
     photoTagsLayerGroupRef.current = L.layerGroup().addTo(map);
@@ -309,6 +314,44 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
       boundaryGroup.addLayer(labelMarker);
     }
   }, [showBoundaryLayer]);
+
+  // Render Site Area Coverage Polygons
+  useEffect(() => {
+    if (!mapRef.current || !sitePolygonsLayerGroupRef.current) return;
+    const polyGroup = sitePolygonsLayerGroupRef.current;
+    polyGroup.clearLayers();
+
+    if (!showSitesLayer || !showSitePolygonsLayer) return;
+
+    sites.forEach((site) => {
+      const pinColor = site.isOffline ? '#EF4444' : '#1D5D9B';
+      const validArea = site.area_size_hectares && site.area_size_hectares > 0 ? site.area_size_hectares : 1.0;
+      const areaSqMeters = validArea * 10000;
+      const radiusMeters = Math.sqrt(areaSqMeters / Math.PI);
+
+      const areaCircle = L.circle([site.latitude, site.longitude], {
+        radius: radiusMeters,
+        color: pinColor,
+        fillColor: pinColor,
+        fillOpacity: 0.18,
+        weight: 2,
+        dashArray: '6, 6',
+      });
+
+      areaCircle.bindTooltip(
+        `<div style="font-weight: 700; font-size: 11px; color: ${pinColor};">` +
+        `<b>${site.site_name}</b><br/>Coverage: ${validArea.toFixed(2)} Ha (${Math.round(areaSqMeters).toLocaleString()} m²)` +
+        `</div>`,
+        { sticky: true, opacity: 0.95 }
+      );
+
+      areaCircle.on('click', () => {
+        if (onSelectSite) onSelectSite(site);
+      });
+
+      polyGroup.addLayer(areaCircle);
+    });
+  }, [sites, showSitesLayer, showSitePolygonsLayer, onSelectSite]);
 
   // Render Site Markers
   useEffect(() => {
