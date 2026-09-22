@@ -55,9 +55,10 @@ export default function AppRouter() {
         }
       />
 
-      <Route path="/my-piggeries" element={<Navigate to="/monitoring-sites" replace />} />
+      <Route path="/my-piggeries" element={<Navigate to="/inspection-sites" replace />} />
+      <Route path="/monitoring-sites" element={<Navigate to="/inspection-sites" replace />} />
       <Route
-        path="/monitoring-sites"
+        path="/inspection-sites"
         element={
           <ProtectedRoute>
             <UserLayout>

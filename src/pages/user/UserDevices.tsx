@@ -97,7 +97,7 @@ export default function UserDevices() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {devices.map((d) => {
               const isRecentlySeen = d.last_seen_at && (new Date().getTime() - new Date(d.last_seen_at).getTime() < 120000);
-              const isUnlinked = d.site_id === null || d.site_id === undefined;
+              const isUnlinked = d.inspection_site_id === null || d.inspection_site_id === undefined;
               return (
                 <IonCard key={d.id} className="premium-card" style={{ margin: 0 }}>
                   <IonCardContent style={{ padding: '18px' }}>
