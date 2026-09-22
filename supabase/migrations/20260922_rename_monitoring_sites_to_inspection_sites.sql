@@ -28,6 +28,11 @@ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'site_locations' AND column_name = 'site_id') THEN
     ALTER TABLE public.site_locations RENAME COLUMN site_id TO inspection_site_id;
   END IF;
+
+  -- In inspection_photos
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'inspection_photos' AND column_name = 'site_id') THEN
+    ALTER TABLE public.inspection_photos RENAME COLUMN site_id TO inspection_site_id;
+  END IF;
 END $$;
 
 -- 3. RENAME CONSTRAINTS (IF EXIST)
