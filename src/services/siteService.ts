@@ -49,7 +49,7 @@ export const registerSiteWithPhoto = async (
       createdOwner = newOwner;
     }
 
-    // 2. Insert into monitoring_sites (no grid cells)
+    // 2. Insert into inspection_sites (no grid cells)
     const sitePayload = {
       site_code: payload.site_code,
       site_name: payload.site_name,
@@ -66,19 +66,19 @@ export const registerSiteWithPhoto = async (
     };
 
     const { data: newSite, error: siteErr } = await supabase
-      .from('monitoring_sites')
+      .from('inspection_sites')
       .insert([sitePayload])
       .select('*')
       .single();
 
     if (siteErr || !newSite) {
-      throw new Error('Failed to register monitoring site: ' + (siteErr?.message || 'Error'));
+      throw new Error('Failed to register inspection site: ' + (siteErr?.message || 'Error'));
     }
     createdSite = newSite;
 
     // 3. Insert initial location record in site_locations
     const locationPayload = {
-      site_id: createdSite.id,
+      inspection_site_id: createdSite.id,
       latitude: payload.latitude,
       longitude: payload.longitude,
       address: payload.address || payload.site_name,
@@ -103,7 +103,7 @@ export const registerSiteWithPhoto = async (
         const { data: updatedPhoto } = await supabase
           .from('inspection_photos')
           .update({
-            site_id: createdSite.id,
+            inspection_site_id: createdSite.id,
             is_site_photo: true,
             is_used: true,
           })
@@ -119,7 +119,7 @@ export const registerSiteWithPhoto = async (
               photo_url: payload.photo_url,
               latitude: payload.latitude,
               longitude: payload.longitude,
-              site_id: createdSite.id,
+              inspection_site_id: createdSite.id,
               is_site_photo: true,
               is_used: true,
               uploaded_by: user.id,
@@ -132,7 +132,7 @@ export const registerSiteWithPhoto = async (
 
       if (photoRecord?.id) {
         await supabase
-          .from('monitoring_sites')
+          .from('inspection_sites')
           .update({ site_photo_id: photoRecord.id })
           .eq('id', createdSite.id);
 
@@ -150,8 +150,8 @@ export const registerSiteWithPhoto = async (
     console.error('Transaction failure during site registration, initiating cleanup rollback:', error);
 
     if (createdSite?.id) {
-      await supabase.from('site_locations').delete().eq('site_id', createdSite.id);
-      await supabase.from('monitoring_sites').delete().eq('id', createdSite.id);
+      await supabase.from('site_locations').delete().eq('inspection_site_id', createdSite.id);
+      await supabase.from('inspection_sites').delete().eq('id', createdSite.id);
     }
 
     throw error;
@@ -166,7 +166,7 @@ export const fetchOdorZones = async (): Promise<OdorZone[]> => {
     // Attempt fetching with joined site name
     const { data, error } = await supabase
       .from('odor_zones')
-      .select('*, monitoring_sites(site_name)')
+      .select('*, inspection_sites(site_name)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -180,7 +180,7 @@ export const fetchOdorZones = async (): Promise<OdorZone[]> => {
         : (zone.polygon_geojson ? fromGeoJSONPolygon(zone.polygon_geojson) : []);
       return {
         ...zone,
-        site_name: zone.monitoring_sites?.site_name || zone.site_name,
+        site_name: zone.inspection_sites?.site_name || zone.monitoring_sites?.site_name || zone.site_name,
         coordinates: coords,
       };
     });
@@ -218,7 +218,7 @@ export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
   const userId = userData.user?.id || null;
 
   const payload = {
-    site_id: zone.site_id,
+    inspection_site_id: zone.site_id,
     zone_name: zone.zone_name,
     polygon_geojson: zone.polygon_geojson,
     center_latitude: zone.center_latitude || null,
@@ -231,7 +231,7 @@ export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
   const { data, error } = await supabase
     .from('odor_zones')
     .insert([payload])
-    .select('*, monitoring_sites(site_name)')
+    .select('*, inspection_sites(site_name)')
     .single();
 
   if (error) {
@@ -241,7 +241,7 @@ export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
   const coords = data.polygon_geojson ? fromGeoJSONPolygon(data.polygon_geojson) : data.coordinates || [];
   return {
     ...data,
-    site_name: data.monitoring_sites?.site_name || data.site_name,
+    site_name: data.inspection_sites?.site_name || data.monitoring_sites?.site_name || data.site_name,
     coordinates: coords,
   };
 };
@@ -268,17 +268,17 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
       const { error: locErr } = await supabase
         .from('site_locations')
         .delete()
-        .eq('site_id', siteId);
+        .eq('inspection_site_id', siteId);
       if (locErr) console.warn('Delete site_locations notice:', locErr.message);
 
-      // Delete site record from monitoring_sites
+      // Delete site record from inspection_sites
       const { error: siteErr } = await supabase
-        .from('monitoring_sites')
+        .from('inspection_sites')
         .delete()
         .eq('id', siteId);
 
       if (siteErr) {
-        throw new Error('Failed to delete monitoring site from Supabase: ' + siteErr.message);
+        throw new Error('Failed to delete inspection site from Supabase: ' + siteErr.message);
       }
     } catch (err) {
       console.error('Error deleting site from Supabase:', err);
