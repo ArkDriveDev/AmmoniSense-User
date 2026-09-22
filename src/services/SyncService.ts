@@ -3,6 +3,7 @@
 
 import offlineStorage, { QueueItem } from './OfflineStorageService';
 import { supabase } from './supabase';
+import { registerSiteWithPhoto } from './siteService';
 
 export type SyncEventType = 'status_change' | 'sync_start' | 'sync_progress' | 'sync_complete' | 'sync_error';
 export type SyncEventListener = (event: { type: SyncEventType; isOnline: boolean; pendingCount: number; activeItem?: QueueItem; message?: string }) => void;
@@ -186,9 +187,11 @@ class SyncService {
   }
 
   private async syncSiteRegistration(item: QueueItem): Promise<void> {
-    const { error } = await supabase.from('monitoring_sites').insert([item.payload]);
-    if (error) {
-      throw new Error(`monitoring_sites insert error: ${error.message}`);
+    // Delegate to registerSiteWithPhoto which writes to inspection_sites (renamed from monitoring_sites)
+    try {
+      await registerSiteWithPhoto(item.payload);
+    } catch (error: any) {
+      throw new Error(`inspection_sites insert error: ${error.message}`);
     }
     // Delete local OfflineSite record from IndexedDB & localStorage once synced to Supabase
     if (item.payload?.temp_id || item.payload?.id) {
