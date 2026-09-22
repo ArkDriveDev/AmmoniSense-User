@@ -15,19 +15,28 @@ import {
 import {
   bluetoothOutline,
   searchOutline,
-  cloudUploadOutline
+  cloudUploadOutline,
+  checkmarkCircleOutline,
+  hardwareChipOutline
 } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 import BLEScanner from '../../components/BLEScanner';
 import BLEReadingDisplay from '../../components/BLEReadingDisplay';
 import bleCentralService, { BLECentralReading, BLECentralDevice } from '../../services/bleCentralService';
+import type { DeviceRecord } from '../../services/deviceService';
 import offlineStorage from '../../services/OfflineStorageService';
+
 
 export default function UserBLESensor() {
   const navigate = useNavigate();
   const [reading, setReading] = useState<BLECentralReading | null>(null);
   const [activeDevice, setActiveDevice] = useState<BLECentralDevice | null>(null);
   const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
+
+  // Auto-registration banner
+  const [regRecord, setRegRecord] = useState<DeviceRecord | null>(null);
+  const [regIsNew, setRegIsNew] = useState<boolean>(false);
+  const [showRegBanner, setShowRegBanner] = useState<boolean>(false);
 
   // Toast
   const [toastMsg, setToastMsg] = useState<string>('');
@@ -38,10 +47,18 @@ export default function UserBLESensor() {
       setReading(telemetry);
     });
 
+    const unsubReg = bleCentralService.onDeviceAutoRegistered((record, isNew) => {
+      setRegRecord(record);
+      setRegIsNew(isNew);
+      setShowRegBanner(true);
+      setTimeout(() => setShowRegBanner(false), 4000);
+    });
+
     setActiveDevice(bleCentralService.getActiveDevice());
 
     return () => {
       unsubTelemetry();
+      unsubReg();
     };
   }, []);
 
@@ -79,6 +96,42 @@ export default function UserBLESensor() {
         </IonRefresher>
 
         <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: 0 }}>
+
+          {/* Auto-Registration Banner */}
+          {showRegBanner && regRecord && (
+            <div
+              style={{
+                background: regIsNew
+                  ? 'linear-gradient(135deg, #064e3b, #047857)'
+                  : 'linear-gradient(135deg, #1e3a8a, #1d4ed8)',
+                borderRadius: '14px',
+                padding: '14px 16px',
+                color: '#ffffff',
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                cursor: 'pointer',
+              }}
+              onClick={() => setShowRegBanner(false)}
+            >
+              <IonIcon
+                icon={regIsNew ? checkmarkCircleOutline : hardwareChipOutline}
+                style={{ fontSize: '28px', flexShrink: 0 }}
+              />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '14px' }}>
+                  {regIsNew ? '✓ Device Auto-Registered' : '↻ Known Device Reconnected'}
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>
+                  {regRecord.device_name || regRecord.device_uid}
+                  {regIsNew ? ' is now registered in Supabase.' : ' — last_seen_at updated.'}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header Card */}
           <div
             style={{
