@@ -273,8 +273,8 @@ export const uploadPhotoToSupabase = async (
  * STEP 1: Take Photo & Save to `inspection_photos` table (is_used = false)
  */
 export const step1_takeAndUploadPhoto = async (
-  siteId?: number,
-  siteName: string = 'Monitoring Site'
+  siteId?: number | string,
+  siteName: string = 'Inspection Site'
 ): Promise<InspectionPhotoRecord> => {
   // 1. Get current GPS location
   let latitude = 14.5995;
@@ -311,6 +311,12 @@ export const step1_takeAndUploadPhoto = async (
   const publicUrl = await uploadPhotoToSupabase(blob, siteId || 'general');
   const photoUrlToSave = publicUrl || finalDataUrl;
 
+  const numericSiteId = typeof siteId === 'number' && !isNaN(siteId)
+    ? siteId
+    : (siteId && typeof siteId === 'string' && !siteId.startsWith('temp_') && !isNaN(Number(siteId)))
+      ? Number(siteId)
+      : null;
+
   // 6. Insert record into `inspection_photos` table with is_used = false
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id || null;
@@ -325,7 +331,7 @@ export const step1_takeAndUploadPhoto = async (
         photo_url: photoUrlToSave,
         latitude,
         longitude,
-        inspection_site_id: siteId || null,
+        inspection_site_id: numericSiteId,
         is_used: false,
         uploaded_by: userId,
       },
@@ -341,7 +347,7 @@ export const step1_takeAndUploadPhoto = async (
           photo_url: photoUrlToSave,
           latitude,
           longitude,
-          site_id: siteId || null,
+          site_id: numericSiteId,
           is_used: false,
           uploaded_by: userId,
         } as any,
