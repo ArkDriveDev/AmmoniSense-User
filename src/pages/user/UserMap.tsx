@@ -149,7 +149,7 @@ export default function UserMap() {
     let onlineFormatted: SiteMarkerData[] = [];
     try {
       const { data: sitesData, error: sitesErr } = await supabase
-        .from('monitoring_sites')
+        .from('inspection_sites')
         .select('*, site_owners(owner_name)');
 
       if (!sitesErr && sitesData) {
@@ -368,7 +368,7 @@ export default function UserMap() {
     try {
       const { data, error } = await supabase
         .from('inspection_photos')
-        .select('*, monitoring_sites(site_name)')
+        .select('*, inspection_sites!inspection_site_id(site_name)')
         .order('uploaded_at', { ascending: false })
         .limit(200);
 
@@ -380,8 +380,8 @@ export default function UserMap() {
             longitude: p.longitude || 124.8637,
             photo_url: p.photo_url,
             grid_cell_id: p.grid_cell_id,
-            site_id: p.site_id,
-            site_name: p.monitoring_sites?.site_name || 'Inspection Site',
+            site_id: p.inspection_site_id || p.site_id,
+            site_name: p.inspection_sites?.site_name || 'Inspection Site',
             is_used: p.is_used,
             uploaded_at: p.uploaded_at,
             is_pending_sync: false,
