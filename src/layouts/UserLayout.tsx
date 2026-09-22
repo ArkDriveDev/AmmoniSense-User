@@ -179,12 +179,12 @@ export default function UserLayout({ children }: any) {
             <IonMenuToggle menu="user-menu" autoHide={false}>
               <IonItem
                 button
-                onClick={() => handleNavigate('/monitoring-sites')}
-                color={isActive('/monitoring-sites') || isActive('/my-piggeries') ? 'primary' : undefined}
-                style={isActive('/monitoring-sites') || isActive('/my-piggeries') ? { borderLeft: '4px solid #1D5D9B', fontWeight: 'bold' } : {}}
+                onClick={() => handleNavigate('/inspection-sites')}
+                color={isActive('/inspection-sites') || isActive('/my-piggeries') ? 'primary' : undefined}
+                style={isActive('/inspection-sites') || isActive('/my-piggeries') ? { borderLeft: '4px solid #1D5D9B', fontWeight: 'bold' } : {}}
               >
-                <IonIcon icon={businessOutline} slot="start" color={isActive('/monitoring-sites') || isActive('/my-piggeries') ? 'light' : 'primary'} />
-                <IonLabel>Monitoring Sites</IonLabel>
+                <IonIcon icon={businessOutline} slot="start" color={isActive('/inspection-sites') || isActive('/my-piggeries') ? 'light' : 'primary'} />
+                <IonLabel>Inspection Sites</IonLabel>
               </IonItem>
             </IonMenuToggle>
 
