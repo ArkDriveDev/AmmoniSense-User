@@ -9,7 +9,7 @@ export interface InspectionPhotoRecord {
   photo_url: string;
   latitude: number;
   longitude: number;
-  site_id: number | null;
+  inspection_site_id: number | null;
   is_used: boolean;
   is_site_photo?: boolean;
   sensor_data_id: number | null;
@@ -322,7 +322,7 @@ export const step1_takeAndUploadPhoto = async (
         photo_url: photoUrlToSave,
         latitude,
         longitude,
-        site_id: siteId || null,
+        inspection_site_id: siteId || null,
         is_used: false,
         uploaded_by: userId,
       },
@@ -337,7 +337,7 @@ export const step1_takeAndUploadPhoto = async (
       photo_url: photoUrlToSave,
       latitude,
       longitude,
-      site_id: siteId || null,
+      inspection_site_id: siteId || null,
       is_used: false,
       sensor_data_id: null,
       uploaded_by: userId,
@@ -479,7 +479,7 @@ export const captureSitePhoto = async (
         photo_url: photoUrlToSave,
         latitude,
         longitude,
-        site_id: null,
+        inspection_site_id: null,
         is_used: true,
         is_site_photo: true,
         uploaded_by: userId,
@@ -494,7 +494,7 @@ export const captureSitePhoto = async (
         photo_url: photoUrlToSave,
         latitude,
         longitude,
-        site_id: null,
+        inspection_site_id: null,
         is_used: true,
         is_site_photo: true,
         sensor_data_id: null,
