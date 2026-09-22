@@ -67,7 +67,7 @@ interface SensorSubmissionFormProps {
 export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSuccess }) => {
   // Site & Device state
   const [sites, setSites] = useState<MonitoringSite[]>([]);
-  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<number | string | null>(null);
   const [selectedSite, setSelectedSite] = useState<MonitoringSite | null>(null);
   const [devices, setDevices] = useState<{ id: number; device_uid: string }[]>([]);
   const [selectedDeviceUid, setSelectedDeviceUid] = useState<string>('');
@@ -223,12 +223,20 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     }
   };
 
-  const fetchDevicesForSite = async (siteId: number) => {
+  const fetchDevicesForSite = async (siteId: number | string) => {
+    // If it is a temporary offline site ID or non-numeric, do not query Supabase
+    if (!siteId || (typeof siteId === 'string' && (siteId.startsWith('temp_') || isNaN(Number(siteId))))) {
+      setDevices([]);
+      setSelectedDeviceUid('ESP32-AMMONIA-NODE-01');
+      return;
+    }
+
     try {
+      const numericSiteId = Number(siteId);
       const { data } = await supabase
         .from('devices')
         .select('id, device_uid')
-        .eq('inspection_site_id', siteId);
+        .eq('inspection_site_id', numericSiteId);
 
       if (data && data.length > 0) {
         setDevices(data);
