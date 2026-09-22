@@ -189,7 +189,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       const ownerId = owners && owners.length > 0 ? owners[0].id : null;
 
-      let query = supabase.from('monitoring_sites').select('*');
+      let query = supabase.from('inspection_sites').select('*');
       if (ownerId) {
         query = query.eq('owner_id', ownerId);
       }
@@ -228,7 +228,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       const { data } = await supabase
         .from('devices')
         .select('id, device_uid')
-        .eq('site_id', siteId);
+        .eq('inspection_site_id', siteId);
 
       if (data && data.length > 0) {
         setDevices(data);
