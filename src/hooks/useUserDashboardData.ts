@@ -39,7 +39,7 @@ export function useUserDashboardData() {
       let sites: any[] = [];
       if (ownerId) {
         const { data: sitesData } = await supabase
-          .from('monitoring_sites')
+          .from('inspection_sites')
           .select('id, site_name, address, site_code')
           .eq('owner_id', ownerId);
 
@@ -57,7 +57,7 @@ export function useUserDashboardData() {
 
       let deviceQuery = supabase.from('devices').select('*');
       if (siteIds.length > 0) {
-        deviceQuery = deviceQuery.in('site_id', siteIds);
+        deviceQuery = deviceQuery.in('inspection_site_id', siteIds);
       }
 
       const { data: devices } = await deviceQuery;
