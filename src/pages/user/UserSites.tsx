@@ -137,7 +137,7 @@ export default function UserSites() {
 
   const handleDeleteSite = async (e: React.MouseEvent, siteId: string | number, siteName: string) => {
     e.stopPropagation();
-    if (window.confirm(`Are you sure you want to delete monitoring site "${siteName}"?`)) {
+    if (window.confirm(`Are you sure you want to delete inspection site "${siteName}"?`)) {
       try {
         await deleteSite(siteId);
         await fetchSites();
@@ -162,7 +162,7 @@ export default function UserSites() {
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Monitoring Sites</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>Inspection Sites</IonTitle>
           <IonButtons slot="end">
             <IonButton 
               onClick={() => setShowCreateModal(true)}
@@ -192,7 +192,7 @@ export default function UserSites() {
         {loading ? (
           <div style={{ textAlign: 'center', marginTop: '60px' }}>
             <IonSpinner name="crescent" color="primary" />
-            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading monitoring sites...</p>
+            <p style={{ color: '#64748B', fontWeight: 600, marginTop: '12px' }}>Loading inspection sites...</p>
           </div>
         ) : sites.length === 0 ? (
           <div style={{ textAlign: 'center', marginTop: '60px' }}>
@@ -212,11 +212,11 @@ export default function UserSites() {
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>No Sites Registered</h3>
                 <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 20px 0' }}>
-                  Register your first environmental monitoring site to start tracking ammonia levels.
+                  Register your first inspection site to start tracking ammonia levels.
                 </p>
                 <IonButton className="btn-ammoni btn-primary" expand="block" onClick={() => setShowCreateModal(true)}>
                   <IonIcon icon={addOutline} slot="start" />
-                  Create Monitoring Site
+                  Create Inspection Site
                 </IonButton>
               </IonCardContent>
             </IonCard>
