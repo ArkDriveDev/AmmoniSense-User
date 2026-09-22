@@ -371,7 +371,7 @@ export const step1_takeAndUploadPhoto = async (
       photo_url: photoUrlToSave,
       latitude,
       longitude,
-      inspection_site_id: siteId || null,
+      inspection_site_id: numericSiteId,
       is_used: false,
       sensor_data_id: null,
       uploaded_by: userId,
