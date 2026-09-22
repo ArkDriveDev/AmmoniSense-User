@@ -60,7 +60,7 @@ export const AdminSensorDataViewer: React.FC = () => {
 
   const fetchSites = async () => {
     try {
-      const { data } = await supabase.from('monitoring_sites').select('*');
+      const { data } = await supabase.from('inspection_sites').select('*');
       if (data) setSites(data);
     } catch (err) {
       console.error('Error fetching sites:', err);
