@@ -128,28 +128,15 @@ export async function fetchMyDevices(): Promise<DeviceRecord[]> {
       .from('devices')
       .select('*')
       .eq('created_by', userId)
-      .order('last_seen_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
-      const fb1 = await supabase
-        .from('devices')
-        .select('*')
-        .eq('created_by', userId)
-        .order('created_at', { ascending: false });
-
-      if (!fb1.error && fb1.data) {
-        data = fb1.data;
-        error = null;
-      }
-    }
-
-    if (error) {
-      const fb2 = await supabase
+      const fb = await supabase
         .from('devices')
         .select('*');
 
-      if (!fb2.error && fb2.data) {
-        data = fb2.data;
+      if (!fb.error && fb.data) {
+        data = fb.data;
         error = null;
       }
     }
@@ -158,7 +145,14 @@ export async function fetchMyDevices(): Promise<DeviceRecord[]> {
       console.warn('[deviceService] fetchMyDevices notice:', error.message);
       return [];
     }
-    return (data ?? []) as DeviceRecord[];
+
+    const records = ((data ?? []) as DeviceRecord[]).sort((a, b) => {
+      const timeA = new Date(a.last_seen_at || a.created_at).getTime();
+      const timeB = new Date(b.last_seen_at || b.created_at).getTime();
+      return timeB - timeA;
+    });
+
+    return records;
   } catch (err: any) {
     console.error('[deviceService] fetchMyDevices failed:', err?.message);
     return [];
