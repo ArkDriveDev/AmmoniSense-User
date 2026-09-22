@@ -13,7 +13,7 @@ ALTER TABLE public.devices
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-    WHERE table_name = ''devices'' AND column_name = ''device_name'') THEN
+    WHERE table_name = 'devices' AND column_name = 'device_name') THEN
     ALTER TABLE public.devices ADD COLUMN device_name TEXT NULL;
   END IF;
 END $$;
@@ -22,7 +22,7 @@ END $$;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-    WHERE table_name = ''devices'' AND column_name = ''first_seen_at'') THEN
+    WHERE table_name = 'devices' AND column_name = 'first_seen_at') THEN
     ALTER TABLE public.devices ADD COLUMN first_seen_at TIMESTAMPTZ NULL;
   END IF;
 END $$;
@@ -31,7 +31,7 @@ END $$;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-    WHERE table_name = ''devices'' AND column_name = ''last_seen_at'') THEN
+    WHERE table_name = 'devices' AND column_name = 'last_seen_at') THEN
     ALTER TABLE public.devices ADD COLUMN last_seen_at TIMESTAMPTZ NULL;
   END IF;
 END $$;
