@@ -31,6 +31,11 @@ import {
 } from 'ionicons/icons';
 import bleCentralService, { BLECentralDevice, BLECentralState, BLEPermissionStatus } from '../services/bleCentralService';
 
+interface RegistrationStatus {
+  isNew: boolean;
+  deviceName: string | null;
+}
+
 interface BLEScannerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -51,6 +56,9 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
   const [permStatus, setPermStatus] = useState<BLEPermissionStatus | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState<boolean>(false);
+  const [autoRegisteringId, setAutoRegisteringId] = useState<string | null>(null);
+  const [registeredIds, setRegisteredIds] = useState<Record<string, RegistrationStatus>>({});
+  const [regToast, setRegToast] = useState<string>('');
 
   useEffect(() => {
     const unsubState = bleCentralService.onStateChange((state) => {
@@ -64,6 +72,19 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
 
     setDevices(bleCentralService.getDiscoveredDevices());
 
+    const unsubReg = bleCentralService.onDeviceAutoRegistered((record, isNew) => {
+      setAutoRegisteringId(null);
+      setRegisteredIds((prev) => ({
+        ...prev,
+        [record.device_uid]: { isNew, deviceName: record.device_name },
+      }));
+      setRegToast(
+        isNew
+          ? `✓ Device "${record.device_name || record.device_uid}" auto-registered!`
+          : `↻ Device "${record.device_name || record.device_uid}" seen before — updated.`
+      );
+    });
+
     if (isOpen) {
       checkPermissions();
     }
@@ -71,6 +92,7 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
     return () => {
       unsubState();
       unsubDevices();
+      unsubReg();
     };
   }, [isOpen]);
 
@@ -111,6 +133,7 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
 
   const handleConnectDevice = async (device: BLECentralDevice) => {
     setActiveDeviceId(device.id);
+    setAutoRegisteringId(device.id);
     try {
       await bleCentralService.connectAndSubscribe(device);
       if (onSelectDevice) {
@@ -119,6 +142,7 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
       onClose();
     } catch (err) {
       console.error('Connect error:', err);
+      setAutoRegisteringId(null);
     }
   };
 
@@ -281,6 +305,8 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
             {devices.map((device) => {
               const rssiColor = getRssiColor(device.rssi);
               const isConnecting = connectionState === 'connecting' && activeDeviceId === device.id;
+              const isRegistering = autoRegisteringId === device.id;
+              const regStatus = registeredIds[device.id];
 
               return (
                 <IonCard key={device.id} className="premium-card" style={{ margin: 0 }}>
@@ -291,16 +317,23 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
                           width: '40px',
                           height: '40px',
                           borderRadius: '12px',
-                          background: 'rgba(29, 93, 155, 0.1)',
+                          background: regStatus ? 'rgba(5,150,105,0.12)' : 'rgba(29, 93, 155, 0.1)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center'
                         }}>
-                          <IonIcon icon={hardwareChipOutline} style={{ color: '#1D5D9B', fontSize: '22px' }} />
+                          <IonIcon icon={hardwareChipOutline} style={{ color: regStatus ? '#059669' : '#1D5D9B', fontSize: '22px' }} />
                         </div>
                         <div>
                           <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>{device.name}</h4>
                           <span style={{ fontSize: '12px', color: '#64748B', fontFamily: 'monospace' }}>ID: {device.id}</span>
+                          {regStatus && (
+                            <div style={{ marginTop: '4px' }}>
+                              <IonBadge style={{ background: regStatus.isNew ? '#ecfdf5' : '#eff6ff', color: regStatus.isNew ? '#047857' : '#1d4ed8', fontSize: '10px', fontWeight: 700, borderRadius: '6px' }}>
+                                {regStatus.isNew ? '✓ Auto-Registered' : '↻ Known Device'}
+                              </IonBadge>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -314,13 +347,18 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
                           size="small"
                           color="success"
                           onClick={() => handleConnectDevice(device)}
-                          disabled={isConnecting}
+                          disabled={isConnecting || isRegistering}
                           style={{ fontWeight: 700, margin: 0 }}
                         >
                           {isConnecting ? (
                             <>
                               <IonSpinner name="crescent" style={{ width: '14px', height: '14px' }} />
                               &nbsp;Connecting...
+                            </>
+                          ) : isRegistering ? (
+                            <>
+                              <IonSpinner name="crescent" style={{ width: '14px', height: '14px' }} />
+                              &nbsp;Registering...
                             </>
                           ) : (
                             'Connect & Subscribe'
@@ -332,9 +370,35 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
                 </IonCard>
               );
             })}
+
           </div>
         )}
       </IonContent>
+
+      {/* Registration Toast */}
+      {regToast !== '' && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#0F3C5C',
+            color: '#ffffff',
+            padding: '10px 20px',
+            borderRadius: '24px',
+            fontSize: '13px',
+            fontWeight: 700,
+            zIndex: 9999,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            whiteSpace: 'nowrap',
+            animation: 'fadeIn 0.3s ease',
+          }}
+          onClick={() => setRegToast('')}
+        >
+          {regToast}
+        </div>
+      )}
     </IonModal>
   );
 };
