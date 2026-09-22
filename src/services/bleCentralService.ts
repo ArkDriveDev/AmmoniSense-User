@@ -12,6 +12,9 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
+import { autoRegisterDevice, DeviceRecord } from './deviceService';
+
+export type { DeviceRecord };
 
 export interface BLEPermissionStatus {
   bluetoothScanGranted: boolean;
@@ -46,6 +49,7 @@ export type BLECentralState = 'disconnected' | 'scanning' | 'connecting' | 'conn
 export type BLECentralTelemetryListener = (reading: BLECentralReading) => void;
 export type BLECentralDeviceListener = (devices: BLECentralDevice[]) => void;
 export type BLECentralStateListener = (state: BLECentralState) => void;
+export type BLECentralAutoRegisteredListener = (device: DeviceRecord, isNew: boolean) => void;
 
 class BLECentralService {
   public static SERVICE_UUID = '0000ffd0-0000-1000-8000-00805f9b34fb';
@@ -59,6 +63,9 @@ class BLECentralService {
   private telemetryListeners: BLECentralTelemetryListener[] = [];
   private deviceListeners: BLECentralDeviceListener[] = [];
   private stateListeners: BLECentralStateListener[] = [];
+  private autoRegisteredListeners: BLECentralAutoRegisteredListener[] = [];
+
+  public lastRegisteredDevice: DeviceRecord | null = null;
 
   private gattServer: any = null;
   private bluetoothDevice: any = null;
@@ -131,6 +138,26 @@ class BLECentralService {
     return () => {
       this.stateListeners = this.stateListeners.filter((l) => l !== listener);
     };
+  }
+
+  public onDeviceAutoRegistered(listener: BLECentralAutoRegisteredListener): () => void {
+    this.autoRegisteredListeners.push(listener);
+    return () => {
+      this.autoRegisteredListeners = this.autoRegisteredListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private async performAutoRegister(device: BLECentralDevice): Promise<void> {
+    try {
+      const record = await autoRegisterDevice(device.id, device.name);
+      if (record) {
+        const isNew = record.first_seen_at === record.last_seen_at;
+        this.lastRegisteredDevice = record;
+        this.autoRegisteredListeners.forEach((fn) => fn(record, isNew));
+      }
+    } catch (err) {
+      console.warn('[BLE Central] Auto-registration notice:', err);
+    }
   }
 
   private notifyTelemetryListeners(reading: BLECentralReading) {
@@ -502,6 +529,8 @@ class BLECentralService {
 
         this.setState('streaming');
         device.connected = true;
+        // Auto-register device in Supabase (non-blocking)
+        this.performAutoRegister(device);
         return;
       } catch (nativeGattErr: any) {
         console.error('Native GATT hardware connection failed:', nativeGattErr);
@@ -524,6 +553,8 @@ class BLECentralService {
         await characteristic.startNotifications();
         this.setState('streaming');
         device.connected = true;
+        // Auto-register device in Supabase (non-blocking)
+        this.performAutoRegister(device);
 
         characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
           const value: DataView = event.target.value;
