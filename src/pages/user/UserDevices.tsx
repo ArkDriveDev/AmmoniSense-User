@@ -16,82 +16,34 @@ import {
 } from '@ionic/react';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '../../services/supabase';
-import { refreshOutline, hardwareChipOutline, wifiOutline, timeOutline } from 'ionicons/icons';
+import { fetchMyDevices } from '../../services/deviceService';
+import type { DeviceRecord } from '../../services/deviceService';
+import { refreshOutline, hardwareChipOutline, wifiOutline, timeOutline, linkOutline } from 'ionicons/icons';
 import { useLocation } from 'react-router-dom';
 
 export default function UserDevices() {
   const location = useLocation();
-  const [devices, setDevices] = useState<any[]>([]);
+  const [devices, setDevices] = useState<DeviceRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [siteName, setSiteName] = useState('');
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const siteId = params.get('site') || params.get('piggery');
-    fetchDevices(siteId);
+    loadDevices();
   }, [location]);
 
-  const fetchDevices = async (siteId: string | null) => {
+  const loadDevices = async () => {
     setLoading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: owners } = await supabase
-        .from('site_owners')
-        .select('id')
-        .eq('created_by', userId);
-
-      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
-
-      let siteQuery = supabase
-        .from('monitoring_sites')
-        .select('id, site_name');
-
-      if (ownerId) {
-        siteQuery = siteQuery.eq('owner_id', ownerId);
-      }
-      if (siteId) {
-        siteQuery = siteQuery.eq('id', parseInt(siteId));
-      }
-
-      const { data: siteList } = await siteQuery;
-
-      if (siteId && siteList && siteList.length > 0) {
-        setSiteName(siteList[0].site_name);
-      }
-
-      const siteIds = siteList?.map(s => s.id) || [];
-
-      let deviceQuery = supabase.from('devices').select('*');
-      if (siteIds.length > 0) {
-        deviceQuery = deviceQuery.in('site_id', siteIds);
-      }
-
-      const { data, error } = await deviceQuery;
-
-      if (error) {
-        console.error('Error fetching devices:', error);
-        return;
-      }
-
-      setDevices(data || []);
+      const data = await fetchMyDevices();
+      setDevices(data);
     } catch (err) {
-      console.error('Unexpected error:', err);
+      console.error('Unexpected error fetching devices:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRefresh = async (event: CustomEvent) => {
-    const params = new URLSearchParams(location.search);
-    await fetchDevices(params.get('site') || params.get('piggery'));
+    await loadDevices();
     event.detail.complete();
   };
 
@@ -99,12 +51,9 @@ export default function UserDevices() {
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>{siteName ? `${siteName} — Devices` : 'Environmental Devices'}</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>My BLE Devices</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={() => {
-              const params = new URLSearchParams(location.search);
-              fetchDevices(params.get('site') || params.get('piggery'));
-            }} style={{ color: '#ffffff' }}>
+            <IonButton onClick={() => loadDevices()} style={{ color: '#ffffff' }}>
               <IonIcon icon={refreshOutline} />
             </IonButton>
           </IonButtons>
@@ -139,7 +88,7 @@ export default function UserDevices() {
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>No Devices Found</h3>
                 <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>
-                  Devices will automatically appear here once paired and deployed at monitoring sites.
+                  Connect your first BLE sensor and it will auto-register here instantly.
                 </p>
               </IonCardContent>
             </IonCard>
@@ -147,7 +96,8 @@ export default function UserDevices() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {devices.map((d) => {
-              const isOnline = d.last_seen && (new Date().getTime() - new Date(d.last_seen).getTime() < 60000);
+              const isRecentlySeen = d.last_seen_at && (new Date().getTime() - new Date(d.last_seen_at).getTime() < 120000);
+              const isUnlinked = d.site_id === null || d.site_id === undefined;
               return (
                 <IonCard key={d.id} className="premium-card" style={{ margin: 0 }}>
                   <IonCardContent style={{ padding: '18px' }}>
@@ -158,42 +108,48 @@ export default function UserDevices() {
                             width: '38px',
                             height: '38px',
                             borderRadius: '12px',
-                            background: isOnline ? 'rgba(5, 150, 105, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                            background: isRecentlySeen ? 'rgba(5, 150, 105, 0.12)' : 'rgba(100, 116, 139, 0.12)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'
                           }}>
-                            <IonIcon icon={hardwareChipOutline} style={{ color: isOnline ? '#059669' : '#64748B', fontSize: '20px' }} />
+                            <IonIcon icon={hardwareChipOutline} style={{ color: isRecentlySeen ? '#059669' : '#64748B', fontSize: '20px' }} />
                           </div>
                           <div>
                             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>
-                              {d.device_uid}
+                              {d.device_name || d.device_uid}
                             </h3>
-                            <span style={{ fontSize: '12px', color: '#64748B' }}>
-                              Firmware v{d.firmware_version || '1.0.0'}
+                            <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'monospace' }}>
+                              UID: {d.device_uid}
                             </span>
                           </div>
                         </div>
 
                         <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
                           <IonIcon icon={timeOutline} style={{ color: '#94A3B8' }} />
-                          Installed: {new Date(d.installed_at).toLocaleDateString()}
-                          {d.last_seen && (
+                          First seen: {d.first_seen_at ? new Date(d.first_seen_at).toLocaleDateString() : 'Unknown'}
+                          {d.last_seen_at && (
                             <span style={{ color: '#475569' }}>
-                              • Last seen: {new Date(d.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              • Last seen: {new Date(d.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                         </div>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                        <span className={`status-badge ${isOnline ? 'safe' : 'offline'}`}>
-                          <span className="pulse-dot"></span>
-                          {isOnline ? 'Online' : 'Offline'}
-                        </span>
                         <IonBadge style={{ background: '#E2E8F0', color: '#475569', fontSize: '10px', fontWeight: 700 }}>
                           {d.status || 'ACTIVE'}
                         </IonBadge>
+                        {isUnlinked ? (
+                          <IonBadge style={{ background: '#fef9c3', color: '#92400e', fontSize: '10px', fontWeight: 700, borderRadius: '6px' }}>
+                            <IonIcon icon={linkOutline} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
+                            Not linked to site
+                          </IonBadge>
+                        ) : (
+                          <IonBadge style={{ background: '#ecfdf5', color: '#047857', fontSize: '10px', fontWeight: 700, borderRadius: '6px' }}>
+                            Linked to site
+                          </IonBadge>
+                        )}
                       </div>
                     </div>
                   </IonCardContent>
