@@ -366,26 +366,14 @@ export default function UserMap() {
   const fetchPhotoTags = async () => {
     let serverPhotoTags: PhotoTagMarkerData[] = [];
     try {
-      let rawPhotos: any[] | null = null;
-      const { data: joined, error: joinErr } = await supabase
+      const { data, error } = await supabase
         .from('inspection_photos')
-        .select('*, inspection_sites(site_name)')
-        .order('uploaded_at', { ascending: false })
+        .select('*')
+        .order('created_at', { ascending: false })
         .limit(200);
 
-      if (!joinErr && joined) {
-        rawPhotos = joined;
-      } else {
-        const { data: fallback } = await supabase
-          .from('inspection_photos')
-          .select('*')
-          .order('uploaded_at', { ascending: false })
-          .limit(200);
-        rawPhotos = fallback || [];
-      }
-
-      if (rawPhotos) {
-        serverPhotoTags = rawPhotos
+      if (!error && data) {
+        serverPhotoTags = data
           .map((p: any) => {
             const sid = p.inspection_site_id || p.site_id;
             const matchedSite = sites.find((s) => s.id === sid);
@@ -396,9 +384,9 @@ export default function UserMap() {
               photo_url: p.photo_url,
               grid_cell_id: p.grid_cell_id,
               site_id: sid,
-              site_name: p.inspection_sites?.site_name || matchedSite?.site_name || 'Inspection Site',
+              site_name: matchedSite?.site_name || 'Inspection Site',
               is_used: p.is_used,
-              uploaded_at: p.uploaded_at,
+              uploaded_at: p.created_at || p.uploaded_at,
               is_pending_sync: false,
             };
           })
