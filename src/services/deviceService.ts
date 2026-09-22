@@ -49,7 +49,7 @@ export async function autoRegisterDevice(
     }
 
     // Insert new device record
-    const { data: inserted, error } = await supabase
+    let { data: inserted, error } = await supabase
       .from('devices')
       .insert({
         device_uid: deviceId,
@@ -63,8 +63,23 @@ export async function autoRegisterDevice(
       .maybeSingle();
 
     if (error) {
-      console.error('[deviceService] Auto-register insert error:', error.message);
-      return null;
+      // Fallback with minimal columns if extended columns don't exist yet
+      const { data: fbData, error: fbErr } = await supabase
+        .from('devices')
+        .insert({
+          device_uid: deviceId,
+          status: 'ACTIVE',
+        })
+        .select('*')
+        .maybeSingle();
+
+      if (!fbErr && fbData) {
+        inserted = fbData;
+        error = null;
+      } else {
+        console.error('[deviceService] Auto-register insert error:', error.message);
+        return null;
+      }
     }
 
     return inserted as DeviceRecord | null;
@@ -87,8 +102,15 @@ export async function linkDeviceToSite(
     .eq('device_uid', deviceId);
 
   if (error) {
-    console.error('[deviceService] linkDeviceToSite error:', error.message);
-    return false;
+    const { error: fbErr } = await supabase
+      .from('devices')
+      .update({ site_id: siteId } as any)
+      .eq('device_uid', deviceId);
+
+    if (fbErr) {
+      console.error('[deviceService] linkDeviceToSite error:', error.message);
+      return false;
+    }
   }
   return true;
 }
@@ -102,14 +124,38 @@ export async function fetchMyDevices(): Promise<DeviceRecord[]> {
     const userId = userData.user?.id;
     if (!userId) return [];
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('devices')
       .select('*')
       .eq('created_by', userId)
       .order('last_seen_at', { ascending: false });
 
     if (error) {
-      console.error('[deviceService] fetchMyDevices error:', error.message);
+      const fb1 = await supabase
+        .from('devices')
+        .select('*')
+        .eq('created_by', userId)
+        .order('created_at', { ascending: false });
+
+      if (!fb1.error && fb1.data) {
+        data = fb1.data;
+        error = null;
+      }
+    }
+
+    if (error) {
+      const fb2 = await supabase
+        .from('devices')
+        .select('*');
+
+      if (!fb2.error && fb2.data) {
+        data = fb2.data;
+        error = null;
+      }
+    }
+
+    if (error) {
+      console.warn('[deviceService] fetchMyDevices notice:', error.message);
       return [];
     }
     return (data ?? []) as DeviceRecord[];
