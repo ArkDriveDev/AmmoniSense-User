@@ -1,10 +1,10 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 
 export interface DeviceRecord {
   id: number;
   device_uid: string;
   device_name: string | null;
-  site_id: number | null;
+  inspection_site_id: number | null;
   firmware_version: string | null;
   status: string;
   first_seen_at: string | null;
@@ -83,7 +83,7 @@ export async function linkDeviceToSite(
 ): Promise<boolean> {
   const { error } = await supabase
     .from('devices')
-    .update({ site_id: siteId })
+    .update({ inspection_site_id: siteId })
     .eq('device_uid', deviceId);
 
   if (error) {
