@@ -61,7 +61,7 @@ export default function AreaMapping() {
     try {
       const [zones, sitesRes, stats] = await Promise.all([
         fetchOdorZones(),
-        supabase.from('monitoring_sites').select('id, site_name, site_code, current_latitude, current_longitude'),
+        supabase.from('inspection_sites').select('id, site_name, site_code, current_latitude, current_longitude'),
         fetchZoneReadingStats(),
       ]);
 
