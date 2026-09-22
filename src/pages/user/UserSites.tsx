@@ -79,7 +79,7 @@ export default function UserSites() {
 
         if (ownerId) {
           const { data, error } = await supabase
-            .from('monitoring_sites')
+            .from('inspection_sites')
             .select('*')
             .eq('owner_id', ownerId);
 
@@ -122,7 +122,7 @@ export default function UserSites() {
           const { count } = await supabase
             .from('devices')
             .select('id', { count: 'exact', head: true })
-            .eq('site_id', item.id);
+            .eq('inspection_site_id', item.id);
           counts[item.id] = count || 0;
         } catch {}
       }
