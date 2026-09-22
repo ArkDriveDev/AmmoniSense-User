@@ -366,26 +366,42 @@ export default function UserMap() {
   const fetchPhotoTags = async () => {
     let serverPhotoTags: PhotoTagMarkerData[] = [];
     try {
-      const { data, error } = await supabase
+      let rawPhotos: any[] | null = null;
+      const { data: joined, error: joinErr } = await supabase
         .from('inspection_photos')
-        .select('*, inspection_sites!inspection_site_id(site_name)')
+        .select('*, inspection_sites(site_name)')
         .order('uploaded_at', { ascending: false })
         .limit(200);
 
-      if (!error && data) {
-        serverPhotoTags = data
-          .map((p: any) => ({
-            id: p.id,
-            latitude: p.latitude || 8.3683,
-            longitude: p.longitude || 124.8637,
-            photo_url: p.photo_url,
-            grid_cell_id: p.grid_cell_id,
-            site_id: p.inspection_site_id || p.site_id,
-            site_name: p.inspection_sites?.site_name || 'Inspection Site',
-            is_used: p.is_used,
-            uploaded_at: p.uploaded_at,
-            is_pending_sync: false,
-          }))
+      if (!joinErr && joined) {
+        rawPhotos = joined;
+      } else {
+        const { data: fallback } = await supabase
+          .from('inspection_photos')
+          .select('*')
+          .order('uploaded_at', { ascending: false })
+          .limit(200);
+        rawPhotos = fallback || [];
+      }
+
+      if (rawPhotos) {
+        serverPhotoTags = rawPhotos
+          .map((p: any) => {
+            const sid = p.inspection_site_id || p.site_id;
+            const matchedSite = sites.find((s) => s.id === sid);
+            return {
+              id: p.id,
+              latitude: p.latitude || 8.3683,
+              longitude: p.longitude || 124.8637,
+              photo_url: p.photo_url,
+              grid_cell_id: p.grid_cell_id,
+              site_id: sid,
+              site_name: p.inspection_sites?.site_name || matchedSite?.site_name || 'Inspection Site',
+              is_used: p.is_used,
+              uploaded_at: p.uploaded_at,
+              is_pending_sync: false,
+            };
+          })
           .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
       }
     } catch (err) {
@@ -490,7 +506,7 @@ export default function UserMap() {
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Monitoring Sites Map</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>Inspection Sites Map</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => setShowLegend(true)} style={{ color: '#ffffff' }}>
               <IonIcon icon={informationCircleOutline} slot="icon-only" />
@@ -706,11 +722,11 @@ export default function UserMap() {
                     color="danger"
                     fill="outline"
                     onClick={async () => {
-                      if (window.confirm(`Are you sure you want to delete monitoring site "${selectedSite.site_name}"?`)) {
+                      if (window.confirm(`Are you sure you want to delete inspection site "${selectedSite.site_name}"?`)) {
                         try {
                           await deleteSite(selectedSite.id);
                           closeBottomSheet();
-                          setToastMsg(`Monitoring site "${selectedSite.site_name}" deleted successfully.`);
+                          setToastMsg(`Inspection site "${selectedSite.site_name}" deleted successfully.`);
                           setShowToast(true);
                           fetchSites();
                         } catch (err: any) {
@@ -876,7 +892,7 @@ export default function UserMap() {
                   checked={showSitesLayer}
                   onChange={(e) => setShowSitesLayer(e.target.checked)}
                 />
-                <b>Monitoring Sites</b> (Pins)
+                <b>Inspection Sites</b> (Pins)
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
@@ -939,12 +955,12 @@ export default function UserMap() {
 
             <IonCard className="premium-card" style={{ margin: '0 0 16px 0', padding: '14px' }}>
               <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#0f172a' }}>
-                Monitoring Sites & Area Coverage
+                Inspection Sites & Area Coverage
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: SITE_BRAND_COLOR }}></span>
-                  <b>Monitoring Site Pin</b> (Registered Facility Location)
+                  <b>Inspection Site Pin</b> (Registered Facility Location)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: 'rgba(29, 93, 155, 0.2)', border: '1.5px dashed #1D5D9B' }}></span>
