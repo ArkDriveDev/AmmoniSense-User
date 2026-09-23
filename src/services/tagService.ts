@@ -56,7 +56,8 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     longitude: Number(payload.longitude) || 0,
     photo_url: payload.photo_url || null,
     photo_thumbnail_url: payload.photo_thumbnail_url || null,
-    device_uid: payload.device_uid || null,
+    // Null out device_uid if empty — prevents FK violation on inspection_tags
+    device_uid: payload.device_uid?.trim() || null,
     inspection_schedule_id: payload.inspection_schedule_id,
     inspection_site_id: payload.inspection_site_id,
     notes: toUpperClean(payload.notes),
@@ -64,7 +65,23 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
 
   try {
     const user = (await supabase.auth.getUser()).data.user;
-    const { data, error } = await supabase.from('inspection_tags').insert([{ ...clean, created_by: user?.id }]).select().single();
+    let { data, error } = await supabase
+      .from('inspection_tags')
+      .insert([{ ...clean, created_by: user?.id }])
+      .select()
+      .single();
+
+    // Retry without device_uid if FK constraint fires (fk_inspection_tags_device)
+    if (error && (error.code === '23503' || error.message?.includes('device_uid'))) {
+      console.warn('[tagService] device_uid FK violation — retrying with device_uid=null.');
+      const { data: r2, error: e2 } = await supabase
+        .from('inspection_tags')
+        .insert([{ ...clean, device_uid: null, created_by: user?.id }])
+        .select()
+        .single();
+      data = r2; error = e2;
+    }
+
     if (!error && data) {
       window.dispatchEvent(new CustomEvent('tags_updated'));
       return formatTag(data, false);
