@@ -1,6 +1,5 @@
 import * as turf from '@turf/turf';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
-import { OdorZone } from '../types/site';
 
 /**
  * Convert an array of Leaflet [latitude, longitude] pairs into a standard GeoJSON Polygon geometry.
@@ -101,27 +100,6 @@ export function isPointInPolygon(lat: number, lng: number, polygonGeoJson: any):
     return false;
   }
 }
-
-/**
- * Find the matching OdorZone (if any) containing the given GPS point.
- */
-export function findOdorZoneForPoint(
-  lat: number,
-  lng: number,
-  zones: OdorZone[]
-): OdorZone | null {
-  if (!zones || zones.length === 0) return null;
-
-  for (const zone of zones) {
-    const geojson = zone.polygon_geojson || (zone.coordinates ? toGeoJSONPolygon(zone.coordinates) : null);
-    if (geojson && isPointInPolygon(lat, lng, geojson)) {
-      return zone;
-    }
-  }
-
-  return null;
-}
-
 /**
  * Calculate polygon area in hectares using Turf.js.
  */
