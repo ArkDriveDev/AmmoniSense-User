@@ -5,7 +5,7 @@ import { supabase } from '../services/supabase';
 import { GpsSource } from '../types/site';
 
 export interface InspectionPhotoRecord {
-  id: number;
+  id: number | null;
   photo_url: string;
   latitude: number;
   longitude: number;
@@ -324,50 +324,46 @@ export const step1_takeAndUploadPhoto = async (
   let inserted: any = null;
   let dbError: any = null;
 
-  const res1 = await supabase
-    .from('inspection_photos')
-    .insert([
-      {
-        photo_url: photoUrlToSave,
-        latitude,
-        longitude,
-        inspection_site_id: numericSiteId,
-        is_used: false,
-        uploaded_by: userId,
-      },
-    ])
-    .select('*')
-    .single();
+  const basePhotoPayload = {
+    photo_url: photoUrlToSave,
+    latitude,
+    longitude,
+    inspection_site_id: numericSiteId,
+    is_used: false,
+  };
 
-  if (res1.error) {
+  // Try with uploaded_by if user is logged in
+  if (userId) {
+    const res1 = await supabase
+      .from('inspection_photos')
+      .insert([{ ...basePhotoPayload, uploaded_by: userId }])
+      .select('*')
+      .maybeSingle();
+
+    if (!res1.error && res1.data) {
+      inserted = res1.data;
+    }
+  }
+
+  // If not inserted yet, try without uploaded_by
+  if (!inserted) {
     const res2 = await supabase
       .from('inspection_photos')
-      .insert([
-        {
-          photo_url: photoUrlToSave,
-          latitude,
-          longitude,
-          site_id: numericSiteId,
-          is_used: false,
-          uploaded_by: userId,
-        } as any,
-      ])
+      .insert([basePhotoPayload])
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (!res2.error && res2.data) {
       inserted = res2.data;
     } else {
-      dbError = res2.error || res1.error;
+      dbError = res2.error;
     }
-  } else {
-    inserted = res1.data;
   }
 
   if (dbError || !inserted) {
     console.warn('Fallback: inspection_photos table write notice:', dbError?.message);
     return {
-      id: Date.now(),
+      id: null,
       photo_url: photoUrlToSave,
       latitude,
       longitude,
@@ -390,9 +386,10 @@ export const step1_takeAndUploadPhoto = async (
  * STEP 3: Mark `inspection_photos` record as used and link `sensor_data_id`
  */
 export const step4_markPhotoAsUsed = async (
-  photoId: number,
+  photoId: number | null | undefined,
   sensorDataId: number
 ): Promise<void> => {
+  if (!photoId) return;
   try {
     await supabase
       .from('inspection_photos')
