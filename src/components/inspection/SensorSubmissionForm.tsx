@@ -302,7 +302,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   // STEP 3: SUBMIT ALL DATA
   // =========================================================
   const handleStep3_SubmitAll = async () => {
-    if (!ammonia) {
+    if (ammonia === '' || ammonia === null || ammonia === undefined || isNaN(parseFloat(ammonia))) {
       setToastMsg('Please enter an ammonia reading');
       setToastColor('warning');
       setShowToast(true);
