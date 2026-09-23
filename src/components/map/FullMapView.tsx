@@ -32,6 +32,8 @@ export interface ReadingMarkerData {
   device_uid?: string;
   created_at: string;
   photo_url?: string;
+  tag_name?: string;
+  notes?: string;
   is_pending_sync?: boolean;
 }
 
