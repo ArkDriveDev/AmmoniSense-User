@@ -31,6 +31,7 @@ import {
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
 import { deleteSite, deleteReading } from '../../services/siteService';
+import { fetchTags } from '../../services/tagService';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
@@ -104,12 +105,14 @@ export default function UserMap() {
     window.addEventListener('site_synced', handleSyncOrDelete);
     window.addEventListener('sensor_synced', handleSyncOrDelete);
     window.addEventListener('offline_sync_completed', handleSyncOrDelete);
+    window.addEventListener('tags_updated', handleSyncOrDelete);
 
     return () => {
       window.removeEventListener('site_deleted', handleSyncOrDelete);
       window.removeEventListener('site_synced', handleSyncOrDelete);
       window.removeEventListener('sensor_synced', handleSyncOrDelete);
       window.removeEventListener('offline_sync_completed', handleSyncOrDelete);
+      window.removeEventListener('tags_updated', handleSyncOrDelete);
     };
   }, []);
 
@@ -301,74 +304,30 @@ export default function UserMap() {
     const validSites = currentSites || sites;
     const validSiteIds = new Set(validSites.map((s) => String(s.id)));
 
-    let serverReadings: ReadingMarkerData[] = [];
     try {
-      const { data, error } = await supabase
-        .from('sensor_data')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (!error && data) {
-        serverReadings = data
-          .filter((r: any) => {
-            const sid = r.inspection_site_id ?? null;
-            // If the reading has a site association, ensure that site still exists.
-            // Readings with no site (null) are also hidden — they are unlinked orphans.
-            if (!sid || !validSiteIds.has(String(sid))) return false;
-            return true;
-          })
-          .map((r: any) => ({
-            id: r.id,
-            ammonia: r.ammonia || 0,
-            temperature: r.temperature,
-            humidity: r.humidity,
-            battery: r.battery,
-            latitude: r.latitude || 8.3683,
-            longitude: r.longitude || 124.8637,
-            grid_cell_id: r.grid_cell_id,
-            device_uid: r.device_uid,
-            inspection_site_id: r.inspection_site_id ?? null,
-            created_at: r.created_at,
-            photo_url: r.photo_url,
-            is_pending_sync: false,
-          }))
-          .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
-      }
-    } catch (err) {
-      console.warn('Error fetching sensor data:', err);
-    }
-
-    try {
-      const queue = await offlineStorage.getQueue();
-      const offlineReadings: ReadingMarkerData[] = queue
-        .filter((q) => {
-          if (q.type !== 'SENSOR_READING') return false;
-          const p = q.payload;
-          if (p?.site_id && !validSiteIds.has(String(p.site_id))) return false;
-          if (p?.temp_id && !validSiteIds.has(String(p.temp_id))) return false;
-          return true;
-        })
-        .map((q) => ({
-          id: q.id,
-          ammonia: q.payload.ammonia || 0,
-          temperature: q.payload.temperature,
-          humidity: q.payload.humidity,
-          battery: q.payload.battery,
-          latitude: q.payload.latitude || 8.3683,
-          longitude: q.payload.longitude || 124.8637,
-          grid_cell_id: q.payload.grid_cell_id,
-          device_uid: q.payload.device_uid || 'OFFLINE-NODE',
-          created_at: q.timestamp,
-          photo_url: q.payload.photo_url,
-          is_pending_sync: true,
+      const allTags = await fetchTags();
+      const mappedReadings: ReadingMarkerData[] = allTags
+        .filter((t) => !t.inspection_site_id || validSiteIds.has(String(t.inspection_site_id)))
+        .map((t) => ({
+          id: t.id,
+          ammonia: t.ammonia,
+          temperature: t.temperature,
+          humidity: t.humidity,
+          battery: t.battery,
+          latitude: t.latitude || 8.3683,
+          longitude: t.longitude || 124.8637,
+          device_uid: t.device_uid || 'N/A',
+          created_at: t.created_at,
+          photo_url: t.photo_thumbnail_url || t.photo_url,
+          tag_name: t.tag_name,
+          notes: t.notes,
+          is_pending_sync: t.isOffline,
         }))
         .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
 
-      setReadings([...offlineReadings, ...serverReadings]);
-    } catch (e) {
-      console.error('Error reading offline queue:', e);
-      setReadings(serverReadings);
+      setReadings(mappedReadings);
+    } catch (err) {
+      console.warn('Error fetching inspection tags for map readings:', err);
     }
   };
 
