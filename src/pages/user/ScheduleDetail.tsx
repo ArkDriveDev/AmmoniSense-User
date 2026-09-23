@@ -1,14 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonBackButton,
-  IonButtons, IonButton, IonIcon, IonSpinner, IonBadge, IonCard, IonCardContent
+  IonButtons, IonButton, IonIcon, IonSpinner, IonBadge, IonCard, IonCardContent,
+  IonSegment, IonSegmentButton, IonLabel
 } from '@ionic/react';
-import { addOutline, calendarOutline, timeOutline, pricetagOutline, personOutline } from 'ionicons/icons';
+import {
+  addOutline, calendarOutline, timeOutline, pricetagOutline, personOutline,
+  mapOutline, listOutline, syncOutline
+} from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchScheduleById } from '../../services/scheduleService';
 import { fetchTags } from '../../services/tagService';
 import TagList from '../../components/inspection/TagList';
 import AddTagModal from '../../components/inspection/AddTagModal';
+import ScheduleTagsMap from '../../components/inspection/ScheduleTagsMap';
+import syncService from '../../services/SyncService';
 import { InspectionSchedule, InspectionTag } from '../../types/inspection';
 
 const statusColor = (s: string) => {
@@ -25,6 +31,8 @@ export default function ScheduleDetail() {
   const [tags, setTags] = useState<InspectionTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddTag, setShowAddTag] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [resyncing, setResyncing] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -43,6 +51,16 @@ export default function ScheduleDetail() {
     }
   }, [id]);
 
+  const handleResync = async () => {
+    setResyncing(true);
+    try {
+      await syncService.resync();
+      await load();
+    } finally {
+      setResyncing(false);
+    }
+  };
+
   useEffect(() => {
     load();
     window.addEventListener('tags_updated', load);
@@ -56,6 +74,9 @@ export default function ScheduleDetail() {
           <IonButtons slot="start"><IonBackButton defaultHref="/schedules" style={{ '--color': '#ffffff' }} /></IonButtons>
           <IonTitle style={{ fontWeight: 700 }}>{schedule?.schedule_name || 'Schedule'}</IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={handleResync} disabled={resyncing} style={{ '--color': '#ffffff' }} title="Re-sync data">
+              <IonIcon icon={syncOutline} slot="icon-only" style={{ animation: resyncing ? 'spin 1.2s linear infinite' : 'none' }} />
+            </IonButton>
             <IonButton onClick={() => setShowAddTag(true)} style={{ '--color': '#ffffff' }}>
               <IonIcon icon={addOutline} slot="start" /> Add Tag
             </IonButton>
@@ -102,14 +123,34 @@ export default function ScheduleDetail() {
               </IonCard>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <h3 style={{ margin: 0, fontWeight: 700, fontSize: '16px', color: '#0F172A' }}>Inspection Tags</h3>
-              <IonButton size="small" color="success" onClick={() => setShowAddTag(true)}>
-                <IonIcon icon={addOutline} slot="start" /> Add Tag
-              </IonButton>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <IonSegment
+                  value={viewMode}
+                  onIonChange={(e) => setViewMode((e.detail.value as 'list' | 'map') || 'list')}
+                  style={{ width: '150px', height: '32px' }}
+                >
+                  <IonSegmentButton value="list" style={{ minHeight: '32px', fontSize: '12px' }}>
+                    <IonIcon icon={listOutline} style={{ fontSize: '13px', marginRight: '3px' }} />
+                    <IonLabel>List</IonLabel>
+                  </IonSegmentButton>
+                  <IonSegmentButton value="map" style={{ minHeight: '32px', fontSize: '12px' }}>
+                    <IonIcon icon={mapOutline} style={{ fontSize: '13px', marginRight: '3px' }} />
+                    <IonLabel>Map</IonLabel>
+                  </IonSegmentButton>
+                </IonSegment>
+                <IonButton size="small" color="success" onClick={() => setShowAddTag(true)}>
+                  <IonIcon icon={addOutline} slot="start" /> Add Tag
+                </IonButton>
+              </div>
             </div>
 
-            <TagList tags={tags} />
+            {viewMode === 'map' ? (
+              <ScheduleTagsMap tags={tags} height="360px" />
+            ) : (
+              <TagList tags={tags} />
+            )}
           </>
         )}
 
