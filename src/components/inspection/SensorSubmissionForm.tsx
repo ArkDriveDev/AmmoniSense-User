@@ -47,7 +47,6 @@ interface MonitoringSite {
   site_code: string;
   site_name: string;
   location?: string | null;
-  owner_id: number;
   created_at?: string;
   created_by?: string | null;
   current_latitude?: number | null;
@@ -179,20 +178,8 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       const userId = userData.user?.id;
       if (!userId) return;
 
-      const { data: owners } = await supabase
-        .from('site_owners')
-        .select('id')
-        .eq('created_by', userId);
-
-      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
-
-      let query = supabase.from('inspection_sites').select('*');
-      if (ownerId) {
-        query = query.eq('owner_id', ownerId);
-      }
-
       let onlineSites: any[] = [];
-      const { data, error } = await query;
+      const { data, error } = await supabase.from('inspection_sites').select('*').eq('created_by', userId);
       if (!error && data) {
         onlineSites = data;
       }
