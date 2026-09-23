@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -16,112 +16,77 @@ import {
   IonSpinner,
   IonToast,
   IonRefresher,
-  IonRefresherContent
+  IonRefresherContent,
+  IonLabel,
 } from '@ionic/react';
 import {
-  shapesOutline,
+  pricetagOutline,
   refreshOutline,
-  layersOutline,
   businessOutline,
-  analyticsOutline
+  analyticsOutline,
+  locationOutline,
 } from 'ionicons/icons';
-import PolygonDrawer from '../../components/map/PolygonDrawer';
-import { OdorZone } from '../../types/site';
 import { supabase } from '../../services/supabase';
-import {
-  fetchOdorZones,
-  saveOdorZone,
-  fetchZoneReadingStats
-} from '../../services/siteService';
+import { fetchTags } from '../../services/tagService';
+import { InspectionTag, calculateAmmoniaStatus } from '../../types/inspection';
 
-interface SiteOption {
-  id: number;
-  site_name: string;
-  site_code?: string;
-  current_latitude?: number;
-  current_longitude?: number;
-}
+const STATUS_COLOR: Record<string, string> = {
+  NORMAL: '#10B981',
+  WARNING: '#F59E0B',
+  HIGH: '#F97316',
+  CRITICAL: '#EF4444',
+};
 
 export default function AreaMapping() {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
-  const [sites, setSites] = useState<SiteOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tags, setTags] = useState<InspectionTag[]>([]);
+  const [sites, setSites] = useState<{ id: number; site_name: string }[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
 
-  // Toast State
-  const [toastMsg, setToastMsg] = useState<string>('');
-  const [showToast, setShowToast] = useState<boolean>(false);
-  const [toastColor, setToastColor] = useState<string>('success');
+  const [toastMsg, setToastMsg] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [zones, sitesRes, stats] = await Promise.all([
-        fetchOdorZones(),
-        supabase.from('inspection_sites').select('id, site_name, site_code, current_latitude, current_longitude'),
-        fetchZoneReadingStats(),
+      const [tagList, sitesRes] = await Promise.all([
+        fetchTags(selectedSiteId ? { siteId: selectedSiteId } : {}),
+        supabase
+          .from('inspection_sites')
+          .select('id, site_name')
+          .order('site_name'),
       ]);
-
-      const sitesList: SiteOption[] = sitesRes.data || [];
-      setSites(sitesList);
-
-      // Merge stats map
-      const statsMap = new Map<string | number, any>();
-      (stats || []).forEach((st: any) => {
-        if (st.zone_id || st.id) {
-          statsMap.set(st.zone_id || st.id, st);
-        }
-      });
-
-      const enrichedZones = (zones || []).map((z) => {
-        const zoneStat = z.id ? statsMap.get(z.id) : null;
-        return {
-          ...z,
-          reading_count: zoneStat?.reading_count ?? z.reading_count ?? 0,
-          avg_ammonia: zoneStat?.avg_ammonia ?? z.avg_ammonia,
-          max_ammonia: zoneStat?.max_ammonia ?? z.max_ammonia,
-          min_ammonia: zoneStat?.min_ammonia ?? z.min_ammonia,
-        };
-      });
-
-      setOdorZones(enrichedZones);
+      setTags(tagList);
+      setSites(sitesRes.data || []);
     } catch (err: any) {
-      console.error('Error loading spatial polygon data:', err);
+      console.error('[AreaMapping] load error:', err);
+      setToastMsg('Failed to load tag data.');
+      setShowToast(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSiteId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleRefresh = async (event: CustomEvent) => {
     await loadData();
     event.detail.complete();
   };
 
-  const handleSaveOdorZone = async (zone: OdorZone) => {
-    try {
-      const saved = await saveOdorZone(zone);
-      setOdorZones((prev) => [saved, ...prev]);
-      setToastMsg(`🟧 Odor Zone "${zone.zone_name}" saved successfully!`);
-      setToastColor('success');
-      setShowToast(true);
-    } catch (err: any) {
-      console.warn('Error saving odor zone, saving locally:', err);
-      const localZone = { ...zone, id: `local_${Date.now()}`, is_pending_sync: true };
-      setOdorZones((prev) => [localZone, ...prev]);
-      setToastMsg(`📶 Saved Odor Zone locally for auto-sync.`);
-      setToastColor('warning');
-      setShowToast(true);
-    }
-  };
+  const filteredTags = selectedSiteId
+    ? tags.filter((t) => String(t.inspection_site_id) === selectedSiteId)
+    : tags;
 
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
-        <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Odor Zone Area Mapping</IonTitle>
+        <IonToolbar
+          style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}
+        >
+          <IonTitle style={{ fontWeight: 700 }}>Inspection Tag Overview</IonTitle>
           <IonButton slot="end" fill="clear" onClick={loadData} style={{ color: '#ffffff' }}>
             <IonIcon icon={refreshOutline} />
           </IonButton>
@@ -134,7 +99,7 @@ export default function AreaMapping() {
         </IonRefresher>
 
         <IonGrid style={{ maxWidth: '850px', margin: '0 auto', padding: 0 }}>
-          {/* Top Info Banner */}
+          {/* Header Banner */}
           <div
             style={{
               background: 'linear-gradient(135deg, rgba(15, 60, 92, 0.95), rgba(29, 93, 155, 0.9))',
@@ -143,88 +108,131 @@ export default function AreaMapping() {
               color: '#ffffff',
               marginBottom: '16px',
               boxShadow: '0 6px 20px rgba(15, 60, 92, 0.2)',
-              backdropFilter: 'blur(10px)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <IonIcon icon={shapesOutline} style={{ fontSize: '28px', color: '#60A5FA' }} />
+              <IonIcon icon={pricetagOutline} style={{ fontSize: '28px', color: '#60A5FA' }} />
               <div>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: '17px' }}>Site Odor Zone Mapping</h3>
+                <h3 style={{ margin: 0, fontWeight: 800, fontSize: '17px' }}>Inspection Tags</h3>
                 <p style={{ margin: '2px 0 0 0', fontSize: '12px', opacity: 0.85 }}>
-                  Draw ONE Odor Zone polygon per site. Sensor readings inside the boundary automatically correlate to the zone.
+                  Point readings captured during site inspections — ammonia, temperature, humidity, and GPS location.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Interactive Odor Zone Polygon Drawer */}
-          <PolygonDrawer
-            sites={sites}
-            onSaveOdorZone={handleSaveOdorZone}
-            height="440px"
-          />
+          {/* Site Filter */}
+          <IonCard className="premium-card" style={{ margin: '0 0 16px 0' }}>
+            <IonCardContent style={{ padding: '12px' }}>
+              <IonLabel style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                Filter by Site
+              </IonLabel>
+              <select
+                value={selectedSiteId}
+                onChange={(e) => setSelectedSiteId(e.target.value)}
+                style={{
+                  width: '100%',
+                  marginTop: '6px',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #CBD5E1',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#0F172A',
+                  background: '#FFFFFF',
+                }}
+              >
+                <option value="">All Sites ({tags.length} tags)</option>
+                {sites.map((s) => (
+                  <option key={s.id} value={String(s.id)}>
+                    {s.site_name}
+                  </option>
+                ))}
+              </select>
+            </IonCardContent>
+          </IonCard>
 
-          {/* Saved Odor Zones Summary List */}
-          <div style={{ marginTop: '24px' }}>
+          {/* Tag List */}
+          <div>
             <h4 style={{ fontWeight: 800, color: '#0F172A', fontSize: '16px', marginBottom: '12px' }}>
-              Saved Odor Zones ({odorZones.length})
+              Inspection Tags ({filteredTags.length})
             </h4>
 
             {loading ? (
               <div style={{ textAlign: 'center', padding: '30px' }}>
                 <IonSpinner name="crescent" color="primary" />
-                <p style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Loading odor zones...</p>
+                <p style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Loading tags...</p>
               </div>
-            ) : odorZones.length === 0 ? (
+            ) : filteredTags.length === 0 ? (
               <IonCard className="premium-card" style={{ margin: 0, padding: '20px', textAlign: 'center' }}>
                 <IonCardContent>
-                  <IonIcon icon={layersOutline} style={{ fontSize: '36px', color: '#94A3B8', marginBottom: '8px' }} />
+                  <IonIcon icon={pricetagOutline} style={{ fontSize: '36px', color: '#94A3B8', marginBottom: '8px' }} />
                   <p style={{ margin: 0, color: '#64748B', fontWeight: 600, fontSize: '14px' }}>
-                    No Odor Zones saved yet. Select a site and tap points on the map above to draw its impact boundary!
+                    No inspection tags yet. Complete an inspection schedule to capture readings.
                   </p>
                 </IonCardContent>
               </IonCard>
             ) : (
               <IonGrid style={{ padding: 0 }}>
                 <IonRow>
-                  {odorZones.map((z, idx) => (
-                    <IonCol key={z.id || idx} size="12" size-md="6">
-                      <IonCard className="premium-card" style={{ margin: '0 0 12px 0' }}>
-                        <IonCardContent style={{ padding: '14px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                                <IonBadge style={{ background: '#F97316', color: '#ffffff', fontSize: '10px', fontWeight: 800 }}>
-                                  🟧 ODOR ZONE
-                                </IonBadge>
-                                {z.site_name && (
-                                  <IonBadge color="light" style={{ color: '#0F3C5C', fontSize: '10px', fontWeight: 700 }}>
-                                    <IonIcon icon={businessOutline} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
-                                    {z.site_name}
+                  {filteredTags.map((tag, idx) => {
+                    const statusColor = STATUS_COLOR[tag.status] || '#94A3B8';
+                    return (
+                      <IonCol key={tag.id || idx} size="12" size-md="6">
+                        <IonCard className="premium-card" style={{ margin: '0 0 12px 0' }}>
+                          <IonCardContent style={{ padding: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                  <IonBadge style={{ background: statusColor, color: '#ffffff', fontSize: '10px', fontWeight: 800 }}>
+                                    {tag.status}
                                   </IonBadge>
-                                )}
-                              </div>
-                              <h4 style={{ margin: '2px 0 6px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>{z.zone_name}</h4>
-                              <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6' }}>
-                                {z.area_size_hectares ? <span>Area: <b>{z.area_size_hectares} ha</b> • </span> : null}
-                                <span>Vertices: <b>{z.coordinates?.length || 0} pts</b></span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                                  <IonIcon icon={analyticsOutline} style={{ color: '#1D5D9B' }} />
-                                  <span>Readings: <b>{z.reading_count || 0}</b></span>
-                                  {z.avg_ammonia !== undefined && z.avg_ammonia !== null && (
-                                    <span>(Avg: <b>{Number(z.avg_ammonia).toFixed(1)} ppm</b>)</span>
+                                  {tag.isOffline && (
+                                    <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
+                                  )}
+                                </div>
+                                <h4 style={{ margin: '2px 0 6px 0', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>
+                                  {tag.tag_name}
+                                </h4>
+                                <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.7' }}>
+                                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                    <span>
+                                      <IonIcon icon={analyticsOutline} style={{ verticalAlign: 'middle', marginRight: '3px', color: statusColor }} />
+                                      NH₃: <b style={{ color: statusColor }}>{tag.ammonia} ppm</b>
+                                    </span>
+                                    <span>🌡️ {tag.temperature}°C</span>
+                                    <span>💧 {tag.humidity}%</span>
+                                    <span>🔋 {tag.battery}%</span>
+                                  </div>
+                                  {(tag.latitude && tag.longitude) ? (
+                                    <div style={{ marginTop: '4px' }}>
+                                      <IonIcon icon={locationOutline} style={{ verticalAlign: 'middle', marginRight: '3px', color: '#1D5D9B' }} />
+                                      {Number(tag.latitude).toFixed(5)}, {Number(tag.longitude).toFixed(5)}
+                                    </div>
+                                  ) : null}
+                                  {tag.notes && (
+                                    <div style={{ marginTop: '4px', fontStyle: 'italic' }}>{tag.notes}</div>
                                   )}
                                 </div>
                               </div>
+                              {tag.photo_url && (
+                                <img
+                                  src={tag.photo_thumbnail_url || tag.photo_url}
+                                  alt="tag"
+                                  style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', marginLeft: '10px', flexShrink: 0 }}
+                                />
+                              )}
                             </div>
-                            {z.is_pending_sync && (
-                              <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
+                            {tag.created_at && (
+                              <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: '#94A3B8' }}>
+                                {new Date(tag.created_at).toLocaleString()}
+                              </p>
                             )}
-                          </div>
-                        </IonCardContent>
-                      </IonCard>
-                    </IonCol>
-                  ))}
+                          </IonCardContent>
+                        </IonCard>
+                      </IonCol>
+                    );
+                  })}
                 </IonRow>
               </IonGrid>
             )}
@@ -236,7 +244,7 @@ export default function AreaMapping() {
           onDidDismiss={() => setShowToast(false)}
           message={toastMsg}
           duration={3500}
-          color={toastColor}
+          color="danger"
           position="bottom"
         />
       </IonContent>

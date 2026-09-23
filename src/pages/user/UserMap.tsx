@@ -594,8 +594,6 @@ export default function UserMap() {
             showReadingsLayer={showReadingsLayer}
             showPhotoTagsLayer={showPhotoTagsLayer}
             showBoundaryLayer={showBoundaryLayer}
-            showOdorZonesLayer={false}
-            odorZones={[]}
             centerLat={mapCenter.lat}
             centerLng={mapCenter.lng}
             zoom={mapCenter.zoom}

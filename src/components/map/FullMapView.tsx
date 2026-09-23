@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import OdorZoneLayer from './OdorZoneLayer';
-import { OdorZone } from '../../types/site';
 
 export interface SiteMarkerData {
   id: string | number;
@@ -54,13 +52,11 @@ interface FullMapViewProps {
   sites?: SiteMarkerData[];
   readings?: ReadingMarkerData[];
   photoTags?: PhotoTagMarkerData[];
-  odorZones?: OdorZone[];
   showSitesLayer?: boolean;
   showSitePolygonsLayer?: boolean;
   showReadingsLayer?: boolean;
   showPhotoTagsLayer?: boolean;
   showBoundaryLayer?: boolean;
-  showOdorZonesLayer?: boolean;
   onSelectSite?: (site: SiteMarkerData) => void;
   onSelectReading?: (reading: ReadingMarkerData) => void;
   onSelectPhotoTag?: (tag: PhotoTagMarkerData) => void;
@@ -121,13 +117,11 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   sites = [],
   readings = [],
   photoTags = [],
-  odorZones = [],
   showSitesLayer = true,
   showSitePolygonsLayer = true,
   showReadingsLayer = true,
   showPhotoTagsLayer = true,
   showBoundaryLayer = true,
-  showOdorZonesLayer = true,
   onSelectSite,
   onSelectReading,
   onSelectPhotoTag,
@@ -567,11 +561,6 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
   return (
     <div style={{ position: 'relative', width: '100%', height, overflow: 'hidden' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', zIndex: 1 }} />
-      <OdorZoneLayer
-        map={mapInstance}
-        odorZones={odorZones}
-        showOdorZones={showOdorZonesLayer}
-      />
     </div>
   );
 };
