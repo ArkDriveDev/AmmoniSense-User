@@ -11,7 +11,6 @@ export interface SiteMarkerData {
   latitude: number;
   longitude: number;
   area_size_hectares?: number;
-  owner_name?: string;
   photo_url?: string;
   status?: string;
   isOffline?: boolean;
