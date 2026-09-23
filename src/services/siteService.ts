@@ -296,7 +296,10 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
   // 2. If it's an online Supabase site (non-temp ID), cascade delete from Supabase tables
   if (!strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_')) {
     try {
-      // Find & delete inspection photos and linked sensor data
+      // Delete sensor_data directly linked to this site via inspection_site_id (new FK)
+      await supabase.from('sensor_data').delete().eq('inspection_site_id', siteId);
+
+      // Find & delete inspection photos and sensor data linked through photo IDs
       const { data: photos } = await supabase
         .from('inspection_photos')
         .select('id')
