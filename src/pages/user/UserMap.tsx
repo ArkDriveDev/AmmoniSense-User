@@ -574,7 +574,95 @@ export default function UserMap() {
       </IonHeader>
 
       <IonContent fullscreen style={{ '--overflow': 'hidden', position: 'relative', width: '100%', height: '100%' }}>
-
+        {/* Interactive Search Suggestions Dropdown Overlay */}
+        {searchText.trim().length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '8px',
+              left: '12px',
+              right: '12px',
+              zIndex: 1200,
+              background: '#ffffff',
+              borderRadius: '12px',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #E2E8F0',
+              maxHeight: '260px',
+              overflowY: 'auto',
+            }}
+          >
+            {filteredSites.length === 0 && filteredReadings.length === 0 ? (
+              <div style={{ padding: '12px 16px', color: '#64748B', fontSize: '13px', textAlign: 'center' }}>
+                No sites or readings matching "{searchText}"
+              </div>
+            ) : (
+              <>
+                {filteredSites.map((s) => (
+                  <div
+                    key={`search_site_${s.id}`}
+                    onClick={() => {
+                      setMapCenter({ lat: s.latitude, lng: s.longitude, zoom: 17 });
+                      closeBottomSheet();
+                      setSelectedSite(s);
+                      setSearchText('');
+                    }}
+                    style={{
+                      padding: '10px 14px',
+                      borderBottom: '1px solid #F1F5F9',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '14px', color: '#0F3C5C' }}>
+                        📍 {s.site_name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748B' }}>
+                        {s.site_code} • {s.address || 'Manolo Fortich'}
+                      </div>
+                    </div>
+                    <IonBadge color="primary" style={{ fontSize: '11px' }}>
+                      {s.site_type || 'Site'}
+                    </IonBadge>
+                  </div>
+                ))}
+                {filteredReadings.map((r) => (
+                  <div
+                    key={`search_reading_${r.id}`}
+                    onClick={() => {
+                      setMapCenter({ lat: r.latitude, lng: r.longitude, zoom: 17 });
+                      closeBottomSheet();
+                      setSelectedReading(r);
+                      setSearchText('');
+                    }}
+                    style={{
+                      padding: '10px 14px',
+                      borderBottom: '1px solid #F1F5F9',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '14px', color: getAmmoniaColor(r.ammonia) }}>
+                        💨 {r.ammonia.toFixed(1)} PPM
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748B' }}>
+                        Device: {r.device_uid || 'N/A'}
+                      </div>
+                    </div>
+                    <IonBadge style={{ background: getAmmoniaColor(r.ammonia), color: '#ffffff', fontSize: '11px' }}>
+                      {getAmmoniaSeverityLabel(r.ammonia)}
+                    </IonBadge>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Map Canvas */}
         {loading ? (
