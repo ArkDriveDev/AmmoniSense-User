@@ -108,7 +108,17 @@ class SyncService {
 
     try {
       const queue = await offlineStorage.getQueue();
-      const pendingItems = queue.filter((item) => item.status !== 'failed' || item.retryCount < 3);
+      const typeOrder: Record<string, number> = {
+        'SITE_REGISTRATION': 1,
+        'INSPECTION_SCHEDULE': 2,
+        'INSPECTION_TAG': 3,
+        'SENSOR_READING': 4,
+        'DEVICE_TAG': 5,
+      };
+
+      const pendingItems = queue
+        .filter((item) => item.status !== 'failed' || item.retryCount < 3)
+        .sort((a, b) => (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99));
 
       if (pendingItems.length === 0) {
         this.isSyncing = false;
@@ -255,11 +265,37 @@ class SyncService {
   }
 
   private async syncSiteRegistration(item: QueueItem): Promise<void> {
-    // Delegate to registerSiteWithPhoto which writes to inspection_sites (renamed from monitoring_sites)
+    let regResult: any = null;
     try {
-      await registerSiteWithPhoto(item.payload);
+      regResult = await registerSiteWithPhoto(item.payload);
     } catch (error: any) {
       throw new Error(`inspection_sites insert error: ${error.message}`);
+    }
+
+    const tempId = item.payload?.temp_id || item.payload?.id;
+    const realSiteId = regResult?.site?.id;
+
+    if (tempId && realSiteId) {
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        map[tempId] = realSiteId;
+        if (item.payload.site_code) map[item.payload.site_code] = realSiteId;
+        localStorage.setItem('tempIdMap', JSON.stringify(map));
+      } catch (e) {
+        console.warn('[SyncService] Could not save site tempIdMap:', e);
+      }
+
+      try {
+        const allItems = await offlineStorage.getQueue();
+        for (const qi of allItems) {
+          if (qi.payload?.inspection_site_id === tempId) {
+            qi.payload.inspection_site_id = realSiteId;
+            await offlineStorage.updateQueueItemPayload(qi.id, qi.payload);
+          }
+        }
+      } catch (e) {
+        console.warn('[SyncService] Could not patch queued items with real site ID:', e);
+      }
     }
     // Delete local OfflineSite record from IndexedDB & localStorage once synced to Supabase
     if (item.payload?.temp_id || item.payload?.id) {
@@ -289,6 +325,32 @@ class SyncService {
 
   private async syncInspectionSchedule(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
+
+    // Resolve temp site ID → real BIGINT id before inserting
+    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
+      const tempSiteId = payload.inspection_site_id;
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        if (map[tempSiteId]) payload.inspection_site_id = map[tempSiteId];
+      } catch { /* ignore */ }
+
+      if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
+        const { data: site } = await supabase
+          .from('inspection_sites')
+          .select('id')
+          .or(`site_code.eq.${tempSiteId},site_name.eq.${tempSiteId}`)
+          .maybeSingle();
+        if (site?.id) {
+          payload.inspection_site_id = site.id;
+          try {
+            const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+            map[tempSiteId] = site.id;
+            localStorage.setItem('tempIdMap', JSON.stringify(map));
+          } catch { /* ignore */ }
+        }
+      }
+    }
+
     const { data: user } = await supabase.auth.getUser();
 
     const { data: inserted, error } = await supabase
@@ -329,6 +391,15 @@ class SyncService {
   private async syncInspectionTag(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
     if (payload.device_uid) await this.ensureDeviceExists(payload.device_uid);
+
+    // Resolve temp site ID if present
+    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
+      const tempSiteId = payload.inspection_site_id;
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        if (map[tempSiteId]) payload.inspection_site_id = map[tempSiteId];
+      } catch { /* ignore */ }
+    }
 
     // Resolve temp schedule ID → real BIGINT id before inserting
     if (typeof payload.inspection_schedule_id === 'string'
