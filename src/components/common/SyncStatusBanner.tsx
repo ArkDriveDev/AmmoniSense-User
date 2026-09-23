@@ -26,10 +26,10 @@ export const SyncStatusBanner: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleManualSync = async () => {
+  const handleResync = async () => {
     if (!isOnline || syncing) return;
     setSyncing(true);
-    await syncService.syncAll();
+    await syncService.resync();
     setSyncing(false);
   };
 
@@ -85,25 +85,28 @@ export const SyncStatusBanner: React.FC = () => {
           : syncing
           ? statusMsg || 'Syncing...'
           : pendingCount > 0
-          ? `${pendingCount} item${pendingCount > 1 ? 's' : ''} queued`
+          ? `${pendingCount} queued`
           : 'Online'}
       </span>
 
-      {isOnline && pendingCount > 0 && !syncing && (
+      {isOnline && !syncing && (
         <IonButton
           fill="clear"
           size="small"
-          onClick={handleManualSync}
+          onClick={handleResync}
           style={{
-            height: '20px',
-            fontSize: '10px',
-            margin: 0,
-            padding: 0,
-            '--color': '#854d0e',
-            fontWeight: 'bold',
+            height: '22px',
+            fontSize: '11px',
+            margin: '0 0 0 2px',
+            padding: '0 4px',
+            '--color': pendingCount > 0 ? '#854d0e' : '#15803d',
+            fontWeight: 700,
+            textTransform: 'none',
           }}
+          title="Trigger re-sync"
         >
-          Sync Now
+          <IonIcon icon={syncOutline} slot="start" style={{ fontSize: '13px', marginRight: '3px' }} />
+          {pendingCount > 0 ? `Sync (${pendingCount})` : 'Re-sync'}
         </IonButton>
       )}
 
