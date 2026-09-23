@@ -162,18 +162,50 @@ class SyncService {
       }
     }
 
-    // 2. Insert into sensor_data table
-    const { data: inserted, error } = await supabase
+    // 2. Ensure device exists in devices table before inserting sensor_data
+    const deviceUid = payload.device_uid || 'ESP32-AMMONIA-NODE-01';
+    await this.ensureDeviceExists(deviceUid);
+
+    // 3. Insert into sensor_data table (with cascading schema-resilient retries)
+    let { data: inserted, error } = await supabase
       .from('sensor_data')
-      .insert([payload])
+      .insert([{ ...payload, device_uid: deviceUid }])
       .select('id')
-      .single();
+      .maybeSingle();
+
+    // Retry without inspection_photo_id if FK violation
+    if (error && (error.message?.includes('inspection_photo') || error.code === '23503')) {
+      const retryPayload = { ...payload, device_uid: deviceUid, inspection_photo_id: null };
+      const { data: r2, error: e2 } = await supabase
+        .from('sensor_data')
+        .insert([retryPayload])
+        .select('id')
+        .maybeSingle();
+      if (!e2 && r2) { inserted = r2; error = null; }
+      else if (e2) { error = e2; }
+    }
+
+    // Retry without inspection_site_id if column missing from schema cache
+    if (error && (
+      error.message?.includes('inspection_site_id') ||
+      error.code === '42703' ||
+      error.code === 'PGRST204'
+    )) {
+      const { inspection_site_id: _s, inspection_photo_id: _p, ...minPayload } = payload;
+      const { data: r3, error: e3 } = await supabase
+        .from('sensor_data')
+        .insert([{ ...minPayload, device_uid: deviceUid }])
+        .select('id')
+        .maybeSingle();
+      if (!e3 && r3) { inserted = r3; error = null; }
+      else if (e3) { error = e3; }
+    }
 
     if (error) {
       throw new Error(`sensor_data insert error: ${error.message}`);
     }
 
-    // 3. Mark photo as used in inspection_photos table if payload has photo_url
+    // 4. Mark photo as used in inspection_photos table if payload has photo_url
     if (payload.photo_url && inserted?.id) {
       try {
         await supabase
@@ -219,6 +251,61 @@ class SyncService {
     }
   }
 
+  /**
+   * Ensure a device exists in the devices table.
+   * - If it already exists: update last_seen_at.
+   * - If it doesn't: auto-register it with minimal fields.
+   */
+  private async ensureDeviceExists(deviceUid: string): Promise<void> {
+    try {
+      const { data: existing } = await supabase
+        .from('devices')
+        .select('device_uid')
+        .eq('device_uid', deviceUid)
+        .maybeSingle();
+
+      if (existing) {
+        // Device found — just refresh last_seen_at
+        await supabase
+          .from('devices')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('device_uid', deviceUid);
+        return;
+      }
+
+      // Device not found — auto-register with available columns
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
+      const now = new Date().toISOString();
+
+      let { error } = await supabase.from('devices').insert({
+        device_uid: deviceUid,
+        device_name: `Sensor ${deviceUid.slice(-6)}`,
+        status: 'ACTIVE',
+        first_seen_at: now,
+        last_seen_at: now,
+        created_by: userId,
+      });
+
+      // Fallback: minimal insert if extended columns don't exist yet
+      if (error) {
+        const { error: fbErr } = await supabase.from('devices').insert({
+          device_uid: deviceUid,
+          status: 'ACTIVE',
+        });
+        if (fbErr) {
+          console.warn('[SyncService] Device auto-register notice:', fbErr.message);
+        }
+      } else {
+        console.log('[SyncService] ✅ Device auto-registered:', deviceUid);
+      }
+    } catch (err: any) {
+      // Non-fatal: log and continue — sensor_data insert may still succeed if device was
+      // registered by another concurrent request.
+      console.warn('[SyncService] ensureDeviceExists notice:', err?.message);
+    }
+  }
+
   private async uploadDataUrlToSupabase(dataUrl: string): Promise<string | null> {
     try {
       const res = await fetch(dataUrl);
@@ -228,21 +315,21 @@ class SyncService {
       const filePath = `user_submissions/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('inspection-photos')
+        .from('sensor-photos')
         .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
 
       if (uploadError) {
-        console.error('Supabase storage upload error:', uploadError);
+        console.error('[SyncService] Storage upload error:', uploadError.message);
         return null;
       }
 
       const { data: urlData } = supabase.storage
-        .from('inspection-photos')
+        .from('sensor-photos')
         .getPublicUrl(filePath);
 
       return urlData?.publicUrl || null;
     } catch (err) {
-      console.error('Error uploading photo blob to Supabase:', err);
+      console.error('[SyncService] Error uploading photo blob:', err);
       return null;
     }
   }
