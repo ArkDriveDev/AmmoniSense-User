@@ -143,6 +143,14 @@ class SyncService {
         await this.syncDeviceTag(item);
         break;
 
+      case 'INSPECTION_SCHEDULE':
+        await this.syncInspectionSchedule(item);
+        break;
+
+      case 'INSPECTION_TAG':
+        await this.syncInspectionTag(item);
+        break;
+
       default:
         throw new Error(`Unknown queue item type: ${item.type}`);
     }
@@ -249,6 +257,32 @@ class SyncService {
     if (error) {
       throw new Error(`devices insert error: ${error.message}`);
     }
+  }
+
+  private async syncInspectionSchedule(item: QueueItem): Promise<void> {
+    const { temp_id, ...payload } = item.payload;
+    const { data: user } = await supabase.auth.getUser();
+    const { error } = await supabase.from('inspection_schedules').insert([{ ...payload, created_by: user.user?.id }]);
+    if (error) throw new Error(`inspection_schedules insert error: ${error.message}`);
+    if (temp_id) offlineStorage.removeOfflineSchedule(temp_id);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
+  }
+
+  private async syncInspectionTag(item: QueueItem): Promise<void> {
+    const { temp_id, ...payload } = item.payload;
+    if (payload.device_uid) await this.ensureDeviceExists(payload.device_uid);
+    if (item.photoStoreId && !payload.photo_url) {
+      const stored = await offlineStorage.getPhoto(item.photoStoreId);
+      if (stored?.dataUrl) {
+        const pUrl = await this.uploadDataUrlToSupabase(stored.dataUrl);
+        if (pUrl) payload.photo_url = pUrl;
+      }
+    }
+    const { data: user } = await supabase.auth.getUser();
+    const { error } = await supabase.from('inspection_tags').insert([{ ...payload, created_by: user.user?.id }]);
+    if (error) throw new Error(`inspection_tags insert error: ${error.message}`);
+    if (temp_id) offlineStorage.removeOfflineTag(temp_id);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
   }
 
   /**
