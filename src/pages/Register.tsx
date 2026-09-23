@@ -131,24 +131,6 @@ const Register: React.FC = () => {
         throw new Error('Profile creation failed: ' + profileError.message);
       }
 
-      // ============================================
-      // STEP 3: Upsert site_owner (INSERT OR UPDATE)
-      // ============================================
-      const { error: ownerError } = await supabase
-        .from('site_owners')
-        .upsert({
-          owner_name: form.full_name,
-          email: form.email,
-          contact_number: form.phone || null,
-          created_by: user.id
-        }, {
-          onConflict: 'email'
-        });
-
-      if (ownerError) {
-        console.warn('site_owners update notice:', ownerError.message);
-      }
-
       setShowSuccessModal(true);
 
     } catch (err) {
