@@ -32,9 +32,7 @@ import { supabase } from '../../services/supabase';
 import CreateSiteModal from '../sites/CreateSiteModal';
 import offlineStorage, { SENSOR_DRAFT_KEY } from '../../services/OfflineStorageService';
 import syncService from '../../services/SyncService';
-import { fetchOdorZones } from '../../services/siteService';
-import { OdorZone } from '../../types/site';
-import { findOdorZoneForPoint } from '../../utils/spatialUtils';
+
 import {
   InspectionPhotoRecord,
   step1_takeAndUploadPhoto,
@@ -72,7 +70,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [selectedSite, setSelectedSite] = useState<MonitoringSite | null>(null);
   const [devices, setDevices] = useState<{ id: number; device_uid: string }[]>([]);
   const [selectedDeviceUid, setSelectedDeviceUid] = useState<string>('');
-  const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
 
   // 3-Step State (No Grid Cells)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -105,7 +102,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
   useEffect(() => {
     fetchSites();
-    fetchOdorZones().then((zones) => setOdorZones(zones)).catch((e) => console.warn('Could not load odor zones:', e));
 
     // Check for draft BLE Central reading from UserBLESensor page
     const draftBLE = offlineStorage.getDraft<BLECentralReading>('draft_ble_central_reading');
@@ -340,10 +336,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       if (ammoniaNum > 70) status = 'HIGH';
       else if (ammoniaNum > 40) status = 'MODERATE';
 
-      // Auto-assign odor_zone_id using Turf point-in-polygon
-      const matchedZone = findOdorZoneForPoint(cellLat, cellLng, odorZones);
-      const odorZoneId = matchedZone?.id ? Number(matchedZone.id) : null;
-
       const targetDevice = selectedDeviceUid || 'ESP32-AMMONIA-NODE-01';
 
       // Ensure device is registered in Supabase devices table
@@ -376,7 +368,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         submitted_by: userId,
         photo_url: photoRecord?.photo_url || null,
         inspection_photo_id: validPhotoId,
-        odor_zone_id: odorZoneId,
         inspection_site_id: numericSiteId,
       };
 
@@ -440,8 +431,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         await step4_markPhotoAsUsed(validPhotoId, sensorDataId);
       }
 
-      const zoneMsg = matchedZone ? ` (Linked to Odor Zone: ${matchedZone.zone_name})` : '';
-      setToastMsg(`🎉 Inspection Success! Reading submitted${zoneMsg}!`);
+      setToastMsg(`🎉 Inspection Success! Reading submitted!`);
       setToastColor('success');
       setShowToast(true);
       offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
@@ -458,8 +448,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         photoStoreId = await offlineStorage.savePhoto(photoRecord.dataUrl);
       }
 
-      const matchedZone = findOdorZoneForPoint(cellLat, cellLng, odorZones);
-      const odorZoneId = matchedZone?.id ? Number(matchedZone.id) : null;
 
       await offlineStorage.enqueueItem('SENSOR_READING', {
         device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
@@ -471,13 +459,11 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         latitude: cellLat,
         longitude: cellLng,
         photo_url: photoRecord?.photo_url || null,
-        odor_zone_id: odorZoneId,
       }, photoStoreId);
 
       offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
 
-      const zoneMsg = matchedZone ? ` [Odor Zone: ${matchedZone.zone_name}]` : '';
-      setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync${zoneMsg}!`);
+      setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync!`);
       setToastColor('warning');
       setShowToast(true);
 
