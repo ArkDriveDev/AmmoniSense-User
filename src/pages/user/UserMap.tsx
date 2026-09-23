@@ -98,6 +98,7 @@ export default function UserMap() {
     loadMapData();
 
     const handleSyncOrDelete = () => {
+      closeBottomSheet();
       loadMapData();
     };
 
@@ -116,13 +117,16 @@ export default function UserMap() {
 
   const loadMapData = async () => {
     setLoading(true);
-    await Promise.all([
-      fetchSites(),
-      fetchReadings(),
-      fetchPhotoTags(),
-      loadPolygons()
-    ]);
-    setLoading(false);
+    try {
+      const loadedSites = await fetchSites();
+      await Promise.all([
+        fetchReadings(loadedSites),
+        fetchPhotoTags(loadedSites),
+        loadPolygons()
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadPolygons = async () => {
@@ -303,9 +307,13 @@ export default function UserMap() {
     const finalSites = Array.from(combinedMap.values());
     console.log('📍 Total sites loaded for map display:', finalSites.length, finalSites);
     setSites(finalSites);
+    return finalSites;
   };
 
-  const fetchReadings = async () => {
+  const fetchReadings = async (currentSites?: SiteMarkerData[]) => {
+    const validSites = currentSites || sites;
+    const validSiteIds = new Set(validSites.map((s) => String(s.id)));
+
     let serverReadings: ReadingMarkerData[] = [];
     try {
       const { data, error } = await supabase
@@ -339,7 +347,13 @@ export default function UserMap() {
     try {
       const queue = await offlineStorage.getQueue();
       const offlineReadings: ReadingMarkerData[] = queue
-        .filter((q) => q.type === 'SENSOR_READING')
+        .filter((q) => {
+          if (q.type !== 'SENSOR_READING') return false;
+          const p = q.payload;
+          if (p?.site_id && !validSiteIds.has(String(p.site_id))) return false;
+          if (p?.temp_id && !validSiteIds.has(String(p.temp_id))) return false;
+          return true;
+        })
         .map((q) => ({
           id: q.id,
           ammonia: q.payload.ammonia || 0,
@@ -363,7 +377,10 @@ export default function UserMap() {
     }
   };
 
-  const fetchPhotoTags = async () => {
+  const fetchPhotoTags = async (currentSites?: SiteMarkerData[]) => {
+    const validSites = currentSites || sites;
+    const validSiteIds = new Set(validSites.map((s) => String(s.id)));
+
     let serverPhotoTags: PhotoTagMarkerData[] = [];
     try {
       const { data, error } = await supabase
@@ -374,9 +391,14 @@ export default function UserMap() {
 
       if (!error && data) {
         serverPhotoTags = data
+          .filter((p: any) => {
+            const sid = p.inspection_site_id || p.site_id;
+            if (sid && !validSiteIds.has(String(sid))) return false;
+            return true;
+          })
           .map((p: any) => {
             const sid = p.inspection_site_id || p.site_id;
-            const matchedSite = sites.find((s) => s.id === sid);
+            const matchedSite = validSites.find((s) => String(s.id) === String(sid));
             return {
               id: p.id,
               latitude: p.latitude || 8.3683,
@@ -399,7 +421,12 @@ export default function UserMap() {
     try {
       const queue = await offlineStorage.getQueue();
       const offlinePhotoTags: PhotoTagMarkerData[] = queue
-        .filter((q) => q.type === 'SENSOR_READING' && q.payload?.photo_url)
+        .filter((q) => {
+          if (q.type !== 'SENSOR_READING' || !q.payload?.photo_url) return false;
+          if (q.payload?.site_id && !validSiteIds.has(String(q.payload.site_id))) return false;
+          if (q.payload?.temp_id && !validSiteIds.has(String(q.payload.temp_id))) return false;
+          return true;
+        })
         .map((q) => ({
           id: q.id,
           latitude: q.payload.latitude || 8.3683,
