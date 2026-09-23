@@ -30,7 +30,7 @@ import {
 
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
-import { fetchOdorZones, deleteSite } from '../../services/siteService';
+import { fetchOdorZones, deleteSite, deleteReading } from '../../services/siteService';
 import { OdorZone } from '../../types/site';
 import FullMapView, {
   SiteMarkerData,
@@ -511,6 +511,21 @@ export default function UserMap() {
     }
   };
 
+  const handleDeleteReading = async (readingId: string | number) => {
+    if (window.confirm('Are you sure you want to delete this sensor reading from the map?')) {
+      try {
+        await deleteReading(readingId);
+        closeBottomSheet();
+        setToastMsg('Sensor reading removed from map.');
+        setShowToast(true);
+        await loadMapData();
+      } catch (err: any) {
+        setToastMsg(err.message || 'Failed to delete reading.');
+        setShowToast(true);
+      }
+    }
+  };
+
   const closeBottomSheet = () => {
     setSelectedSite(null);
     setSelectedReading(null);
@@ -808,15 +823,26 @@ export default function UserMap() {
                   </div>
                 </div>
 
-                {selectedReading.photo_url && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {selectedReading.photo_url && (
+                    <IonButton
+                      expand="block"
+                      fill="outline"
+                      style={{ flex: 1 }}
+                      onClick={() => setShowPhotoModal(true)}
+                    >
+                      <IonIcon icon={eyeOutline} slot="start" /> View Photo
+                    </IonButton>
+                  )}
                   <IonButton
                     expand="block"
+                    color="danger"
                     fill="outline"
-                    onClick={() => setShowPhotoModal(true)}
+                    onClick={() => handleDeleteReading(selectedReading.id)}
                   >
-                    <IonIcon icon={eyeOutline} slot="start" /> View Inspection Photo
+                    <IonIcon icon={trashOutline} slot="icon-only" />
                   </IonButton>
-                )}
+                </div>
               </div>
             )}
 
