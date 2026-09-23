@@ -27,6 +27,7 @@ import SyncStatusBanner from '../components/common/SyncStatusBanner';
 import {
   homeOutline,
   businessOutline,
+  calendarOutline,
   hardwareChipOutline,
   barChartOutline,
   logOutOutline,
@@ -185,6 +186,18 @@ export default function UserLayout({ children }: any) {
               >
                 <IonIcon icon={businessOutline} slot="start" color={isActive('/inspection-sites') || isActive('/my-piggeries') ? 'light' : 'primary'} />
                 <IonLabel>Inspection Sites</IonLabel>
+              </IonItem>
+            </IonMenuToggle>
+
+            <IonMenuToggle menu="user-menu" autoHide={false}>
+              <IonItem
+                button
+                onClick={() => handleNavigate('/schedules')}
+                color={location.pathname.startsWith('/schedules') ? 'primary' : undefined}
+                style={location.pathname.startsWith('/schedules') ? { borderLeft: '4px solid #1D5D9B', fontWeight: 'bold' } : {}}
+              >
+                <IonIcon icon={calendarOutline} slot="start" color={location.pathname.startsWith('/schedules') ? 'light' : 'primary'} />
+                <IonLabel>Schedules</IonLabel>
               </IonItem>
             </IonMenuToggle>
 
