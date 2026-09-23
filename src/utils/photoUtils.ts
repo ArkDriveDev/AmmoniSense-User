@@ -13,8 +13,8 @@ export interface InspectionPhotoRecord {
   is_used: boolean;
   is_site_photo?: boolean;
   sensor_data_id: number | null;
-  uploaded_by: string | null;
-  uploaded_at: string;
+  captured_by: string | null;
+  captured_at: string;
   dataUrl?: string;
 }
 
@@ -332,36 +332,21 @@ export const step1_takeAndUploadPhoto = async (
     is_used: false,
   };
 
-  // Try with uploaded_by if user is logged in
-  if (userId) {
-    const res1 = await supabase
-      .from('inspection_photos')
-      .insert([{ ...basePhotoPayload, uploaded_by: userId }])
-      .select('*')
-      .maybeSingle();
+  // Insert with captured_by (correct column name per inspection_photos schema)
+  const res = await supabase
+    .from('inspection_photos')
+    .insert([{ ...basePhotoPayload, captured_by: userId }])
+    .select('*')
+    .maybeSingle();
 
-    if (!res1.error && res1.data) {
-      inserted = res1.data;
-    }
-  }
-
-  // If not inserted yet, try without uploaded_by
-  if (!inserted) {
-    const res2 = await supabase
-      .from('inspection_photos')
-      .insert([basePhotoPayload])
-      .select('*')
-      .maybeSingle();
-
-    if (!res2.error && res2.data) {
-      inserted = res2.data;
-    } else {
-      dbError = res2.error;
-    }
-  }
-
-  if (dbError || !inserted) {
+  if (!res.error && res.data) {
+    inserted = res.data;
+  } else {
+    dbError = res.error;
     console.warn('Fallback: inspection_photos table write notice:', dbError?.message);
+  }
+
+  if (!inserted) {
     return {
       id: null,
       photo_url: photoUrlToSave,
@@ -370,8 +355,8 @@ export const step1_takeAndUploadPhoto = async (
       inspection_site_id: numericSiteId,
       is_used: false,
       sensor_data_id: null,
-      uploaded_by: userId,
-      uploaded_at: new Date().toISOString(),
+      captured_by: userId,
+      captured_at: new Date().toISOString(),
       dataUrl: finalDataUrl,
     };
   }
@@ -512,7 +497,7 @@ export const captureSitePhoto = async (
         longitude,
         is_used: true,
         is_site_photo: true,
-        uploaded_by: userId,
+        captured_by: userId,
       },
     ])
     .select('*')
@@ -528,8 +513,8 @@ export const captureSitePhoto = async (
         is_used: true,
         is_site_photo: true,
         sensor_data_id: null,
-        uploaded_by: userId,
-        uploaded_at: new Date().toISOString(),
+        captured_by: userId,
+        captured_at: new Date().toISOString(),
         dataUrl: finalDataUrl,
       }
     : {
