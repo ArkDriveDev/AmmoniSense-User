@@ -216,6 +216,28 @@ class OfflineStorageService {
     });
   }
 
+  async updateQueueItemPayload(id: string, payload: any): Promise<void> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+      const store = tx.objectStore(QUEUE_STORE);
+      const getReq = store.get(id);
+
+      getReq.onsuccess = () => {
+        const item: QueueItem = getReq.result;
+        if (item) {
+          item.payload = payload;
+          const putReq = store.put(item);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        } else {
+          resolve();
+        }
+      };
+      getReq.onerror = () => reject(getReq.error);
+    });
+  }
+
   // ==========================================
   // INDEXEDDB PHOTO HELPERS
   // ==========================================
