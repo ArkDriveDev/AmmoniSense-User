@@ -767,7 +767,7 @@ export default function UserMap() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                   <div>
-                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Sensor Reading Detail</span>
+                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>{selectedReading.tag_name || 'Inspection Tag Reading'}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                       <span
                         style={{
@@ -812,6 +812,13 @@ export default function UserMap() {
                     <strong style={{ color: '#0f172a' }}>{new Date(selectedReading.created_at).toLocaleString()}</strong>
                   </div>
                 </div>
+
+                {selectedReading.notes && (
+                  <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', marginBottom: '14px', fontSize: '12px', color: '#475569' }}>
+                    <span style={{ fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '2px' }}>NOTES</span>
+                    {selectedReading.notes}
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '10px' }}>
                   {selectedReading.photo_url && (
@@ -894,7 +901,7 @@ export default function UserMap() {
                     style={{ flex: 1 }}
                     onClick={() => {
                       closeBottomSheet();
-                      navigate('/my-sensor-data');
+                      navigate('/schedules');
                     }}
                   >
                     Complete Inspection ➔
