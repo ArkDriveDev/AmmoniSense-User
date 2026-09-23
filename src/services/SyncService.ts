@@ -390,7 +390,26 @@ class SyncService {
 
   private async syncInspectionTag(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
-    if (payload.device_uid) await this.ensureDeviceExists(payload.device_uid);
+
+    // Ensure device is registered — if it can't be, null out device_uid to avoid FK violation
+    if (payload.device_uid) {
+      try {
+        await this.ensureDeviceExists(payload.device_uid);
+        // Verify the device row actually exists before using the FK
+        const { data: devCheck } = await supabase
+          .from('devices')
+          .select('device_uid')
+          .eq('device_uid', payload.device_uid)
+          .maybeSingle();
+        if (!devCheck) {
+          console.warn(`[SyncService] Device "${payload.device_uid}" not found after ensure — dropping FK to avoid constraint error.`);
+          payload.device_uid = null;
+        }
+      } catch (e) {
+        console.warn('[SyncService] ensureDeviceExists failed — nulling device_uid for safe insert:', e);
+        payload.device_uid = null;
+      }
+    }
 
     // Resolve temp site ID if present
     if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
@@ -453,7 +472,20 @@ class SyncService {
     }
 
     const { data: user } = await supabase.auth.getUser();
-    const { error } = await supabase.from('inspection_tags').insert([{ ...payload, created_by: user.user?.id }]);
+    let { error } = await supabase
+      .from('inspection_tags')
+      .insert([{ ...payload, created_by: user.user?.id }]);
+
+    // Retry without device_uid if FK constraint fires
+    if (error && (error.code === '23503' || error.message?.includes('fk_inspection_tags_device') || error.message?.includes('device_uid'))) {
+      console.warn('[SyncService] inspection_tags FK on device_uid — retrying without device_uid.');
+      const { device_uid: _dropped, ...safePayload } = payload;
+      const { error: retryErr } = await supabase
+        .from('inspection_tags')
+        .insert([{ ...safePayload, device_uid: null, created_by: user.user?.id }]);
+      error = retryErr ?? null;
+    }
+
     if (error) throw new Error(`inspection_tags insert error: ${error.message}`);
     if (temp_id) offlineStorage.removeOfflineTag(temp_id);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
