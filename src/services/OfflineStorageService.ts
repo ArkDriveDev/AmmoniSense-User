@@ -5,7 +5,7 @@ import { OfflineSite } from '../types/site';
 
 export interface QueueItem {
   id: string;
-  type: 'SENSOR_READING' | 'SITE_REGISTRATION' | 'DEVICE_TAG';
+  type: 'SENSOR_READING' | 'SITE_REGISTRATION' | 'DEVICE_TAG' | 'INSPECTION_SCHEDULE' | 'INSPECTION_TAG';
   payload: any;
   photoStoreId?: string;
   timestamp: string;
@@ -387,6 +387,42 @@ class OfflineStorageService {
     } catch (lsErr) {
       console.warn('Error removing site from localStorage offline_sites:', lsErr);
     }
+  }
+
+  public getOfflineSchedules(): any[] {
+    try {
+      const data = localStorage.getItem('offline_inspection_schedules');
+      return data ? JSON.parse(data) : [];
+    } catch { return []; }
+  }
+
+  public saveOfflineSchedule(schedule: any): void {
+    const list = this.getOfflineSchedules().filter((s: any) => s.id !== schedule.id);
+    list.unshift(schedule);
+    localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
+  }
+
+  public removeOfflineSchedule(id: string | number): void {
+    const list = this.getOfflineSchedules().filter((s: any) => String(s.id) !== String(id));
+    localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
+  }
+
+  public getOfflineTags(): any[] {
+    try {
+      const data = localStorage.getItem('offline_inspection_tags');
+      return data ? JSON.parse(data) : [];
+    } catch { return []; }
+  }
+
+  public saveOfflineTag(tag: any): void {
+    const list = this.getOfflineTags().filter((t: any) => t.id !== tag.id);
+    list.unshift(tag);
+    localStorage.setItem('offline_inspection_tags', JSON.stringify(list));
+  }
+
+  public removeOfflineTag(id: string | number): void {
+    const list = this.getOfflineTags().filter((t: any) => String(t.id) !== String(id));
+    localStorage.setItem('offline_inspection_tags', JSON.stringify(list));
   }
 }
 
