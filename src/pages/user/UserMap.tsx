@@ -555,38 +555,26 @@ export default function UserMap() {
             </IonButton>
           </IonButtons>
         </IonToolbar>
+        <IonToolbar style={{ '--background': '#0F3C5C', padding: '0 8px 6px 8px' }}>
+          <IonSearchbar
+            value={searchText}
+            onIonInput={(e) => setSearchText(e.detail.value || '')}
+            placeholder="Search site name, code, address, or PPM..."
+            showClearButton="always"
+            style={{
+              '--background': 'rgba(255, 255, 255, 0.95)',
+              '--color': '#0F172A',
+              '--placeholder-color': '#64748B',
+              '--icon-color': '#0F3C5C',
+              '--border-radius': '12px',
+              padding: '0 4px',
+            }}
+          />
+        </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen style={{ '--overflow': 'hidden', position: 'relative', width: '100%', height: '100%' }}>
-        {/* Floating Top Search Bar */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            right: '12px',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '16px',
-              boxShadow: '0 4px 20px rgba(15, 60, 92, 0.18)',
-              padding: '2px 8px',
-              border: '1px solid rgba(226, 232, 240, 0.8)',
-            }}
-          >
-            <IonSearchbar
-              value={searchText}
-              onIonInput={(e) => setSearchText(e.detail.value!)}
-              placeholder="Search site name, code, or address..."
-              showClearButton="always"
-              style={{ '--background': 'transparent', '--box-shadow': 'none', padding: 0 }}
-            />
-          </div>
-        </div>
+
 
         {/* Map Canvas */}
         {loading ? (
