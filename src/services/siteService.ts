@@ -146,7 +146,7 @@ export const registerSiteWithPhoto = async (
         };
         let { data: newPhoto, error: photoErr } = await supabase
           .from('inspection_photos')
-          .insert([{ ...photoData, uploaded_by: user.id }])
+          .insert([{ ...photoData, captured_by: user.id }])
           .select('*')
           .maybeSingle();
 
