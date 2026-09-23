@@ -19,34 +19,59 @@ export const registerSiteWithPhoto = async (
   let photoRecord: any = null;
 
   try {
-    // 1. Get or upsert site_owner by email
+    // 1. Get or upsert site_owner by created_by or email
     const ownerEmail = payload.owner_email || user.email || `inspector_${user.id.slice(0, 6)}@menro.gov.ph`;
     const ownerName = payload.owner_name || user.user_metadata?.full_name || user.email || 'Inspector Owner';
 
-    const { data: existingOwners } = await supabase
+    // First try querying existing owner by creator ID
+    const { data: ownersByCreator } = await supabase
       .from('site_owners')
       .select('*')
-      .eq('email', ownerEmail);
+      .eq('created_by', user.id);
 
-    if (existingOwners && existingOwners.length > 0) {
-      createdOwner = existingOwners[0];
+    if (ownersByCreator && ownersByCreator.length > 0) {
+      createdOwner = ownersByCreator[0];
     } else {
-      const { data: newOwner, error: ownerErr } = await supabase
-        .from('site_owners')
-        .insert([
-          {
-            owner_name: ownerName,
-            email: ownerEmail,
-            created_by: user.id,
-          },
-        ])
-        .select('*')
-        .single();
-
-      if (ownerErr || !newOwner) {
-        throw new Error('Failed to create site owner record: ' + (ownerErr?.message || 'Error'));
+      // If none found by creator, try querying by email (if column exists)
+      let matchedOwner: any = null;
+      try {
+        const { data: ownersByEmail } = await supabase
+          .from('site_owners')
+          .select('*')
+          .eq('email', ownerEmail);
+        if (ownersByEmail && ownersByEmail.length > 0) {
+          matchedOwner = ownersByEmail[0];
+        }
+      } catch {
+        // Schema cache might not have email column yet
       }
-      createdOwner = newOwner;
+
+      if (matchedOwner) {
+        createdOwner = matchedOwner;
+      } else {
+        // Attempt insert with email first
+        let { data: newOwner, error: ownerErr } = await supabase
+          .from('site_owners')
+          .insert([{ owner_name: ownerName, email: ownerEmail, created_by: user.id }])
+          .select('*')
+          .maybeSingle();
+
+        // If email column doesn't exist, retry insert without email
+        if (ownerErr && (ownerErr.message?.includes('email') || ownerErr.code === '42703' || ownerErr.code === 'PGRST204')) {
+          const { data: retryOwner, error: retryErr } = await supabase
+            .from('site_owners')
+            .insert([{ owner_name: ownerName, created_by: user.id }])
+            .select('*')
+            .maybeSingle();
+          newOwner = retryOwner;
+          ownerErr = retryErr;
+        }
+
+        if (ownerErr || !newOwner) {
+          throw new Error('Failed to create site owner record: ' + (ownerErr?.message || 'Error'));
+        }
+        createdOwner = newOwner;
+      }
     }
 
     // 2. Insert into inspection_sites (no grid cells)
@@ -112,21 +137,28 @@ export const registerSiteWithPhoto = async (
           .single();
         photoRecord = updatedPhoto;
       } else if (payload.photo_url) {
-        const { data: newPhoto } = await supabase
+        const photoData: any = {
+          photo_url: payload.photo_url,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          inspection_site_id: createdSite.id,
+          is_site_photo: true,
+          is_used: true,
+        };
+        let { data: newPhoto, error: photoErr } = await supabase
           .from('inspection_photos')
-          .insert([
-            {
-              photo_url: payload.photo_url,
-              latitude: payload.latitude,
-              longitude: payload.longitude,
-              inspection_site_id: createdSite.id,
-              is_site_photo: true,
-              is_used: true,
-              uploaded_by: user.id,
-            },
-          ])
+          .insert([{ ...photoData, uploaded_by: user.id }])
           .select('*')
-          .single();
+          .maybeSingle();
+
+        if (photoErr) {
+          const { data: retryPhoto } = await supabase
+            .from('inspection_photos')
+            .insert([photoData])
+            .select('*')
+            .maybeSingle();
+          newPhoto = retryPhoto;
+        }
         photoRecord = newPhoto;
       }
 
