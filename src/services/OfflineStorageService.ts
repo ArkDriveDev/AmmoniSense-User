@@ -323,14 +323,31 @@ class OfflineStorageService {
       console.warn('IndexedDB deleteOfflineSite notice:', e);
     }
 
-    // 2. Purge queued SITE_REGISTRATION items matching this ID from IndexedDB QUEUE_STORE
+    // 2. Purge queued SITE_REGISTRATION and SENSOR_READING items matching this ID
     try {
       const queue = await this.getQueue();
       for (const item of queue) {
-        if (
+        const isMatchingSite =
           item.type === 'SITE_REGISTRATION' &&
-          (item.payload?.temp_id === id || item.payload?.id === id || item.id === id)
-        ) {
+          (item.payload?.temp_id === id || item.payload?.id === id || item.id === id);
+
+        const isMatchingReading =
+          item.type === 'SENSOR_READING' &&
+          (item.payload?.site_id === id ||
+            item.payload?.temp_id === id ||
+            item.payload?.inspection_site_id === id ||
+            String(item.payload?.site_id) === String(id));
+
+        if (isMatchingSite || isMatchingReading) {
+          if (item.photoStoreId) {
+            try {
+              const db = await this.initDB();
+              const tx = db.transaction(PHOTO_STORE, 'readwrite');
+              tx.objectStore(PHOTO_STORE).delete(item.photoStoreId);
+            } catch (pErr) {
+              console.warn('Error purging photo from PHOTO_STORE:', pErr);
+            }
+          }
           await this.removeQueueItem(item.id);
         }
       }
@@ -340,6 +357,21 @@ class OfflineStorageService {
 
     // 3. Purge site from localStorage 'offline_sites' key
     this.removeSiteFromLocalStorage(id);
+  }
+
+  async deleteOfflineReading(queueId: string): Promise<void> {
+    try {
+      const queue = await this.getQueue();
+      const item = queue.find((q) => q.id === queueId);
+      if (item?.photoStoreId) {
+        const db = await this.initDB();
+        const tx = db.transaction(PHOTO_STORE, 'readwrite');
+        tx.objectStore(PHOTO_STORE).delete(item.photoStoreId);
+      }
+      await this.removeQueueItem(queueId);
+    } catch (e) {
+      console.warn('Error deleting offline reading:', e);
+    }
   }
 
   public removeSiteFromLocalStorage(id: string): void {
