@@ -293,15 +293,38 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
     console.warn('Error purging local site record:', e);
   }
 
-  // 2. If it's a online Supabase site (non-temp ID), delete from Supabase tables
+  // 2. If it's an online Supabase site (non-temp ID), cascade delete from Supabase tables
   if (!strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_')) {
     try {
-      // Delete associated site location records first
-      const { error: locErr } = await supabase
-        .from('site_locations')
-        .delete()
+      // Find & delete inspection photos and linked sensor data
+      const { data: photos } = await supabase
+        .from('inspection_photos')
+        .select('id')
         .eq('inspection_site_id', siteId);
-      if (locErr) console.warn('Delete site_locations notice:', locErr.message);
+
+      if (photos && photos.length > 0) {
+        const photoIds = photos.map((p) => p.id);
+        await supabase.from('sensor_data').delete().in('inspection_photo_id', photoIds);
+        await supabase.from('inspection_photos').delete().in('id', photoIds);
+      }
+
+      // Find site devices and delete their sensor data
+      const { data: devRows } = await supabase
+        .from('devices')
+        .select('device_uid')
+        .eq('inspection_site_id', siteId);
+
+      if (devRows && devRows.length > 0) {
+        const devUids = devRows.map((d) => d.device_uid);
+        await supabase.from('sensor_data').delete().in('device_uid', devUids);
+        await supabase.from('devices').delete().eq('inspection_site_id', siteId);
+      }
+
+      // Delete associated odor zones
+      await supabase.from('odor_zones').delete().eq('site_id', siteId);
+
+      // Delete associated site location records
+      await supabase.from('site_locations').delete().eq('inspection_site_id', siteId);
 
       // Delete site record from inspection_sites
       const { error: siteErr } = await supabase
@@ -321,5 +344,29 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
   // 3. Notify all listeners (UserMap, UserSites, etc.) via custom event
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('site_deleted', { detail: { siteId: strId } }));
+  }
+};
+
+/**
+ * Delete a single sensor reading from Supabase or offline queue.
+ */
+export const deleteReading = async (readingId: string | number): Promise<void> => {
+  const strId = String(readingId);
+  try {
+    await offlineStorage.deleteOfflineReading(strId);
+  } catch (e) {
+    console.warn('Error purging local reading:', e);
+  }
+
+  if (!strId.startsWith('queue_') && !isNaN(Number(strId))) {
+    try {
+      await supabase.from('sensor_data').delete().eq('id', Number(strId));
+    } catch (e) {
+      console.warn('Error deleting sensor reading from Supabase:', e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sensor_synced'));
   }
 };
