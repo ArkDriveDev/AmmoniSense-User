@@ -42,16 +42,16 @@ export const TagCard: React.FC<Props> = ({ tag, onClick }) => {
                 {tag.tag_name}
               </h4>
               <IonBadge color={statusBadgeColor(tag.status)}>
-                {tag.ammonia.toFixed(2)} PPM ({tag.status})
+                {(Number(tag.ammonia) || 0).toFixed(2)} PPM ({tag.status || 'NORMAL'})
               </IonBadge>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
-              <span><IonIcon icon={thermometerOutline} /> {tag.temperature.toFixed(1)}°C</span>
-              <span><IonIcon icon={waterOutline} /> {tag.humidity.toFixed(1)}%</span>
-              <span><IonIcon icon={batteryChargingOutline} /> {tag.battery}%</span>
+              <span><IonIcon icon={thermometerOutline} /> {(Number(tag.temperature) || 0).toFixed(1)}°C</span>
+              <span><IonIcon icon={waterOutline} /> {(Number(tag.humidity) || 0).toFixed(1)}%</span>
+              <span><IonIcon icon={batteryChargingOutline} /> {tag.battery !== undefined && tag.battery !== null ? Number(tag.battery) : 100}%</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '11px', color: '#94A3B8' }}>
-              <span><IonIcon icon={locationOutline} /> {tag.latitude.toFixed(4)}, {tag.longitude.toFixed(4)}</span>
+              <span><IonIcon icon={locationOutline} /> {(Number(tag.latitude) || 0).toFixed(4)}, {(Number(tag.longitude) || 0).toFixed(4)}</span>
               {tag.isOffline && <IonBadge color="warning" style={{ fontSize: '9px' }}><IonIcon icon={cloudOfflineOutline} /> Offline</IonBadge>}
             </div>
           </div>
