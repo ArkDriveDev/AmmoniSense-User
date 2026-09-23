@@ -280,22 +280,41 @@ export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
 
 /**
  * Delete a Monitoring Site from Supabase, IndexedDB, and localStorage.
+ * Cascades to inspection_schedules, inspection_tags, and all related photos.
  * Dispatches 'site_deleted' event for automatic UI/map refresh.
  */
 export const deleteSite = async (siteId: string | number): Promise<void> => {
   const strId = String(siteId);
 
-  // 1. Always purge local offline site records (IndexedDB + queue + localStorage)
+  // 1. Cascade-remove offline schedules + tags from localStorage and the IndexedDB queue
   try {
+    const removedScheduleIds = offlineStorage.removeOfflineSchedulesBySite(strId);
+    offlineStorage.removeOfflineTagsBySiteOrSchedules(strId, removedScheduleIds);
+    await offlineStorage.purgeQueueItemsForSite(strId, removedScheduleIds);
     await offlineStorage.deleteOfflineSite(strId);
     offlineStorage.removeSiteFromLocalStorage(strId);
   } catch (e) {
-    console.warn('Error purging local site record:', e);
+    console.warn('Error purging local site/schedule/tag records:', e);
   }
 
   // 2. If it's an online Supabase site (non-temp ID), cascade delete from Supabase tables
   if (!strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_')) {
     try {
+      // Fetch child schedule IDs for cascading tag/photo deletes
+      const { data: schedRows } = await supabase
+        .from('inspection_schedules')
+        .select('id')
+        .eq('inspection_site_id', siteId);
+      const schedIds = (schedRows || []).map((s: any) => s.id);
+
+      // Delete inspection_tags under those schedules
+      if (schedIds.length > 0) {
+        await supabase.from('inspection_tags').delete().in('inspection_schedule_id', schedIds);
+      }
+
+      // Delete inspection_schedules under this site
+      await supabase.from('inspection_schedules').delete().eq('inspection_site_id', siteId);
+
       // Delete sensor_data directly linked to this site via inspection_site_id (new FK)
       await supabase.from('sensor_data').delete().eq('inspection_site_id', siteId);
 
@@ -323,13 +342,11 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
         await supabase.from('devices').delete().eq('inspection_site_id', siteId);
       }
 
-      // Delete associated odor zones
+      // Delete associated odor zones and site location records
       await supabase.from('odor_zones').delete().eq('site_id', siteId);
-
-      // Delete associated site location records
       await supabase.from('site_locations').delete().eq('inspection_site_id', siteId);
 
-      // Delete site record from inspection_sites
+      // Finally delete the site record
       const { error: siteErr } = await supabase
         .from('inspection_sites')
         .delete()
