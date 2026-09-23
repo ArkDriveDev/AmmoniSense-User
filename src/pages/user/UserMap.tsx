@@ -335,71 +335,30 @@ export default function UserMap() {
     const validSites = currentSites || sites;
     const validSiteIds = new Set(validSites.map((s) => String(s.id)));
 
-    let serverPhotoTags: PhotoTagMarkerData[] = [];
     try {
-      const { data, error } = await supabase
-        .from('inspection_photos')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (!error && data) {
-        serverPhotoTags = data
-          .filter((p: any) => {
-            const sid = p.inspection_site_id ?? p.site_id ?? null;
-            // Reject photos with no site association OR whose site no longer exists
-            if (!sid || !validSiteIds.has(String(sid))) return false;
-            return true;
-          })
-          .map((p: any) => {
-            const sid = p.inspection_site_id ?? p.site_id ?? null;
-            const matchedSite = validSites.find((s) => String(s.id) === String(sid));
-            return {
-              id: p.id,
-              latitude: p.latitude || 8.3683,
-              longitude: p.longitude || 124.8637,
-              photo_url: p.photo_url,
-              grid_cell_id: p.grid_cell_id,
-              site_id: sid,
-              site_name: matchedSite?.site_name || 'Inspection Site',
-              is_used: p.is_used,
-              uploaded_at: p.created_at || p.uploaded_at,
-              is_pending_sync: false,
-            };
-          })
-          .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
-      }
-    } catch (err) {
-      console.warn('Error fetching inspection photo tags:', err);
-    }
-
-    try {
-      const queue = await offlineStorage.getQueue();
-      const offlinePhotoTags: PhotoTagMarkerData[] = queue
-        .filter((q) => {
-          if (q.type !== 'SENSOR_READING' || !q.payload?.photo_url) return false;
-          if (q.payload?.site_id && !validSiteIds.has(String(q.payload.site_id))) return false;
-          if (q.payload?.temp_id && !validSiteIds.has(String(q.payload.temp_id))) return false;
-          return true;
+      const allTags = await fetchTags();
+      const mappedPhotoTags: PhotoTagMarkerData[] = allTags
+        .filter((t) => Boolean(t.photo_url || t.photo_thumbnail_url))
+        .filter((t) => !t.inspection_site_id || validSiteIds.has(String(t.inspection_site_id)))
+        .map((t) => {
+          const matchedSite = validSites.find((s) => String(s.id) === String(t.inspection_site_id));
+          return {
+            id: `tag_photo_${t.id}`,
+            latitude: t.latitude || 8.3683,
+            longitude: t.longitude || 124.8637,
+            photo_url: t.photo_url || t.photo_thumbnail_url || '',
+            site_id: t.inspection_site_id ? Number(t.inspection_site_id) : null,
+            site_name: matchedSite?.site_name || t.tag_name || 'Inspection Tag',
+            is_used: true,
+            uploaded_at: t.created_at,
+            is_pending_sync: t.isOffline,
+          };
         })
-        .map((q) => ({
-          id: q.id,
-          latitude: q.payload.latitude || 8.3683,
-          longitude: q.payload.longitude || 124.8637,
-          photo_url: q.payload.photo_url,
-          grid_cell_id: q.payload.grid_cell_id,
-          site_id: q.payload.site_id || null,
-          site_name: 'Offline Inspection Tag',
-          is_used: false,
-          uploaded_at: q.timestamp,
-          is_pending_sync: true,
-        }))
         .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
 
-      setPhotoTags([...offlinePhotoTags, ...serverPhotoTags]);
-    } catch (e) {
-      console.error('Error reading offline photo tags queue:', e);
-      setPhotoTags(serverPhotoTags);
+      setPhotoTags(mappedPhotoTags);
+    } catch (err) {
+      console.warn('Error fetching photo tags from inspection tags:', err);
     }
   };
 
