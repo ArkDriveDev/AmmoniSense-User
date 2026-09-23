@@ -10,7 +10,7 @@ import InspectionSiteDetail from './pages/user/InspectionSiteDetail';
 import UserSchedules from './pages/user/UserSchedules';
 import ScheduleDetail from './pages/user/ScheduleDetail';
 import UserDevices from './pages/user/UserDevices';
-import UserSensorData from './pages/user/UserSensorData';
+import AddTagPage from './pages/user/AddTagPage';
 import UserMap from './pages/user/UserMap';
 import UserBLESensor from './pages/user/UserBLESensor';
 
@@ -118,16 +118,28 @@ export default function AppRouter() {
       />
 
       <Route
-        path="/my-sensor-data"
+        path="/schedules/:scheduleId/add-tag"
         element={
           <ProtectedRoute>
             <UserLayout>
-              <UserSensorData />
+              <AddTagPage />
             </UserLayout>
           </ProtectedRoute>
         }
       />
-      <Route path="/sensor-data" element={<Navigate to="/my-sensor-data" replace />} />
+      <Route
+        path="/add-tag"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <AddTagPage />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="/my-sensor-data" element={<Navigate to="/schedules" replace />} />
+      <Route path="/sensor-data" element={<Navigate to="/schedules" replace />} />
       <Route path="/my-alerts" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
