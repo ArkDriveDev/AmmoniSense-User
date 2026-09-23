@@ -28,12 +28,8 @@ export default function UserInspectionSites() {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (userId) {
-        const { data: owners } = await supabase.from('site_owners').select('id').eq('created_by', userId);
-        const ownerId = owners?.[0]?.id;
-        if (ownerId) {
-          const { data } = await supabase.from('inspection_sites').select('*').eq('owner_id', ownerId);
-          if (data) online = data;
-        }
+        const { data } = await supabase.from('inspection_sites').select('*').eq('created_by', userId);
+        if (data) online = data;
       }
     } catch { /* offline */ }
 

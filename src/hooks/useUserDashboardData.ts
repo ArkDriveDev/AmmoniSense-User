@@ -29,29 +29,17 @@ export function useUserDashboardData() {
         return;
       }
 
-      const { data: owners } = await supabase
-        .from('site_owners')
-        .select('id')
+      const { data: sitesData } = await supabase
+        .from('inspection_sites')
+        .select('id, site_name, address, site_code')
         .eq('created_by', userId);
 
-      const ownerId = owners && owners.length > 0 ? owners[0].id : null;
-
-      let sites: any[] = [];
-      if (ownerId) {
-        const { data: sitesData } = await supabase
-          .from('inspection_sites')
-          .select('id, site_name, address, site_code')
-          .eq('owner_id', ownerId);
-
-        if (sitesData) {
-          sites = sitesData.map(s => ({
-            id: s.id,
-            site_name: s.site_name,
-            location: s.address,
-            site_code: s.site_code
-          }));
-        }
-      }
+      const sites: any[] = (sitesData || []).map(s => ({
+        id: s.id,
+        site_name: s.site_name,
+        location: s.address,
+        site_code: s.site_code
+      }));
 
       const siteIds = sites.map(s => s.id);
 
