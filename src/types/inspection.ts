@@ -69,7 +69,7 @@ export interface InspectionTag {
   photo_thumbnail_url?: string | null;
   device_uid?: string | null;
   inspection_schedule_id: number | string;
-  inspection_site_id: number | string;
+  inspection_site_id?: number | string | null;
   notes?: string | null;
   created_by?: string | null;
   created_at?: string;
@@ -79,15 +79,16 @@ export interface InspectionTag {
 export interface CreateTagPayload {
   tag_name: string;
   ammonia: number;
-  temperature: number;
-  humidity: number;
-  battery: number;
+  temperature?: number;
+  humidity?: number;
+  battery?: number;
   latitude: number;
   longitude: number;
   photo_url?: string | null;
   photo_thumbnail_url?: string | null;
   device_uid?: string | null;
   inspection_schedule_id: number | string;
-  inspection_site_id: number | string;
+  inspection_site_id?: number | string | null;
   notes?: string;
+  status?: AmmoniaStatus;
 }
