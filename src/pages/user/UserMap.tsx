@@ -144,7 +144,7 @@ export default function UserMap() {
     try {
       const { data: sitesData, error: sitesErr } = await supabase
         .from('inspection_sites')
-        .select('*, site_owners(owner_name)');
+        .select('*');
 
       if (!sitesErr && sitesData) {
         onlineFormatted = sitesData.map((s: any) => {
@@ -159,7 +159,6 @@ export default function UserMap() {
             longitude: coords.longitude,
             area_size_hectares: s.area_size_hectares ? Number(s.area_size_hectares) : 1.0,
             grid_cell_id: s.current_grid_cell_id || 'A1',
-            owner_name: s.site_owners?.owner_name || s.owner_name || 'Inspector Owner',
             photo_url: s.site_photo_thumbnail || s.site_photo_url,
             isOffline: false,
             is_pending_sync: false,
@@ -196,7 +195,6 @@ export default function UserMap() {
             longitude: coords.longitude,
             area_size_hectares: os.area_size_hectares ? Number(os.area_size_hectares) : 1.0,
             grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
-            owner_name: os.owner?.owner_name || 'Inspector Owner',
             photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
             isOffline: true,
             is_pending_sync: true,
@@ -226,7 +224,6 @@ export default function UserMap() {
               longitude: coords.longitude,
               area_size_hectares: p.area_size_hectares ? Number(p.area_size_hectares) : 1.0,
               grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
-              owner_name: 'Inspector Owner',
               photo_url: p.site_photo_url || p.photo_url,
               isOffline: true,
               is_pending_sync: true,
@@ -263,7 +260,6 @@ export default function UserMap() {
                 longitude: coords.longitude,
                 area_size_hectares: os.area_size_hectares ? Number(os.area_size_hectares) : 1.0,
                 grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
-                owner_name: os.owner?.owner_name || 'Inspector Owner',
                 photo_url: os.site_photo_thumbnail || os.site_photo_url,
                 isOffline: true,
                 is_pending_sync: true,
@@ -381,7 +377,6 @@ export default function UserMap() {
       site.site_name.toLowerCase().includes(query) ||
       site.site_code?.toLowerCase().includes(query) ||
       site.address?.toLowerCase().includes(query) ||
-      site.owner_name?.toLowerCase().includes(query) ||
       site.site_type?.toLowerCase().includes(query)
     );
   });
@@ -702,8 +697,8 @@ export default function UserMap() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
                   <div>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Owner / Operator</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedSite.owner_name}</strong>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site Type</span>
+                    <strong style={{ color: '#0f172a' }}>{selectedSite.site_type || 'Agricultural'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coverage Area</span>
