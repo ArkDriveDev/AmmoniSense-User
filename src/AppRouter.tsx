@@ -5,6 +5,10 @@ import Register from './pages/Register';
 
 import UserDashboard from './pages/user/UserDashboard';
 import UserSites from './pages/user/UserSites';
+import UserInspectionSites from './pages/user/UserInspectionSites';
+import InspectionSiteDetail from './pages/user/InspectionSiteDetail';
+import UserSchedules from './pages/user/UserSchedules';
+import ScheduleDetail from './pages/user/ScheduleDetail';
 import UserDevices from './pages/user/UserDevices';
 import UserSensorData from './pages/user/UserSensorData';
 import UserMap from './pages/user/UserMap';
@@ -62,7 +66,40 @@ export default function AppRouter() {
         element={
           <ProtectedRoute>
             <UserLayout>
-              <UserSites />
+              <UserInspectionSites />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/inspection-sites/:id"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <InspectionSiteDetail />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/schedules"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <UserSchedules />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/schedules/:id"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <ScheduleDetail />
             </UserLayout>
           </ProtectedRoute>
         }
