@@ -30,8 +30,7 @@ import {
 
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
-import { fetchOdorZones, deleteSite, deleteReading } from '../../services/siteService';
-import { OdorZone } from '../../types/site';
+import { deleteSite, deleteReading } from '../../services/siteService';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
@@ -61,7 +60,7 @@ export default function UserMap() {
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
   const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
   const [photoTags, setPhotoTags] = useState<PhotoTagMarkerData[]>([]);
-  const [odorZones, setOdorZones] = useState<OdorZone[]>([]);
+
 
   // Search input
   const [searchText, setSearchText] = useState<string>('');
@@ -72,7 +71,6 @@ export default function UserMap() {
   const [showReadingsLayer, setShowReadingsLayer] = useState<boolean>(true);
   const [showPhotoTagsLayer, setShowPhotoTagsLayer] = useState<boolean>(true);
   const [showBoundaryLayer, setShowBoundaryLayer] = useState<boolean>(true);
-  const [showOdorZonesLayer, setShowOdorZonesLayer] = useState<boolean>(true);
 
   // Navigation & Location
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom?: number }>(MANOLO_FORTICH_CENTER);
@@ -121,21 +119,10 @@ export default function UserMap() {
       const loadedSites = await fetchSites();
       await Promise.all([
         fetchReadings(loadedSites),
-        fetchPhotoTags(loadedSites),
-        loadPolygons()
+        fetchPhotoTags(loadedSites)
       ]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadPolygons = async () => {
-    try {
-      const zones = await fetchOdorZones();
-      console.log('🟧 Total odor zones loaded for map display:', zones.length, zones);
-      setOdorZones(zones);
-    } catch (e) {
-      console.warn('Error loading odor zones in UserMap:', e);
     }
   };
 
@@ -689,8 +676,8 @@ export default function UserMap() {
             showReadingsLayer={showReadingsLayer}
             showPhotoTagsLayer={showPhotoTagsLayer}
             showBoundaryLayer={showBoundaryLayer}
-            showOdorZonesLayer={showOdorZonesLayer}
-            odorZones={odorZones}
+            showOdorZonesLayer={false}
+            odorZones={[]}
             centerLat={mapCenter.lat}
             centerLng={mapCenter.lng}
             zoom={mapCenter.zoom}
@@ -1055,15 +1042,6 @@ export default function UserMap() {
                   onChange={(e) => setShowBoundaryLayer(e.target.checked)}
                 />
                 <b>Manolo Fortich Boundary</b>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showOdorZonesLayer}
-                  onChange={(e) => setShowOdorZonesLayer(e.target.checked)}
-                />
-                <b>Odor Zones & Communities</b> (Polygons)
               </label>
             </div>
           </div>
