@@ -446,6 +446,43 @@ class OfflineStorageService {
     const list = this.getOfflineTags().filter((t: any) => String(t.id) !== String(id));
     localStorage.setItem('offline_inspection_tags', JSON.stringify(list));
   }
+
+  /** Remove all offline schedules belonging to a site and return their IDs. */
+  public removeOfflineSchedulesBySite(siteId: string | number): string[] {
+    const siteStr = String(siteId);
+    const all = this.getOfflineSchedules();
+    const removed = all.filter((s: any) => String(s.inspection_site_id) === siteStr).map((s: any) => String(s.id));
+    const kept = all.filter((s: any) => String(s.inspection_site_id) !== siteStr);
+    localStorage.setItem('offline_inspection_schedules', JSON.stringify(kept));
+    return removed;
+  }
+
+  /** Remove all offline tags belonging to a site or whose schedule ID is in the given list. */
+  public removeOfflineTagsBySiteOrSchedules(siteId: string | number, scheduleIds: string[]): void {
+    const siteStr = String(siteId);
+    const schedSet = new Set(scheduleIds);
+    const kept = this.getOfflineTags().filter((t: any) =>
+      String(t.inspection_site_id) !== siteStr && !schedSet.has(String(t.inspection_schedule_id))
+    );
+    localStorage.setItem('offline_inspection_tags', JSON.stringify(kept));
+  }
+
+  /** Purge IndexedDB queue items for a deleted site and all its child schedules/tags. */
+  async purgeQueueItemsForSite(siteId: string | number, scheduleIds: string[]): Promise<void> {
+    const siteStr = String(siteId);
+    const schedSet = new Set(scheduleIds);
+    try {
+      const queue = await this.getQueue();
+      for (const item of queue) {
+        const p = item.payload || {};
+        const isSite = String(p.temp_id) === siteStr || String(p.id) === siteStr || String(p.inspection_site_id) === siteStr;
+        const isSched = schedSet.has(String(p.temp_id)) || schedSet.has(String(p.id)) || schedSet.has(String(p.inspection_schedule_id));
+        if (isSite || isSched) await this.removeQueueItem(item.id);
+      }
+    } catch (e) {
+      console.warn('[OfflineStorage] Could not purge queue for deleted site:', e);
+    }
+  }
 }
 
 export const offlineStorage = new OfflineStorageService();
