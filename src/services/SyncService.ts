@@ -391,6 +391,17 @@ class SyncService {
   private async syncInspectionTag(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
 
+    // Preserve zero-value readings correctly
+    const parseNum = (v: any, fallback: number): number =>
+      v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
+
+    payload.ammonia = parseNum(payload.ammonia, 0);
+    payload.temperature = parseNum(payload.temperature, 0);
+    payload.humidity = parseNum(payload.humidity, 0);
+    payload.battery = parseNum(payload.battery, 100);
+    payload.latitude = parseNum(payload.latitude, 0);
+    payload.longitude = parseNum(payload.longitude, 0);
+
     // Ensure device is registered — if it can't be, null out device_uid to avoid FK violation
     if (payload.device_uid) {
       try {
@@ -411,15 +422,6 @@ class SyncService {
       }
     }
 
-    // Resolve temp site ID if present
-    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
-      const tempSiteId = payload.inspection_site_id;
-      try {
-        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-        if (map[tempSiteId]) payload.inspection_site_id = map[tempSiteId];
-      } catch { /* ignore */ }
-    }
-
     // Resolve temp schedule ID → real BIGINT id before inserting
     if (typeof payload.inspection_schedule_id === 'string'
         && payload.inspection_schedule_id.startsWith('temp_sched_')) {
@@ -437,11 +439,14 @@ class SyncService {
           && payload.inspection_schedule_id.startsWith('temp_sched_')) {
         const { data: sched } = await supabase
           .from('inspection_schedules')
-          .select('id')
+          .select('id, inspection_site_id')
           .eq('offline_temp_id', tempSchedId)
           .maybeSingle();
         if (sched?.id) {
           payload.inspection_schedule_id = sched.id;
+          if (!payload.inspection_site_id && sched.inspection_site_id) {
+            payload.inspection_site_id = sched.inspection_site_id;
+          }
           // Persist resolved mapping for future tags
           try {
             const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
@@ -452,6 +457,40 @@ class SyncService {
           throw new Error(`Cannot resolve schedule temp ID: ${tempSchedId}. Schedule may not have synced yet.`);
         }
       }
+    }
+
+    // Resolve temp site ID if present — tags do NOT require inspection_site_id!
+    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
+      const tempSiteId = payload.inspection_site_id;
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        if (map[tempSiteId]) payload.inspection_site_id = map[tempSiteId];
+      } catch { /* ignore */ }
+    }
+
+    // Fallback: look up schedule's site if still unresolved
+    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
+      if (payload.inspection_schedule_id && typeof payload.inspection_schedule_id === 'number') {
+        try {
+          const { data: schedSite } = await supabase
+            .from('inspection_schedules')
+            .select('inspection_site_id')
+            .eq('id', payload.inspection_schedule_id)
+            .maybeSingle();
+          if (schedSite?.inspection_site_id) {
+            payload.inspection_site_id = schedSite.inspection_site_id;
+          }
+        } catch { /* ignore */ }
+      }
+    }
+
+    // If inspection_site_id is still unresolved or non-numeric, null it out (do not require it)
+    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)) || !payload.inspection_site_id.trim())) {
+      payload.inspection_site_id = null;
+    } else if (payload.inspection_site_id !== null && payload.inspection_site_id !== undefined) {
+      payload.inspection_site_id = Number(payload.inspection_site_id) || null;
+    } else {
+      payload.inspection_site_id = null;
     }
 
     let photoData = payload.photo_url;
@@ -476,14 +515,40 @@ class SyncService {
       .from('inspection_tags')
       .insert([{ ...payload, created_by: user.user?.id }]);
 
-    // Retry without device_uid if FK constraint fires
+    // Retry without inspection_site_id if FK / column constraint fires
+    if (error && (
+      error.code === '23503' ||
+      error.code === '22P02' ||
+      error.message?.includes('inspection_site') ||
+      error.message?.includes('inspection_tags_inspection_site_id_fkey')
+    )) {
+      console.warn('[SyncService] inspection_tags site constraint notice — retrying with inspection_site_id: null.');
+      payload.inspection_site_id = null;
+      const { error: retrySiteErr } = await supabase
+        .from('inspection_tags')
+        .insert([{ ...payload, inspection_site_id: null, created_by: user.user?.id }]);
+      error = retrySiteErr ?? null;
+    }
+
+    // Retry without device_uid if device FK constraint fires
     if (error && (error.code === '23503' || error.message?.includes('fk_inspection_tags_device') || error.message?.includes('device_uid'))) {
       console.warn('[SyncService] inspection_tags FK on device_uid — retrying without device_uid.');
-      const { device_uid: _dropped, ...safePayload } = payload;
-      const { error: retryErr } = await supabase
+      payload.device_uid = null;
+      const { error: retryDevErr } = await supabase
         .from('inspection_tags')
-        .insert([{ ...safePayload, device_uid: null, created_by: user.user?.id }]);
-      error = retryErr ?? null;
+        .insert([{ ...payload, device_uid: null, created_by: user.user?.id }]);
+      error = retryDevErr ?? null;
+    }
+
+    // Retry without both device_uid and inspection_site_id as a resilient fallback
+    if (error && error.code === '23503') {
+      console.warn('[SyncService] inspection_tags FK error — retrying with null site and null device.');
+      payload.device_uid = null;
+      payload.inspection_site_id = null;
+      const { error: retryBothErr } = await supabase
+        .from('inspection_tags')
+        .insert([{ ...payload, device_uid: null, inspection_site_id: null, created_by: user.user?.id }]);
+      error = retryBothErr ?? null;
     }
 
     if (error) throw new Error(`inspection_tags insert error: ${error.message}`);
