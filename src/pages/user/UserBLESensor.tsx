@@ -74,9 +74,9 @@ export default function UserBLESensor() {
       return;
     }
 
-    // Save reading to offline draft / localStorage so SensorSubmissionForm loads it
+    // Save reading to offline draft / localStorage so inspection tags can load it
     offlineStorage.saveDraft('draft_ble_central_reading', reading);
-    navigate('/sensor-data');
+    navigate('/schedules');
   };
 
   return (
