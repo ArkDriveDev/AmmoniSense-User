@@ -1,7 +1,6 @@
 import { supabase } from './supabase';
-import { CreateSitePayload, SiteRegistrationResult, OdorZone } from '../types/site';
+import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
 import offlineStorage from './OfflineStorageService';
-import { fromGeoJSONPolygon } from '../utils/spatialUtils';
 
 /**
  * Register Monitoring Site with photo & GPS without grid cells.
@@ -191,94 +190,6 @@ export const registerSiteWithPhoto = async (
 };
 
 /**
- * Fetch all Odor Zones from Supabase
- */
-export const fetchOdorZones = async (): Promise<OdorZone[]> => {
-  try {
-    // Attempt fetching with joined site name
-    const { data, error } = await supabase
-      .from('odor_zones')
-      .select('*, inspection_sites(site_name)')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.warn('Supabase fetch odor_zones notice:', error.message);
-      return [];
-    }
-
-    return (data || []).map((zone: any) => {
-      const coords = zone.coordinates
-        ? fromGeoJSONPolygon(zone.coordinates)
-        : (zone.polygon_geojson ? fromGeoJSONPolygon(zone.polygon_geojson) : []);
-      return {
-        ...zone,
-        site_name: zone.inspection_sites?.site_name || zone.monitoring_sites?.site_name || zone.site_name,
-        coordinates: coords,
-      };
-    });
-  } catch (err: any) {
-    console.error('Error fetching odor zones:', err);
-    return [];
-  }
-};
-
-/**
- * Fetch Odor Zone Reading Statistics view
- */
-export const fetchZoneReadingStats = async (): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('zone_reading_stats')
-      .select('*');
-
-    if (error) {
-      console.warn('Supabase fetch zone_reading_stats notice:', error.message);
-      return [];
-    }
-    return data || [];
-  } catch (err: any) {
-    console.warn('Error fetching zone_reading_stats:', err);
-    return [];
-  }
-};
-
-/**
- * Save new Odor Zone to Supabase
- */
-export const saveOdorZone = async (zone: OdorZone): Promise<OdorZone> => {
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id || null;
-
-  const payload = {
-    inspection_site_id: zone.site_id,
-    zone_name: zone.zone_name,
-    polygon_geojson: zone.polygon_geojson,
-    center_latitude: zone.center_latitude || null,
-    center_longitude: zone.center_longitude || null,
-    area_size_hectares: zone.area_size_hectares || null,
-    notes: zone.notes || null,
-    created_by: userId,
-  };
-
-  const { data, error } = await supabase
-    .from('odor_zones')
-    .insert([payload])
-    .select('*, inspection_sites(site_name)')
-    .single();
-
-  if (error) {
-    throw new Error('Supabase save odor_zones error: ' + error.message);
-  }
-
-  const coords = data.polygon_geojson ? fromGeoJSONPolygon(data.polygon_geojson) : data.coordinates || [];
-  return {
-    ...data,
-    site_name: data.inspection_sites?.site_name || data.monitoring_sites?.site_name || data.site_name,
-    coordinates: coords,
-  };
-};
-
-/**
  * Delete a Monitoring Site from Supabase, IndexedDB, and localStorage.
  * Cascades to inspection_schedules, inspection_tags, and all related photos.
  * Dispatches 'site_deleted' event for automatic UI/map refresh.
@@ -342,8 +253,7 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
         await supabase.from('devices').delete().eq('inspection_site_id', siteId);
       }
 
-      // Delete associated odor zones and site location records
-      await supabase.from('odor_zones').delete().eq('site_id', siteId);
+      // Delete associated site location records
       await supabase.from('site_locations').delete().eq('inspection_site_id', siteId);
 
       // Finally delete the site record
