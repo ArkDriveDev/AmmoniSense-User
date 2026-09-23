@@ -4,6 +4,7 @@
 import offlineStorage, { QueueItem } from './OfflineStorageService';
 import { supabase } from './supabase';
 import { registerSiteWithPhoto } from './siteService';
+import { uploadPhotoPair } from './photoStorageService';
 
 export type SyncEventType = 'status_change' | 'sync_start' | 'sync_progress' | 'sync_complete' | 'sync_error';
 export type SyncEventListener = (event: { type: SyncEventType; isOnline: boolean; pendingCount: number; activeItem?: QueueItem; message?: string }) => void;
@@ -98,6 +99,12 @@ class SyncService {
 
       for (const item of pendingItems) {
         if (!this.onlineStatus) break; // Network lost mid-sync
+
+        // Exponential backoff delay for items that failed previous attempts
+        if (item.retryCount > 0) {
+          const backoffDelay = Math.min(1000 * Math.pow(2, item.retryCount - 1), 15000);
+          await new Promise((res) => setTimeout(res, backoffDelay));
+        }
 
         try {
           await offlineStorage.updateQueueItemStatus(item.id, 'syncing');
@@ -271,13 +278,24 @@ class SyncService {
   private async syncInspectionTag(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
     if (payload.device_uid) await this.ensureDeviceExists(payload.device_uid);
-    if (item.photoStoreId && !payload.photo_url) {
+
+    let photoData = payload.photo_url;
+    let thumbData = payload.photo_thumbnail_url;
+    if (item.photoStoreId && (!photoData || photoData.startsWith('data:'))) {
       const stored = await offlineStorage.getPhoto(item.photoStoreId);
-      if (stored?.dataUrl) {
-        const pUrl = await this.uploadDataUrlToSupabase(stored.dataUrl);
-        if (pUrl) payload.photo_url = pUrl;
+      if (stored?.dataUrl) photoData = stored.dataUrl;
+    }
+
+    if (photoData && photoData.startsWith('data:')) {
+      try {
+        const uploaded = await uploadPhotoPair(photoData, thumbData || photoData, payload.tag_name || 'tag');
+        payload.photo_url = uploaded.photoUrl;
+        payload.photo_thumbnail_url = uploaded.thumbnailUrl;
+      } catch (e) {
+        console.warn('[SyncService] Storage upload notice during tag sync:', e);
       }
     }
+
     const { data: user } = await supabase.auth.getUser();
     const { error } = await supabase.from('inspection_tags').insert([{ ...payload, created_by: user.user?.id }]);
     if (error) throw new Error(`inspection_tags insert error: ${error.message}`);
