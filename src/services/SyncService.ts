@@ -76,6 +76,27 @@ class SyncService {
   // SYNC EXECUTION ENGINE
   // ==========================================
 
+  public async resync(): Promise<{ success: number; failed: number }> {
+    if (!this.onlineStatus) return { success: 0, failed: 0 };
+    try {
+      const queue = await offlineStorage.getQueue();
+      for (const item of queue) {
+        if (item.status === 'failed') {
+          await offlineStorage.updateQueueItemStatus(item.id, 'pending');
+        }
+      }
+    } catch (e) {
+      console.warn('[SyncService] Could not reset failed items for resync:', e);
+    }
+    const result = await this.syncAll();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('schedules_updated'));
+      window.dispatchEvent(new CustomEvent('tags_updated'));
+      window.dispatchEvent(new CustomEvent('site_synced'));
+    }
+    return result;
+  }
+
   public async syncAll(): Promise<{ success: number; failed: number }> {
     if (!this.onlineStatus || this.isSyncing) {
       return { success: 0, failed: 0 };
