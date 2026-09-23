@@ -324,6 +324,13 @@ export default function UserMap() {
 
       if (!error && data) {
         serverReadings = data
+          .filter((r: any) => {
+            const sid = r.inspection_site_id ?? null;
+            // If the reading has a site association, ensure that site still exists.
+            // Readings with no site (null) are also hidden — they are unlinked orphans.
+            if (!sid || !validSiteIds.has(String(sid))) return false;
+            return true;
+          })
           .map((r: any) => ({
             id: r.id,
             ammonia: r.ammonia || 0,
@@ -334,6 +341,7 @@ export default function UserMap() {
             longitude: r.longitude || 124.8637,
             grid_cell_id: r.grid_cell_id,
             device_uid: r.device_uid,
+            inspection_site_id: r.inspection_site_id ?? null,
             created_at: r.created_at,
             photo_url: r.photo_url,
             is_pending_sync: false,
@@ -392,12 +400,13 @@ export default function UserMap() {
       if (!error && data) {
         serverPhotoTags = data
           .filter((p: any) => {
-            const sid = p.inspection_site_id || p.site_id;
-            if (sid && !validSiteIds.has(String(sid))) return false;
+            const sid = p.inspection_site_id ?? p.site_id ?? null;
+            // Reject photos with no site association OR whose site no longer exists
+            if (!sid || !validSiteIds.has(String(sid))) return false;
             return true;
           })
           .map((p: any) => {
-            const sid = p.inspection_site_id || p.site_id;
+            const sid = p.inspection_site_id ?? p.site_id ?? null;
             const matchedSite = validSites.find((s) => String(s.id) === String(sid));
             return {
               id: p.id,
