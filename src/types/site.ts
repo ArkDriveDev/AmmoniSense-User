@@ -1,11 +1,5 @@
 export type GpsSource = 'photo_exif' | 'device_gps' | 'manual';
 
-export interface OfflineOwner {
-  owner_name: string;
-  contact_number?: string;
-  email?: string;
-  address?: string;
-}
 
 export interface OfflineSite {
   id: string;                    // temp_id (e.g., 'temp_1234567890')
@@ -14,8 +8,6 @@ export interface OfflineSite {
   site_code: string;            // generated locally
   site_name: string;
   site_type: string;
-  owner_id: number | null;      // null until synced
-  owner?: OfflineOwner;          // offline owner data
   current_latitude: number;
   current_longitude: number;
   address: string;
@@ -40,8 +32,6 @@ export interface CreateSitePayload {
   latitude: number;
   longitude: number;
   notes?: string;
-  owner_name?: string;
-  owner_email?: string;
   photo_record_id?: number;
   photo_url?: string;
   gps_source?: GpsSource;
@@ -51,7 +41,6 @@ export interface CreateSitePayload {
 // OdorZone removed — replaced by inspection_tags in the new schema
 
 export interface SiteRegistrationResult {
-  owner: any;
   site: any;
   location: any;
   photo?: any;
