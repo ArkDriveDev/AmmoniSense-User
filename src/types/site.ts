@@ -48,29 +48,7 @@ export interface CreateSitePayload {
   temp_id?: string;
 }
 
-export interface OdorZone {
-  id?: number | string;
-  site_id: number | null;
-  site_name?: string;
-  zone_name: string;
-  polygon_geojson: any; // GeoJSON Polygon
-  center_latitude?: number | null;
-  center_longitude?: number | null;
-  area_size_hectares?: number | null;
-  coordinates?: [number, number][]; // Leaflet [lat, lng] coordinates array
-  created_at?: string;
-  created_by?: string;
-  updated_at?: string;
-  notes?: string | null;
-  is_pending_sync?: boolean;
-  // Statistics from views
-  reading_count?: number;
-  avg_ammonia?: number;
-  max_ammonia?: number;
-  min_ammonia?: number;
-  severity_level?: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
-  ammonia_ppm?: number;
-}
+// OdorZone removed — replaced by inspection_tags in the new schema
 
 export interface SiteRegistrationResult {
   owner: any;
