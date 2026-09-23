@@ -73,3 +73,45 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
   window.dispatchEvent(new CustomEvent('schedules_updated'));
   return offlineRec;
 }
+
+export async function deleteSchedule(scheduleId: string | number): Promise<void> {
+  const strId = String(scheduleId);
+  const isTemp = strId.startsWith('temp_sched_');
+
+  // 1. Clean offline tags whose schedule matches
+  const keptTags = offlineStorage.getOfflineTags().filter(
+    (t: any) => String(t.inspection_schedule_id) !== strId
+  );
+  localStorage.setItem('offline_inspection_tags', JSON.stringify(keptTags));
+
+  // 2. Remove the offline schedule entry
+  offlineStorage.removeOfflineSchedule(strId);
+
+  // 3. Purge any queued items referencing this schedule
+  try {
+    const queue = await offlineStorage.getQueue();
+    for (const item of queue) {
+      const p = item.payload || {};
+      if (String(p.temp_id) === strId || String(p.id) === strId || String(p.inspection_schedule_id) === strId) {
+        await offlineStorage.removeQueueItem(item.id);
+      }
+    }
+  } catch (e) {
+    console.warn('[scheduleService] Queue purge notice:', e);
+  }
+
+  // 4. Delete from Supabase if it's a real (numeric) ID
+  if (!isTemp) {
+    try {
+      await supabase.from('inspection_tags').delete().eq('inspection_schedule_id', scheduleId);
+      const { error } = await supabase.from('inspection_schedules').delete().eq('id', scheduleId);
+      if (error) throw new Error(error.message);
+    } catch (err) {
+      console.error('[scheduleService] Supabase delete error:', err);
+      throw err;
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent('schedules_updated'));
+}
+
