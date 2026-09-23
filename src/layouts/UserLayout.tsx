@@ -216,18 +216,6 @@ export default function UserLayout({ children }: any) {
             <IonMenuToggle menu="user-menu" autoHide={false}>
               <IonItem
                 button
-                onClick={() => handleNavigate('/my-sensor-data')}
-                color={isActive('/my-sensor-data') || isActive('/sensor-data') ? 'primary' : undefined}
-                style={isActive('/my-sensor-data') || isActive('/sensor-data') ? { borderLeft: '4px solid #1D5D9B', fontWeight: 'bold' } : {}}
-              >
-                <IonIcon icon={barChartOutline} slot="start" color={isActive('/my-sensor-data') || isActive('/sensor-data') ? 'light' : 'primary'} />
-                <IonLabel>Sensor Data</IonLabel>
-              </IonItem>
-            </IonMenuToggle>
-
-            <IonMenuToggle menu="user-menu" autoHide={false}>
-              <IonItem
-                button
                 onClick={logout}
                 style={{ marginTop: '16px' }}
               >
