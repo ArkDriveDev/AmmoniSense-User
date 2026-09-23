@@ -12,73 +12,16 @@ export const registerSiteWithPhoto = async (
   const user = userData.user;
   if (!user) throw new Error('User authentication required');
 
-  let createdOwner: any = null;
   let createdSite: any = null;
   let createdLocation: any = null;
   let photoRecord: any = null;
 
   try {
-    // 1. Get or upsert site_owner by created_by or email
-    const ownerEmail = payload.owner_email || user.email || `inspector_${user.id.slice(0, 6)}@menro.gov.ph`;
-    const ownerName = payload.owner_name || user.user_metadata?.full_name || user.email || 'Inspector Owner';
-
-    // First try querying existing owner by creator ID
-    const { data: ownersByCreator } = await supabase
-      .from('site_owners')
-      .select('*')
-      .eq('created_by', user.id);
-
-    if (ownersByCreator && ownersByCreator.length > 0) {
-      createdOwner = ownersByCreator[0];
-    } else {
-      // If none found by creator, try querying by email (if column exists)
-      let matchedOwner: any = null;
-      try {
-        const { data: ownersByEmail } = await supabase
-          .from('site_owners')
-          .select('*')
-          .eq('email', ownerEmail);
-        if (ownersByEmail && ownersByEmail.length > 0) {
-          matchedOwner = ownersByEmail[0];
-        }
-      } catch {
-        // Schema cache might not have email column yet
-      }
-
-      if (matchedOwner) {
-        createdOwner = matchedOwner;
-      } else {
-        // Attempt insert with email first
-        let { data: newOwner, error: ownerErr } = await supabase
-          .from('site_owners')
-          .insert([{ owner_name: ownerName, email: ownerEmail, created_by: user.id }])
-          .select('*')
-          .maybeSingle();
-
-        // If email column doesn't exist, retry insert without email
-        if (ownerErr && (ownerErr.message?.includes('email') || ownerErr.code === '42703' || ownerErr.code === 'PGRST204')) {
-          const { data: retryOwner, error: retryErr } = await supabase
-            .from('site_owners')
-            .insert([{ owner_name: ownerName, created_by: user.id }])
-            .select('*')
-            .maybeSingle();
-          newOwner = retryOwner;
-          ownerErr = retryErr;
-        }
-
-        if (ownerErr || !newOwner) {
-          throw new Error('Failed to create site owner record: ' + (ownerErr?.message || 'Error'));
-        }
-        createdOwner = newOwner;
-      }
-    }
-
-    // 2. Insert into inspection_sites (no grid cells)
+    // 1. Insert into inspection_sites
     const sitePayload = {
       site_code: payload.site_code,
       site_name: payload.site_name,
       site_type: payload.site_type,
-      owner_id: createdOwner.id,
       current_latitude: payload.latitude,
       current_longitude: payload.longitude,
       address: payload.address || payload.site_name,
@@ -172,7 +115,6 @@ export const registerSiteWithPhoto = async (
     }
 
     return {
-      owner: createdOwner,
       site: createdSite,
       location: createdLocation,
       photo: photoRecord,
