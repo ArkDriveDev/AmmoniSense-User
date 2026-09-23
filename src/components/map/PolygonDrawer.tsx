@@ -23,8 +23,20 @@ import {
   businessOutline
 } from 'ionicons/icons';
 import { MANOLO_FORTICH_BOUNDS } from './FullMapView';
-import { OdorZone } from '../../types/site';
 import { toGeoJSONPolygon, calculatePolygonAreaHectares, calculatePolygonCenter } from '../../utils/spatialUtils';
+
+/** Local type — used for polygon boundary drafts (not tied to any DB table). */
+export interface PolygonZoneDraft {
+  site_id: number | null;
+  site_name?: string;
+  zone_name: string;
+  polygon_geojson: any;
+  center_latitude?: number | null;
+  center_longitude?: number | null;
+  area_size_hectares?: number | null;
+  coordinates?: [number, number][];
+  notes?: string | null;
+}
 
 interface PolygonDrawerProps {
   centerLat?: number;
@@ -33,7 +45,7 @@ interface PolygonDrawerProps {
   height?: string;
   selectedSiteId?: number | null;
   sites?: Array<{ id: number; site_name: string; site_code?: string }>;
-  onSaveOdorZone?: (zone: OdorZone) => void;
+  onSaveOdorZone?: (zone: PolygonZoneDraft) => void;
 }
 
 export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
@@ -209,7 +221,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       const center = calculatePolygonCenter(polygonGeojson);
       const area = calculatePolygonAreaHectares(polygonGeojson);
 
-      const zone: OdorZone = {
+      const zone: PolygonZoneDraft = {
         site_id: siteId,
         zone_name: zoneName.trim() || 'Odor Impact Zone',
         polygon_geojson: polygonGeojson,
