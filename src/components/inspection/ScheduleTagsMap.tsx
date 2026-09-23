@@ -42,10 +42,11 @@ export const ScheduleTagsMap: React.FC<ScheduleTagsMapProps> = ({ tags, height =
       if (isNaN(lat) || isNaN(lng)) return;
       bounds.push([lat, lng]);
 
-      const color = getAmmoniaColor(tag.ammonia);
+      const ammoniaVal = (tag.ammonia !== undefined && tag.ammonia !== null && !isNaN(Number(tag.ammonia))) ? Number(tag.ammonia) : 0;
+      const color = getAmmoniaColor(ammoniaVal);
       const icon = L.divIcon({
         className: 'schedule-tag-marker',
-        html: `<div style="background:${color};color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:12px;border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.35);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer;"><span>📍 ${tag.ammonia.toFixed(1)}</span><span style="font-size:9px;opacity:0.9;">PPM</span></div>`,
+        html: `<div style="background:${color};color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:12px;border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.35);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer;"><span>📍 ${ammoniaVal.toFixed(1)}</span><span style="font-size:9px;opacity:0.9;">PPM</span></div>`,
         iconSize: [60, 26],
         iconAnchor: [30, 13],
       });
@@ -56,8 +57,8 @@ export const ScheduleTagsMap: React.FC<ScheduleTagsMapProps> = ({ tags, height =
 
       const popup = `<div style="font-family:sans-serif;min-width:180px;font-size:12px;color:#1E293B;">
         <div style="font-weight:800;font-size:13px;color:#0F172A;margin-bottom:2px;">${tag.tag_name}</div>
-        <div style="display:inline-block;padding:2px 6px;border-radius:4px;background:${color};color:#fff;font-weight:700;font-size:11px;margin-bottom:4px;">${tag.ammonia.toFixed(1)} PPM (${tag.status || 'NORMAL'})</div>
-        <div style="color:#64748B;font-size:11px;">Temp: ${tag.temperature ?? '--'}°C | Hum: ${tag.humidity ?? '--'}% | Bat: ${tag.battery ?? '--'}%</div>
+        <div style="display:inline-block;padding:2px 6px;border-radius:4px;background:${color};color:#fff;font-weight:700;font-size:11px;margin-bottom:4px;">${ammoniaVal.toFixed(1)} PPM (${tag.status || 'NORMAL'})</div>
+        <div style="color:#64748B;font-size:11px;">Temp: ${tag.temperature !== undefined && tag.temperature !== null ? tag.temperature : '--'}°C | Hum: ${tag.humidity !== undefined && tag.humidity !== null ? tag.humidity : '--'}% | Bat: ${tag.battery !== undefined && tag.battery !== null ? tag.battery : '--'}%</div>
         ${tag.notes ? `<div style="margin-top:4px;font-style:italic;color:#475569;">"${tag.notes}"</div>` : ''}
         ${photoHtml}
       </div>`;
