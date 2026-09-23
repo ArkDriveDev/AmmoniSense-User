@@ -358,6 +358,12 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         ? photoRecord.id
         : null;
 
+      const numericSiteId = (
+        selectedSiteId &&
+        typeof selectedSiteId !== 'string' ||
+        (typeof selectedSiteId === 'string' && !selectedSiteId.startsWith('temp_') && !isNaN(Number(selectedSiteId)))
+      ) ? Number(selectedSiteId) : null;
+
       const sensorPayload: any = {
         device_uid: targetDevice,
         ammonia: ammoniaNum,
@@ -371,6 +377,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         photo_url: photoRecord?.photo_url || null,
         inspection_photo_id: validPhotoId,
         odor_zone_id: odorZoneId,
+        inspection_site_id: numericSiteId,
       };
 
       if (!syncService.isOnline()) {
@@ -396,6 +403,29 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         if (!retryErr && retryInsert) {
           firstInsert = retryInsert;
           sensorError = null;
+        } else if (retryErr) {
+          sensorError = retryErr;
+        }
+      }
+
+      // Retry without inspection_site_id if column not yet in schema cache (migration pending)
+      if (sensorError && (
+        sensorError.message?.includes('inspection_site_id') ||
+        sensorError.code === '42703' ||
+        sensorError.code === 'PGRST204'
+      )) {
+        const { inspection_site_id: _dropped, inspection_photo_id: _dropped2, ...minimalPayload } = sensorPayload;
+        const { data: fallbackInsert, error: fallbackErr } = await supabase
+          .from('sensor_data')
+          .insert([minimalPayload])
+          .select('id')
+          .maybeSingle();
+
+        if (!fallbackErr && fallbackInsert) {
+          firstInsert = fallbackInsert;
+          sensorError = null;
+        } else if (fallbackErr) {
+          sensorError = fallbackErr;
         }
       }
 
