@@ -42,6 +42,7 @@ import {
 } from '../../utils/photoUtils';
 import bleService, { BLEReading } from '../../services/bleService';
 import bleCentralService, { BLECentralReading } from '../../services/bleCentralService';
+import { autoRegisterDevice } from '../../services/deviceService';
 
 interface MonitoringSite {
   id: number;
@@ -343,8 +344,22 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       const matchedZone = findOdorZoneForPoint(cellLat, cellLng, odorZones);
       const odorZoneId = matchedZone?.id ? Number(matchedZone.id) : null;
 
+      const targetDevice = selectedDeviceUid || 'ESP32-AMMONIA-NODE-01';
+
+      // Ensure device is registered in Supabase devices table
+      try {
+        await autoRegisterDevice(targetDevice);
+      } catch (devErr) {
+        console.warn('Notice registering device:', devErr);
+      }
+
+      // Only use inspection_photo_id if it is a valid database record ID
+      const validPhotoId = (photoRecord?.id && typeof photoRecord.id === 'number' && photoRecord.id < 1000000000)
+        ? photoRecord.id
+        : null;
+
       const sensorPayload: any = {
-        device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
+        device_uid: targetDevice,
         ammonia: ammoniaNum,
         temperature: isNaN(tempNum) ? null : tempNum,
         humidity: isNaN(humNum) ? null : humNum,
@@ -354,7 +369,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         longitude: cellLng,
         submitted_by: userId,
         photo_url: photoRecord?.photo_url || null,
-        inspection_photo_id: photoRecord?.id || null,
+        inspection_photo_id: validPhotoId,
         odor_zone_id: odorZoneId,
       };
 
@@ -362,20 +377,37 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         throw new Error('OFFLINE_MODE');
       }
 
-      const { data: insertedSensorData, error: sensorError } = await supabase
+      let insertedSensorData: any = null;
+      let { data: firstInsert, error: sensorError } = await supabase
         .from('sensor_data')
         .insert([sensorPayload])
         .select('id')
-        .single();
+        .maybeSingle();
 
-      if (sensorError) {
-        throw new Error('Supabase insert sensor_data error: ' + sensorError.message);
+      // Retry without inspection_photo_id if foreign key or schema violation
+      if (sensorError && (sensorError.message?.includes('inspection_photo') || sensorError.code === '23503')) {
+        const retryPayload = { ...sensorPayload, inspection_photo_id: null };
+        const { data: retryInsert, error: retryErr } = await supabase
+          .from('sensor_data')
+          .insert([retryPayload])
+          .select('id')
+          .maybeSingle();
+
+        if (!retryErr && retryInsert) {
+          firstInsert = retryInsert;
+          sensorError = null;
+        }
       }
 
+      if (sensorError || !firstInsert) {
+        throw new Error('Supabase insert sensor_data error: ' + (sensorError?.message || 'Insert failed'));
+      }
+
+      insertedSensorData = firstInsert;
       const sensorDataId = insertedSensorData?.id;
 
-      if (photoRecord?.id && sensorDataId) {
-        await step4_markPhotoAsUsed(photoRecord.id, sensorDataId);
+      if (validPhotoId && sensorDataId) {
+        await step4_markPhotoAsUsed(validPhotoId, sensorDataId);
       }
 
       const zoneMsg = matchedZone ? ` (Linked to Odor Zone: ${matchedZone.zone_name})` : '';
