@@ -6,10 +6,10 @@ import {
 } from '@ionic/react';
 import {
   addOutline, calendarOutline, timeOutline, pricetagOutline, personOutline,
-  mapOutline, listOutline, syncOutline
+  mapOutline, listOutline, syncOutline, trashOutline
 } from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchScheduleById } from '../../services/scheduleService';
+import { fetchScheduleById, deleteSchedule } from '../../services/scheduleService';
 import { fetchTags } from '../../services/tagService';
 import TagList from '../../components/inspection/TagList';
 import AddTagModal from '../../components/inspection/AddTagModal';
@@ -33,6 +33,7 @@ export default function ScheduleDetail() {
   const [showAddTag, setShowAddTag] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [resyncing, setResyncing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -61,6 +62,23 @@ export default function ScheduleDetail() {
     }
   };
 
+  const handleDeleteSchedule = async () => {
+    if (!schedule) return;
+    const confirmed = window.confirm(
+      `Delete "${schedule.schedule_name}"?\n\nThis will permanently delete the schedule and ALL its inspection tags.\nThis action cannot be undone.`
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    try {
+      await deleteSchedule(schedule.id);
+      navigate(-1);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete schedule.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     load();
     window.addEventListener('tags_updated', load);
@@ -74,6 +92,9 @@ export default function ScheduleDetail() {
           <IonButtons slot="start"><IonBackButton defaultHref="/schedules" style={{ '--color': '#ffffff' }} /></IonButtons>
           <IonTitle style={{ fontWeight: 700 }}>{schedule?.schedule_name || 'Schedule'}</IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={handleDeleteSchedule} disabled={deleting} style={{ '--color': '#ff6b6b' }} title="Delete schedule">
+              <IonIcon icon={trashOutline} slot="icon-only" />
+            </IonButton>
             <IonButton onClick={handleResync} disabled={resyncing} style={{ '--color': '#ffffff' }} title="Re-sync data">
               <IonIcon icon={syncOutline} slot="icon-only" style={{ animation: resyncing ? 'spin 1.2s linear infinite' : 'none' }} />
             </IonButton>

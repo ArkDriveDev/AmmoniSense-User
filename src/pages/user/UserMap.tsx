@@ -742,7 +742,7 @@ export default function UserMap() {
                     color="danger"
                     fill="outline"
                     onClick={async () => {
-                      if (window.confirm(`Are you sure you want to delete inspection site "${selectedSite.site_name}"?`)) {
+                      if (window.confirm(`Delete "${selectedSite.site_name}"?\n\nThis will permanently delete the site along with ALL its inspection schedules and tags.\nThis action cannot be undone.`)) {
                         try {
                           await deleteSite(selectedSite.id);
                           closeBottomSheet();

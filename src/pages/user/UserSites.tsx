@@ -137,7 +137,7 @@ export default function UserSites() {
 
   const handleDeleteSite = async (e: React.MouseEvent, siteId: string | number, siteName: string) => {
     e.stopPropagation();
-    if (window.confirm(`Are you sure you want to delete inspection site "${siteName}"?`)) {
+    if (window.confirm(`Delete "${siteName}"?\n\nThis will permanently delete the site along with ALL its inspection schedules and tags.\nThis action cannot be undone.`)) {
       try {
         await deleteSite(siteId);
         await fetchSites();
