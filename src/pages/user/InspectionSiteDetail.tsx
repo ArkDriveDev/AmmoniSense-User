@@ -23,7 +23,7 @@ export default function InspectionSiteDetail() {
     if (!id) return;
     setLoading(true);
     try {
-      const { data: siteData } = await supabase.from('inspection_sites').select('*, site_owners(owner_name)').eq('id', id).maybeSingle();
+      const { data: siteData } = await supabase.from('inspection_sites').select('*').eq('id', id).maybeSingle();
       setSite(siteData);
       const [sched, tagRes] = await Promise.all([
         fetchSchedules(id),
