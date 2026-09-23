@@ -16,7 +16,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   scheduleId: number | string;
-  siteId: number | string;
+  siteId?: number | string;
   onCreated?: () => void;
 }
 
@@ -65,17 +65,17 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       }
       await createTag({
         tag_name: toUpperClean(tagName),
-        ammonia,
-        temperature: temp,
-        humidity: hum,
-        battery,
+        ammonia: (ammonia !== undefined && !isNaN(Number(ammonia))) ? Number(ammonia) : 0,
+        temperature: (temp !== undefined && !isNaN(Number(temp))) ? Number(temp) : 0,
+        humidity: (hum !== undefined && !isNaN(Number(hum))) ? Number(hum) : 0,
+        battery: (battery !== undefined && !isNaN(Number(battery))) ? Number(battery) : 100,
         latitude: lat,
         longitude: lng,
         photo_url: pUrl,
         photo_thumbnail_url: tUrl,
         device_uid: deviceUid,
         inspection_schedule_id: scheduleId,
-        inspection_site_id: siteId,
+        inspection_site_id: siteId || undefined,
         notes: toUpperClean(notes),
       });
       onCreated?.();
