@@ -269,8 +269,38 @@ class SyncService {
   private async syncInspectionSchedule(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
     const { data: user } = await supabase.auth.getUser();
-    const { error } = await supabase.from('inspection_schedules').insert([{ ...payload, created_by: user.user?.id }]);
+
+    const { data: inserted, error } = await supabase
+      .from('inspection_schedules')
+      .insert([{ ...payload, offline_temp_id: temp_id || null, created_by: user.user?.id }])
+      .select('id')
+      .single();
     if (error) throw new Error(`inspection_schedules insert error: ${error.message}`);
+
+    // Persist temp → real ID mapping so queued tags can resolve it
+    if (temp_id && inserted?.id) {
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        map[temp_id] = inserted.id;
+        localStorage.setItem('tempIdMap', JSON.stringify(map));
+      } catch (e) {
+        console.warn('[SyncService] Could not save tempIdMap:', e);
+      }
+
+      // Patch any pending INSPECTION_TAG queue items referencing this temp ID
+      try {
+        const allItems = await offlineStorage.getQueue();
+        for (const qi of allItems) {
+          if (qi.type === 'INSPECTION_TAG' && qi.payload?.inspection_schedule_id === temp_id) {
+            qi.payload.inspection_schedule_id = inserted.id;
+            await offlineStorage.updateQueueItemPayload(qi.id, qi.payload);
+          }
+        }
+      } catch (e) {
+        console.warn('[SyncService] Could not patch queued tags with real schedule ID:', e);
+      }
+    }
+
     if (temp_id) offlineStorage.removeOfflineSchedule(temp_id);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
   }
@@ -278,6 +308,40 @@ class SyncService {
   private async syncInspectionTag(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
     if (payload.device_uid) await this.ensureDeviceExists(payload.device_uid);
+
+    // Resolve temp schedule ID → real BIGINT id before inserting
+    if (typeof payload.inspection_schedule_id === 'string'
+        && payload.inspection_schedule_id.startsWith('temp_sched_')) {
+      const tempSchedId = payload.inspection_schedule_id;
+      // 1. Check in-memory localStorage map
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        if (map[tempSchedId]) {
+          payload.inspection_schedule_id = map[tempSchedId];
+        }
+      } catch { /* ignore parse errors */ }
+
+      // 2. Fallback: query DB by offline_temp_id if still unresolved
+      if (typeof payload.inspection_schedule_id === 'string'
+          && payload.inspection_schedule_id.startsWith('temp_sched_')) {
+        const { data: sched } = await supabase
+          .from('inspection_schedules')
+          .select('id')
+          .eq('offline_temp_id', tempSchedId)
+          .maybeSingle();
+        if (sched?.id) {
+          payload.inspection_schedule_id = sched.id;
+          // Persist resolved mapping for future tags
+          try {
+            const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+            map[tempSchedId] = sched.id;
+            localStorage.setItem('tempIdMap', JSON.stringify(map));
+          } catch { /* ignore */ }
+        } else {
+          throw new Error(`Cannot resolve schedule temp ID: ${tempSchedId}. Schedule may not have synced yet.`);
+        }
+      }
+    }
 
     let photoData = payload.photo_url;
     let thumbData = payload.photo_thumbnail_url;
