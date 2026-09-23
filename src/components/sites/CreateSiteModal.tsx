@@ -246,13 +246,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         site_code: form.site_code,
         site_name: form.site_name,
         site_type: form.site_type,
-        owner_id: null,
-        owner: {
-          owner_name: 'Inspector Owner',
-          contact_number: '',
-          email: '',
-          address: form.address || form.site_name,
-        },
         current_latitude: form.current_latitude,
         current_longitude: form.current_longitude,
         address: form.address || form.site_name,
