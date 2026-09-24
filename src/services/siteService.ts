@@ -43,26 +43,12 @@ export const registerSiteWithPhoto = async (
     }
     createdSite = newSite;
 
-    // 3. Insert initial location record in site_locations
-    const locationPayload = {
+    createdLocation = {
       inspection_site_id: createdSite.id,
       latitude: payload.latitude,
       longitude: payload.longitude,
       address: payload.address || payload.site_name,
-      recorded_by: user.id,
-      notes: `Initial registration location recorded via ${payload.gps_source || 'GPS'}.`,
     };
-
-    const { data: newLoc, error: locErr } = await supabase
-      .from('site_locations')
-      .insert([locationPayload])
-      .select('*')
-      .single();
-
-    if (locErr) {
-      console.warn('Notice writing to site_locations:', locErr.message);
-    }
-    createdLocation = newLoc || locationPayload;
 
     // 4. Link & update inspection_photo if provided
     if (payload.photo_record_id || payload.photo_url) {
@@ -123,7 +109,6 @@ export const registerSiteWithPhoto = async (
     console.error('Transaction failure during site registration, initiating cleanup rollback:', error);
 
     if (createdSite?.id) {
-      await supabase.from('site_locations').delete().eq('inspection_site_id', createdSite.id);
       await supabase.from('inspection_sites').delete().eq('id', createdSite.id);
     }
 
@@ -194,9 +179,6 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
         await supabase.from('sensor_data').delete().in('device_uid', devUids);
         await supabase.from('devices').delete().eq('inspection_site_id', siteId);
       }
-
-      // Delete associated site location records
-      await supabase.from('site_locations').delete().eq('inspection_site_id', siteId);
 
       // Finally delete the site record
       const { error: siteErr } = await supabase
