@@ -34,6 +34,8 @@ export interface InspectionSite {
   area_size_hectares: number;
   site_photo_url?: string | null;
   site_photo_thumbnail?: string | null;
+  site_photo_storage_path?: string | null;
+  site_photo_thumbnail_storage_path?: string | null;
   offline_temp_id?: string | null;
   is_active?: boolean;
   notes?: string | null;
@@ -53,6 +55,8 @@ export interface CreateSitePayload {
   photo_url?: string;
   site_photo_url?: string;
   site_photo_thumbnail?: string;
+  site_photo_storage_path?: string | null;
+  site_photo_thumbnail_storage_path?: string | null;
   gps_source?: GpsSource;
   temp_id?: string;
 }
