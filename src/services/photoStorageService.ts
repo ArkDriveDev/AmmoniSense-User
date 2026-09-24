@@ -93,6 +93,14 @@ export function extractStoragePath(urlOrPath: string, bucket: string): string {
   return urlOrPath;
 }
 
+/**
+ * Strips all non-digit characters to ensure path segments contain only numeric IDs.
+ */
+export function sanitizeNumericId(id: string | number | null | undefined): string {
+  if (id === null || id === undefined) return '';
+  return String(id).replace(/\D/g, '');
+}
+
 export async function uploadPhotoPair(
   dataUrl: string,
   thumbnailDataUrl: string,
@@ -150,10 +158,13 @@ export async function uploadPhotoPair(
 export async function uploadSitePhoto(
   blob: Blob,
   thumbnailBlob: Blob | null,
-  siteId: string | number = 'general'
+  siteId: string | number
 ): Promise<UploadedSitePhoto> {
-  const path = `${siteId}/site_photo.jpg`;
-  const thumbPath = `${siteId}/site_photo_thumb.jpg`;
+  const cleanSiteId = sanitizeNumericId(siteId);
+  if (!cleanSiteId) throw new Error(`[photoStorageService] Numeric siteId required. Got: ${siteId}`);
+
+  const path = `${cleanSiteId}/site_photo.jpg`;
+  const thumbPath = `${cleanSiteId}/site_photo_thumb.jpg`;
 
   const { error: upErr } = await supabase.storage
     .from('site-photos')
@@ -161,25 +172,27 @@ export async function uploadSitePhoto(
   if (upErr) throw new Error('[photoStorageService] Site photo upload failed: ' + upErr.message);
 
   let thumbStorePath: string | null = null;
+  let thumbUrl: string | null = null;
+  const expiresIn = 60 * 60 * 24 * 365; // 1 year
   if (thumbnailBlob) {
     const { error: thErr } = await supabase.storage
       .from('site-photos')
       .upload(thumbPath, thumbnailBlob, { contentType: 'image/jpeg', upsert: true });
-    if (!thErr) thumbStorePath = thumbPath;
-    else console.warn('[photoStorageService] Site thumbnail upload failed:', thErr.message);
+    if (!thErr) {
+      thumbStorePath = thumbPath;
+      thumbUrl = await getSignedPhotoUrl('site-photos', thumbStorePath, expiresIn);
+    } else {
+      console.warn('[photoStorageService] Site thumbnail upload failed:', thErr.message);
+    }
   }
 
-  const expiresIn = 60 * 60 * 24 * 365; // 1 year
   const photoUrl = await getSignedPhotoUrl('site-photos', path, expiresIn);
-  const thumbUrl = thumbStorePath
-    ? await getSignedPhotoUrl('site-photos', thumbStorePath, expiresIn)
-    : photoUrl;
 
   return {
     site_photo_url: photoUrl,
     site_photo_thumbnail: thumbUrl,
     site_photo_storage_path: path,
-    site_photo_thumbnail_storage_path: thumbStorePath ?? path,
+    site_photo_thumbnail_storage_path: thumbStorePath,
   };
 }
 
@@ -192,10 +205,16 @@ export async function uploadTagPhoto(
   blob: Blob,
   thumbnailBlob: Blob | null,
   tagId: string | number,
-  siteId: string | number = 'general'
+  siteId: string | number
 ): Promise<UploadedTagPhoto> {
-  const path = `${siteId}/tags/${tagId}/photo.jpg`;
-  const thumbPath = `${siteId}/tags/${tagId}/photo_thumb.jpg`;
+  const cleanSiteId = sanitizeNumericId(siteId);
+  const cleanTagId = sanitizeNumericId(tagId);
+  if (!cleanSiteId || !cleanTagId) {
+    throw new Error(`[photoStorageService] Numeric IDs required. Got siteId: ${siteId}, tagId: ${tagId}`);
+  }
+
+  const path = `${cleanSiteId}/tags/${cleanTagId}/photo.jpg`;
+  const thumbPath = `${cleanSiteId}/tags/${cleanTagId}/photo_thumb.jpg`;
 
   const { error: upErr } = await supabase.storage
     .from('inspection-photos')
@@ -203,25 +222,27 @@ export async function uploadTagPhoto(
   if (upErr) throw new Error('[photoStorageService] Tag photo upload failed: ' + upErr.message);
 
   let thumbStorePath: string | null = null;
+  let thumbUrl: string | null = null;
+  const expiresIn = 60 * 60 * 24 * 365;
   if (thumbnailBlob) {
     const { error: thErr } = await supabase.storage
       .from('inspection-thumbnails')
       .upload(thumbPath, thumbnailBlob, { contentType: 'image/jpeg', upsert: true });
-    if (!thErr) thumbStorePath = thumbPath;
-    else console.warn('[photoStorageService] Tag thumbnail upload failed:', thErr.message);
+    if (!thErr) {
+      thumbStorePath = thumbPath;
+      thumbUrl = await getSignedPhotoUrl('inspection-thumbnails', thumbStorePath, expiresIn);
+    } else {
+      console.warn('[photoStorageService] Tag thumbnail upload failed:', thErr.message);
+    }
   }
 
-  const expiresIn = 60 * 60 * 24 * 365;
   const photoUrl = await getSignedPhotoUrl('inspection-photos', path, expiresIn);
-  const thumbUrl = thumbStorePath
-    ? await getSignedPhotoUrl('inspection-thumbnails', thumbStorePath, expiresIn)
-    : photoUrl;
 
   return {
     photo_url: photoUrl,
     photo_thumbnail_url: thumbUrl,
     photo_storage_path: path,
-    photo_thumbnail_storage_path: thumbStorePath ?? path,
+    photo_thumbnail_storage_path: thumbStorePath,
   };
 }
 
