@@ -546,43 +546,60 @@ class SyncService {
     }
 
     const tagRecord: any = {
-      ...payload,
+      tag_name: payload.tag_name || 'Inspection Tag',
+      inspection_schedule_id: payload.inspection_schedule_id ?? null,
+      inspection_site_id: payload.inspection_site_id ?? null,
+      ammonia: Number(payload.ammonia) || 0,
+      temperature: Number(payload.temperature) || 0,
+      humidity: Number(payload.humidity) || 0,
+      battery: payload.battery !== undefined && payload.battery !== null ? Number(payload.battery) : 100,
+      status: (payload.status || 'NORMAL').toUpperCase(),
+      latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
+      longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
+      photo_url: payload.photo_url || null,
+      photo_thumbnail_url: payload.photo_thumbnail_url || null,
+      device_uid: payload.device_uid || null,
+      sensor_data_id: payload.sensor_data_id || null,
+      notes: payload.notes || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
-      created_by: user.user?.id,
+      created_by: payload.created_by || user.user?.id || null,
     };
+
+    console.log('[SYNC] Final payload:', {
+      site_id: tagRecord.inspection_site_id,
+      schedule_id: tagRecord.inspection_schedule_id,
+      device_uid: tagRecord.device_uid,
+      sensor_data_id: tagRecord.sensor_data_id,
+    });
 
     let { error } = await supabase
       .from('inspection_tags')
       .insert([tagRecord]);
 
-    // Resilient FK retry handling:
+    // Resilient FK retry fallback if any unexpected constraint fires
     if (error && (error.code === '23503' || error.code === '22P02')) {
-      console.warn('[SyncService] FK constraint error on tag sync — retrying with safe fallbacks:', error.message);
-      for (const fk of ['sensor_data_id', 'inspection_site_id', 'device_uid'] as const) {
-        if (error && tagRecord[fk]) {
-          tagRecord[fk] = null;
-          const res = await supabase.from('inspection_tags').insert([tagRecord]);
-          error = res.error;
-        }
-      }
-      if (error) {
-        const res = await supabase.from('inspection_tags').insert([{
-          ...tagRecord,
-          inspection_schedule_id: null,
-          inspection_site_id: null,
-          device_uid: null,
-          sensor_data_id: null,
-        }]);
-        error = res.error;
-      }
+      console.warn('[SYNC] FK constraint notice on tag sync — retrying with null parent FKs:', error.message);
+      const res = await supabase.from('inspection_tags').insert([{
+        ...tagRecord,
+        inspection_schedule_id: null,
+        inspection_site_id: null,
+        device_uid: null,
+        sensor_data_id: null,
+      }]);
+      error = res.error;
     }
 
     if (error && error.code === '23505') {
-      console.warn('[SyncService] Duplicate tag detected during sync, treating as success.');
+      console.warn('[SYNC] Duplicate tag detected during sync, treating as success.');
       error = null;
     }
 
-    if (error) throw new Error(`inspection_tags insert error: ${error.message}`);
+    if (error) {
+      console.error('[SYNC] Tag insert failed:', error);
+      throw error;
+    }
+
+    console.log('[SYNC] ✅ Tag saved');
     if (temp_id) offlineStorage.removeOfflineTag(temp_id);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
   }
