@@ -34,13 +34,14 @@ import {
   navigateOutline
 } from 'ionicons/icons';
 import { Geolocation } from '@capacitor/geolocation';
-import { captureSitePhoto, InspectionPhotoRecord } from '../../utils/photoUtils';
+import { captureSitePhoto, InspectionPhotoRecord, dataURLtoBlob } from '../../utils/photoUtils';
 import { registerSiteWithPhoto } from '../../services/siteService';
 import { supabase } from '../../services/supabase';
 import offlineStorage, { SITE_DRAFT_KEY } from '../../services/OfflineStorageService';
 import syncService from '../../services/SyncService';
 import { GpsSource, OfflineSite } from '../../types/site';
 import PolygonPreview from '../map/PolygonPreview';
+import { uploadSitePhoto, deleteStorageFiles } from '../../services/photoStorageService';
 
 export interface CreateSiteModalProps {
   isOpen: boolean;
@@ -195,6 +196,29 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     if (editSite) {
       try {
         const isOfflineOnly = typeof editSite.id === 'string' && editSite.id.startsWith('temp_');
+
+        // If a new photo was captured, upload it and delete old files first
+        let updatedPhotoFields: Record<string, string | null> = {};
+        if (photoRecord?.dataUrl) {
+          try {
+            const blob = dataURLtoBlob(photoRecord.dataUrl);
+            const uploaded = await uploadSitePhoto(blob, null, editSite.id);
+            // Delete old storage files (best-effort)
+            await deleteStorageFiles('site-photos', [
+              editSite.site_photo_storage_path,
+              editSite.site_photo_thumbnail_storage_path,
+            ]);
+            updatedPhotoFields = {
+              site_photo_url: uploaded.site_photo_url,
+              site_photo_thumbnail: uploaded.site_photo_thumbnail,
+              site_photo_storage_path: uploaded.site_photo_storage_path,
+              site_photo_thumbnail_storage_path: uploaded.site_photo_thumbnail_storage_path,
+            };
+          } catch (photoErr) {
+            console.warn('[CreateSiteModal] Photo re-upload failed, keeping old URLs:', photoErr);
+          }
+        }
+
         const siteUpdateData = {
           site_code: form.site_code,
           site_name: form.site_name,
@@ -204,7 +228,11 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           current_latitude: form.current_latitude,
           current_longitude: form.current_longitude,
           notes: form.notes,
-          ...(photoPreview ? { site_photo_url: photoPreview, site_photo_thumbnail: photoPreview } : {})
+          ...(Object.keys(updatedPhotoFields).length > 0
+            ? updatedPhotoFields
+            : photoPreview
+              ? { site_photo_url: photoPreview, site_photo_thumbnail: photoPreview }
+              : {}),
         };
 
         let synced = false;
