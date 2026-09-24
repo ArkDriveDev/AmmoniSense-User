@@ -8,9 +8,10 @@ import { Geolocation } from '@capacitor/geolocation';
 import BLEConnectPanel from './BLEConnectPanel';
 import TagLocationStep from './TagLocationStep';
 import TagFormReview from './TagFormReview';
-import { captureInspectionPhoto, uploadPhotoPair } from '../../services/photoStorageService';
-import { createTag } from '../../services/tagService';
+import { captureInspectionPhoto, uploadTagPhoto } from '../../services/photoStorageService';
+import { createTag, updateTag } from '../../services/tagService';
 import { toUpperClean } from '../../types/inspection';
+import { dataUrlToBlob } from '../../utils/thumbnailUtils';
 
 interface Props {
   isOpen: boolean;
@@ -56,20 +57,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     if (!tagName.trim()) return alert('Please enter a TAG NAME');
     setSaving(true);
     try {
-      let pUrl = photoDataUrl;
-      let tUrl = thumbDataUrl;
-      let pPath: string | null = null;
-      let tPath: string | null = null;
-      if (photoDataUrl) {
-        const cleanName = toUpperClean(tagName) || 'TAG';
-        const siteRef = siteId || 'general';
-        const uploaded = await uploadPhotoPair(photoDataUrl, thumbDataUrl, cleanName, siteRef);
-        pUrl = uploaded.photoUrl;
-        tUrl = uploaded.thumbnailUrl;
-        pPath = uploaded.photo_storage_path || null;
-        tPath = uploaded.photo_thumbnail_storage_path || null;
-      }
-      await createTag({
+      // 1. Create tag record first to obtain its numeric database ID
+      const createdTag = await createTag({
         tag_name: toUpperClean(tagName),
         ammonia: (ammonia !== undefined && !isNaN(Number(ammonia))) ? Number(ammonia) : 0,
         temperature: (temp !== undefined && !isNaN(Number(temp))) ? Number(temp) : 0,
@@ -77,15 +66,33 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         battery: (battery !== undefined && !isNaN(Number(battery))) ? Number(battery) : 100,
         latitude: lat,
         longitude: lng,
-        photo_url: pUrl,
-        photo_thumbnail_url: tUrl,
-        photo_storage_path: pPath,
-        photo_thumbnail_storage_path: tPath,
+        photo_url: photoDataUrl || null,
+        photo_thumbnail_url: thumbDataUrl || null,
         device_uid: deviceUid,
         inspection_schedule_id: scheduleId,
         inspection_site_id: siteId || undefined,
         notes: toUpperClean(notes),
       });
+
+      // 2. If photo was captured and tag has numeric ID, upload and update with storage paths
+      if (photoDataUrl && createdTag?.id && typeof createdTag.id === 'number') {
+        const targetSiteId = siteId || createdTag.inspection_site_id;
+        if (targetSiteId) {
+          try {
+            const photoBlob = dataUrlToBlob(photoDataUrl);
+            const thumbBlob = thumbDataUrl ? dataUrlToBlob(thumbDataUrl) : null;
+            const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, createdTag.id, targetSiteId);
+            await updateTag(createdTag.id, {
+              photo_url: uploaded.photo_url,
+              photo_thumbnail_url: uploaded.photo_thumbnail_url,
+              photo_storage_path: uploaded.photo_storage_path,
+              photo_thumbnail_storage_path: uploaded.photo_thumbnail_storage_path,
+            });
+          } catch (photoErr) {
+            console.warn('[AddTagModal] Photo upload after tag creation failed:', photoErr);
+          }
+        }
+      }
       onCreated?.();
       onClose();
     } catch (err: any) {
