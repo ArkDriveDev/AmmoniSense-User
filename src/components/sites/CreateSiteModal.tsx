@@ -75,14 +75,19 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
   useEffect(() => {
     if (isOpen) {
       if (editSite) {
+        const rawLat = editSite.current_latitude ?? editSite.latitude;
+        const rawLng = editSite.current_longitude ?? editSite.longitude;
+        const latNum = parseFloat(rawLat);
+        const lngNum = parseFloat(rawLng);
+        const areaNum = parseFloat(editSite.area_size_hectares);
         setForm({
           site_code: editSite.site_code || `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
           site_name: editSite.site_name || '',
           site_type: editSite.site_type || 'Poultry',
           address: editSite.address || '',
-          area_size_hectares: (editSite.area_size_hectares || 1.0).toString(),
-          current_latitude: editSite.current_latitude ?? editSite.latitude ?? 8.3683,
-          current_longitude: editSite.current_longitude ?? editSite.longitude ?? 124.8637,
+          area_size_hectares: (!isNaN(areaNum) && areaNum > 0 ? areaNum : 1.0).toString(),
+          current_latitude: !isNaN(latNum) && latNum !== 0 ? latNum : 8.3683,
+          current_longitude: !isNaN(lngNum) && lngNum !== 0 ? lngNum : 124.8637,
           notes: editSite.notes || '',
         });
         if (editSite.site_photo_url || editSite.site_photo_thumbnail) {
@@ -470,8 +475,11 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
               🗺️ Live Coverage Polygon Preview
             </span>
             <PolygonPreview
-              center={[form.current_latitude, form.current_longitude]}
-              areaHectares={parseFloat(form.area_size_hectares) || 1.0}
+              center={[
+                parseFloat(String(form.current_latitude)) || 8.3683,
+                parseFloat(String(form.current_longitude)) || 124.8637
+              ]}
+              areaHectares={parseFloat(String(form.area_size_hectares)) || 1.0}
               height="200px"
             />
           </div>
