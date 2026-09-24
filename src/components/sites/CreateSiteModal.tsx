@@ -61,7 +61,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
   const [form, setForm] = useState({
     site_code: `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
     site_name: '',
-    site_type: 'Piggery',
+    site_type: 'Poultry',
     address: '',
     area_size_hectares: '1.0',
     current_latitude: 8.3683,
@@ -78,7 +78,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         setForm({
           site_code: editSite.site_code || `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
           site_name: editSite.site_name || '',
-          site_type: editSite.site_type || 'Piggery',
+          site_type: editSite.site_type || 'Poultry',
           address: editSite.address || '',
           area_size_hectares: (editSite.area_size_hectares || 1.0).toString(),
           current_latitude: editSite.current_latitude || 8.3683,
@@ -399,8 +399,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
               value={form.site_type}
               onIonChange={e => setForm({ ...form, site_type: e.detail.value! })}
             >
-              <IonSelectOption value="Piggery">Piggery Farm</IonSelectOption>
               <IonSelectOption value="Poultry">Poultry Farm</IonSelectOption>
+              <IonSelectOption value="Piggery">Piggery Farm</IonSelectOption>
               <IonSelectOption value="Agricultural">Agricultural Zone</IonSelectOption>
               <IonSelectOption value="Industrial">Industrial Facility</IonSelectOption>
               <IonSelectOption value="River/Waterway">River / Waterway</IonSelectOption>
