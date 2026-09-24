@@ -241,8 +241,9 @@ export const uploadPhotoToSupabase = async (
   siteId: string | number = 'general'
 ): Promise<string | null> => {
   try {
-    const filename = `site_${siteId}/${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
-    
+    // Fixed filename — upsert replaces the previous file at this path automatically
+    const filename = `${siteId}/site_photo.jpg`;
+
     const { data, error } = await supabase.storage
       .from('site-photos')
       .upload(filename, blob, {
@@ -383,7 +384,8 @@ export interface CaptureSitePhotoResult {
  * Capture Site Photo via Capacitor Camera, extract EXIF GPS or fallback to Device GPS, stamp, upload & record
  */
 export const captureSitePhoto = async (
-  siteName: string = 'New Monitoring Site'
+  siteName: string = 'New Monitoring Site',
+  siteId?: string | number | null
 ): Promise<CaptureSitePhotoResult> => {
   // 1. Capture photo via Capacitor Camera (with web/unimplemented fallback)
   const capturedDataUrl = await captureImageWithCameraOrFallback();
@@ -422,9 +424,12 @@ export const captureSitePhoto = async (
   const stampedDataUrl = await addStampToImage(capturedDataUrl, stampOptions);
   const finalDataUrl = embedExifData(stampedDataUrl, stampOptions);
 
-  // 5. Upload photo to Supabase Storage
-  const blob = dataURLtoBlob(finalDataUrl);
-  const publicUrl = await uploadPhotoToSupabase(blob, 'site_registration');
+  // 5. Upload photo to Supabase Storage only if a valid siteId is known
+  let publicUrl: string | null = null;
+  if (siteId && siteId !== 'site_registration' && !String(siteId).startsWith('temp_')) {
+    const blob = dataURLtoBlob(finalDataUrl);
+    publicUrl = await uploadPhotoToSupabase(blob, siteId);
+  }
   const photoUrlToSave = publicUrl || finalDataUrl;
 
   const photoRecord: InspectionPhotoRecord = {
