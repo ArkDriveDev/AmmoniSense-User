@@ -296,7 +296,23 @@ class SyncService {
       if (!targetId || (typeof targetId === 'string' && targetId.startsWith('temp_'))) {
         throw new Error(`Cannot update site: real DB id missing for target ${targetId}`);
       }
-      const { id: _id, temp_id: _tid, created_at: _ca, ...siteUpdates } = payload;
+      // Ensure only valid inspection_sites columns are updated
+      const siteUpdates: Record<string, any> = {};
+      if (payload.site_code !== undefined) siteUpdates.site_code = payload.site_code;
+      if (payload.site_name !== undefined) siteUpdates.site_name = payload.site_name;
+      if (payload.site_type !== undefined) siteUpdates.site_type = payload.site_type;
+      if (payload.address !== undefined) siteUpdates.address = payload.address;
+      if (payload.area_size_hectares !== undefined) siteUpdates.area_size_hectares = payload.area_size_hectares;
+      if (payload.notes !== undefined) siteUpdates.notes = payload.notes;
+      if (payload.is_active !== undefined) siteUpdates.is_active = payload.is_active;
+      if (payload.site_photo_url !== undefined) siteUpdates.site_photo_url = payload.site_photo_url;
+      if (payload.site_photo_thumbnail !== undefined) siteUpdates.site_photo_thumbnail = payload.site_photo_thumbnail;
+
+      const lat = payload.current_latitude !== undefined ? payload.current_latitude : payload.latitude;
+      const lng = payload.current_longitude !== undefined ? payload.current_longitude : payload.longitude;
+      if (lat !== undefined) siteUpdates.current_latitude = lat;
+      if (lng !== undefined) siteUpdates.current_longitude = lng;
+
       const { error: updErr } = await supabase
         .from('inspection_sites')
         .update(siteUpdates)
