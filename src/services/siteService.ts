@@ -168,17 +168,6 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
         await supabase.from('inspection_photos').delete().in('id', photoIds);
       }
 
-      // Find site devices and delete their sensor data
-      const { data: devRows } = await supabase
-        .from('devices')
-        .select('device_uid')
-        .eq('inspection_site_id', siteId);
-
-      if (devRows && devRows.length > 0) {
-        const devUids = devRows.map((d) => d.device_uid);
-        await supabase.from('sensor_data').delete().in('device_uid', devUids);
-        await supabase.from('devices').delete().eq('inspection_site_id', siteId);
-      }
 
       // Finally delete the site record
       const { error: siteErr } = await supabase
