@@ -103,7 +103,10 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
   const tempId = `temp_sched_${Date.now()}`;
   const offlineRec = formatSched({ ...clean, id: tempId, created_at: new Date().toISOString() }, true);
   offlineStorage.saveOfflineSchedule(offlineRec);
-  await offlineStorage.enqueueItem('INSPECTION_SCHEDULE', { ...clean, temp_id: tempId });
+  await offlineStorage.enqueueItem('inspection_schedule', { ...clean, temp_id: tempId }, {
+    action: 'insert',
+    tempId,
+  });
   window.dispatchEvent(new CustomEvent('schedules_updated'));
   return offlineRec;
 }
@@ -159,17 +162,46 @@ export async function updateSchedule(scheduleId: number | string, updates: Parti
   if (updates.assigned_to !== undefined) clean.assigned_to = updates.assigned_to;
 
   const isOffline = typeof scheduleId === 'string' && scheduleId.startsWith('temp_');
+  let synced = false;
+
   if (!isOffline && navigator.onLine) {
-    const { error } = await supabase.from('inspection_schedules').update(clean).eq('id', scheduleId);
-    if (error) throw error;
-  } else {
-    const all = offlineStorage.getOfflineSchedules();
-    const target = all.find((s: any) => String(s.id) === String(scheduleId));
-    if (target) {
-      Object.assign(target, clean);
-      offlineStorage.saveOfflineSchedule(target);
+    try {
+      const { error } = await supabase.from('inspection_schedules').update(clean).eq('id', scheduleId);
+      if (!error) synced = true;
+      else console.warn('[scheduleService] Supabase schedule update failed, queueing offline:', error);
+    } catch (err) {
+      console.warn('[scheduleService] Network failed during schedule update, queueing offline:', err);
     }
   }
+
+  // Update local cache if present
+  const all = offlineStorage.getOfflineSchedules();
+  const target = all.find((s: any) => String(s.id) === String(scheduleId));
+  if (target) {
+    Object.assign(target, clean);
+    offlineStorage.saveOfflineSchedule(target);
+  }
+
+  // If not synced directly to Supabase, enqueue or update in offline queue
+  if (!synced) {
+    const queue = await offlineStorage.getQueue();
+    const strId = String(scheduleId);
+    const existingQueueItem = queue.find((q) =>
+      q.tempId === strId || q.payload?.temp_id === strId || (q.targetId && String(q.targetId) === strId)
+    );
+
+    if (existingQueueItem && existingQueueItem.action === 'insert') {
+      const updatedPayload = { ...existingQueueItem.payload, ...clean };
+      await offlineStorage.updateQueueItemPayload(existingQueueItem.id, updatedPayload);
+    } else {
+      await offlineStorage.enqueueItem('inspection_schedule', clean, {
+        action: 'update',
+        targetId: !isOffline ? Number(scheduleId) : null,
+        tempId: isOffline ? strId : null,
+      });
+    }
+  }
+
   window.dispatchEvent(new CustomEvent('schedules_updated'));
 }
 
