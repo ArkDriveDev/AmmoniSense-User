@@ -32,6 +32,7 @@ import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
 import { deleteSite, deleteReading } from '../../services/siteService';
 import { fetchTags } from '../../services/tagService';
+import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
@@ -532,9 +533,7 @@ export default function UserMap() {
                         {s.site_code} • {s.address || 'Manolo Fortich'}
                       </div>
                     </div>
-                    <IonBadge color="primary" style={{ fontSize: '11px' }}>
-                      {s.site_type || 'Site'}
-                    </IonBadge>
+                    <SiteTypeBadge siteType={s.site_type} />
                   </div>
                 ))}
                 {filteredReadings.map((r) => (
@@ -671,9 +670,7 @@ export default function UserMap() {
             {selectedSite && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                  <IonBadge style={{ background: selectedSite.isOffline ? '#ef4444' : SITE_BRAND_COLOR, color: '#ffffff', padding: '4px 8px', borderRadius: '6px' }}>
-                    {selectedSite.site_type || 'Agricultural'}
-                  </IonBadge>
+                  <SiteTypeBadge siteType={selectedSite.site_type} />
                   <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
                     {selectedSite.site_code}
                   </span>
