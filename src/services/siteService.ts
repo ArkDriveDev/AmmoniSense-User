@@ -27,6 +27,8 @@ export const registerSiteWithPhoto = async (
       address: payload.address || payload.site_name,
       area_size_hectares: payload.area_size_hectares || 1.0,
       notes: payload.notes || null,
+      site_photo_url: (payload as any).site_photo_url || payload.photo_url || null,
+      site_photo_thumbnail: (payload as any).site_photo_thumbnail || (payload as any).site_photo_url || payload.photo_url || null,
       created_by: user.id,
       updated_by: user.id,
       is_active: true,
@@ -50,60 +52,10 @@ export const registerSiteWithPhoto = async (
       address: payload.address || payload.site_name,
     };
 
-    // 4. Link & update inspection_photo if provided
-    if (payload.photo_record_id || payload.photo_url) {
-      if (payload.photo_record_id) {
-        const { data: updatedPhoto } = await supabase
-          .from('inspection_photos')
-          .update({
-            inspection_site_id: createdSite.id,
-            is_site_photo: true,
-            is_used: true,
-          })
-          .eq('id', payload.photo_record_id)
-          .select('*')
-          .single();
-        photoRecord = updatedPhoto;
-      } else if (payload.photo_url) {
-        const photoData: any = {
-          photo_url: payload.photo_url,
-          latitude: payload.latitude,
-          longitude: payload.longitude,
-          inspection_site_id: createdSite.id,
-          is_site_photo: true,
-          is_used: true,
-        };
-        let { data: newPhoto, error: photoErr } = await supabase
-          .from('inspection_photos')
-          .insert([{ ...photoData, captured_by: user.id }])
-          .select('*')
-          .maybeSingle();
-
-        if (photoErr) {
-          const { data: retryPhoto } = await supabase
-            .from('inspection_photos')
-            .insert([photoData])
-            .select('*')
-            .maybeSingle();
-          newPhoto = retryPhoto;
-        }
-        photoRecord = newPhoto;
-      }
-
-      if (photoRecord?.id) {
-        await supabase
-          .from('inspection_sites')
-          .update({ site_photo_id: photoRecord.id })
-          .eq('id', createdSite.id);
-
-        createdSite.site_photo_id = photoRecord.id;
-      }
-    }
-
     return {
       site: createdSite,
       location: createdLocation,
-      photo: photoRecord,
+      photo: null,
     };
   } catch (error: any) {
     console.error('Transaction failure during site registration, initiating cleanup rollback:', error);
@@ -156,17 +108,6 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
       // Delete sensor_data directly linked to this site via inspection_site_id (new FK)
       await supabase.from('sensor_data').delete().eq('inspection_site_id', siteId);
 
-      // Find & delete inspection photos and sensor data linked through photo IDs
-      const { data: photos } = await supabase
-        .from('inspection_photos')
-        .select('id')
-        .eq('inspection_site_id', siteId);
-
-      if (photos && photos.length > 0) {
-        const photoIds = photos.map((p) => p.id);
-        await supabase.from('sensor_data').delete().in('inspection_photo_id', photoIds);
-        await supabase.from('inspection_photos').delete().in('id', photoIds);
-      }
 
 
       // Finally delete the site record
