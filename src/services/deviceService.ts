@@ -1,18 +1,22 @@
 import { supabase } from './supabase';
 
-export interface DeviceRecord {
+export interface Device {
   id: number;
   device_uid: string;
   device_name: string | null;
-  inspection_site_id: number | null;
-  firmware_version: string | null;
   status: string;
+  auto_registered?: boolean;
+  firmware_version?: string | null;
   first_seen_at: string | null;
   last_seen_at: string | null;
-  installed_at: string;
+  last_connected_by?: string | null;
+  connection_count?: number;
+  installed_at?: string;
   created_at: string;
   created_by: string | null;
 }
+
+export type DeviceRecord = Device;
 
 /**
  * Auto-register a BLE device in Supabase.
@@ -90,28 +94,12 @@ export async function autoRegisterDevice(
 }
 
 /**
- * Link an existing device to a monitoring site.
+ * @deprecated Devices are standalone — no site assignment in schema.
  */
 export async function linkDeviceToSite(
-  deviceId: string,
-  siteId: number
+  _deviceId: string,
+  _siteId: number
 ): Promise<boolean> {
-  const { error } = await supabase
-    .from('devices')
-    .update({ inspection_site_id: siteId })
-    .eq('device_uid', deviceId);
-
-  if (error) {
-    const { error: fbErr } = await supabase
-      .from('devices')
-      .update({ site_id: siteId } as any)
-      .eq('device_uid', deviceId);
-
-    if (fbErr) {
-      console.error('[deviceService] linkDeviceToSite error:', error.message);
-      return false;
-    }
-  }
   return true;
 }
 
