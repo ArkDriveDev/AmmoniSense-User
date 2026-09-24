@@ -32,6 +32,51 @@ export async function captureInspectionPhoto(): Promise<PhotoCaptureResult | nul
   }
 }
 
+export async function getSignedPhotoUrl(
+  bucket: string,
+  path: string,
+  expiresIn = 3600
+): Promise<string | null> {
+  try {
+    const cleanPath = extractStoragePath(path, bucket);
+    if (!cleanPath) return null;
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(cleanPath, expiresIn);
+    if (error) {
+      console.warn(`[photoStorageService] Failed to create signed URL for ${bucket}/${cleanPath}:`, error.message);
+      return null;
+    }
+    return data.signedUrl;
+  } catch (err) {
+    console.warn(`[photoStorageService] getSignedPhotoUrl exception:`, err);
+    return null;
+  }
+}
+
+export function extractStoragePath(urlOrPath: string, bucket: string): string {
+  if (!urlOrPath) return '';
+  if (urlOrPath.startsWith('data:') || urlOrPath.startsWith('blob:')) return urlOrPath;
+
+  const publicPrefix = `/storage/v1/object/public/${bucket}/`;
+  const signPrefix = `/storage/v1/object/sign/${bucket}/`;
+
+  const publicIdx = urlOrPath.indexOf(publicPrefix);
+  if (publicIdx !== -1) {
+    return decodeURIComponent(urlOrPath.substring(publicIdx + publicPrefix.length));
+  }
+
+  const signIdx = urlOrPath.indexOf(signPrefix);
+  if (signIdx !== -1) {
+    const afterSign = urlOrPath.substring(signIdx + signPrefix.length);
+    const qIdx = afterSign.indexOf('?');
+    const cleanPath = qIdx !== -1 ? afterSign.substring(0, qIdx) : afterSign;
+    return decodeURIComponent(cleanPath);
+  }
+
+  return urlOrPath;
+}
+
 export async function uploadPhotoPair(
   dataUrl: string,
   thumbnailDataUrl: string,
@@ -57,8 +102,8 @@ export async function uploadPhotoPair(
     ]);
 
     if (!pRes.error && !tRes.error) {
-      const pUrl = supabase.storage.from('inspection-photos').getPublicUrl(pName).data.publicUrl;
-      const tUrl = supabase.storage.from('inspection-thumbnails').getPublicUrl(tName).data.publicUrl;
+      const pUrl = (await getSignedPhotoUrl('inspection-photos', pName)) || pName;
+      const tUrl = (await getSignedPhotoUrl('inspection-thumbnails', tName)) || tName;
       return { photoUrl: pUrl, thumbnailUrl: tUrl, isOffline: false };
     }
   } catch (e) {
