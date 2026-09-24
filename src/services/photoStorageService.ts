@@ -12,6 +12,8 @@ export interface UploadedPhotoPair {
   photoUrl: string;
   thumbnailUrl: string;
   photoStoreId?: string;
+  photo_storage_path?: string;
+  photo_thumbnail_storage_path?: string;
   isOffline: boolean;
 }
 
@@ -94,11 +96,12 @@ export function extractStoragePath(urlOrPath: string, bucket: string): string {
 export async function uploadPhotoPair(
   dataUrl: string,
   thumbnailDataUrl: string,
-  tagRef: string | number = 'tag'
+  tagRef: string | number = 'tag',
+  siteId: string | number = 'general'
 ): Promise<UploadedPhotoPair> {
-  const ts = Date.now();
-  const pName = `tag_${tagRef}_${ts}.jpg`;
-  const tName = `thumb_${tagRef}_${ts}.jpg`;
+  // Fixed filenames — upsert replaces the old file automatically
+  const pName = `${siteId}/tags/${tagRef}/photo.jpg`;
+  const tName = `${siteId}/tags/${tagRef}/photo_thumb.jpg`;
 
   try {
     const photoBlob = dataUrlToBlob(dataUrl);
@@ -118,7 +121,13 @@ export async function uploadPhotoPair(
     if (!pRes.error && !tRes.error) {
       const pUrl = (await getSignedPhotoUrl('inspection-photos', pName)) || pName;
       const tUrl = (await getSignedPhotoUrl('inspection-thumbnails', tName)) || tName;
-      return { photoUrl: pUrl, thumbnailUrl: tUrl, isOffline: false };
+      return {
+        photoUrl: pUrl,
+        thumbnailUrl: tUrl,
+        photo_storage_path: pName,
+        photo_thumbnail_storage_path: tName,
+        isOffline: false,
+      };
     }
   } catch (e) {
     console.warn('[photoStorageService] Storage upload failed, fallback offline:', e);
@@ -135,17 +144,16 @@ export async function uploadPhotoPair(
 
 /**
  * Upload a site photo (full + thumbnail) to the 'site-photos' bucket.
- * Returns signed URLs and storage paths for both files.
+ * Uses a FIXED filename so re-uploading always replaces the previous file.
+ * Path: `${siteId}/site_photo.jpg`  /  `${siteId}/site_photo_thumb.jpg`
  */
 export async function uploadSitePhoto(
   blob: Blob,
   thumbnailBlob: Blob | null,
   siteId: string | number = 'general'
 ): Promise<UploadedSitePhoto> {
-  const ts = Date.now();
-  const rand = Math.random().toString(36).slice(-6);
-  const path = `${siteId}/${ts}-${rand}.jpg`;
-  const thumbPath = `${siteId}/${ts}-${rand}-thumb.jpg`;
+  const path = `${siteId}/site_photo.jpg`;
+  const thumbPath = `${siteId}/site_photo_thumb.jpg`;
 
   const { error: upErr } = await supabase.storage
     .from('site-photos')
@@ -177,17 +185,17 @@ export async function uploadSitePhoto(
 
 /**
  * Upload a tag photo (full + thumbnail) to the inspection-photos / inspection-thumbnails buckets.
- * Returns signed URLs and storage paths for both files.
+ * Uses FIXED filenames so re-uploading always replaces the previous file.
+ * Path: `${siteId}/tags/${tagId}/photo.jpg`  /  `${siteId}/tags/${tagId}/photo_thumb.jpg`
  */
 export async function uploadTagPhoto(
   blob: Blob,
   thumbnailBlob: Blob | null,
-  tagRef: string | number = 'tag'
+  tagId: string | number,
+  siteId: string | number = 'general'
 ): Promise<UploadedTagPhoto> {
-  const ts = Date.now();
-  const rand = Math.random().toString(36).slice(-6);
-  const path = `${tagRef}/${ts}-${rand}.jpg`;
-  const thumbPath = `${tagRef}/${ts}-${rand}-thumb.jpg`;
+  const path = `${siteId}/tags/${tagId}/photo.jpg`;
+  const thumbPath = `${siteId}/tags/${tagId}/photo_thumb.jpg`;
 
   const { error: upErr } = await supabase.storage
     .from('inspection-photos')
