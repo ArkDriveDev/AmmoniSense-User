@@ -46,7 +46,7 @@ export interface CreateSiteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSiteCreated?: (newSite: any) => void;
-  editSite?: OfflineSite | null;
+  editSite?: any | null;
 }
 
 export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClose, onSiteCreated, editSite }) => {
@@ -81,12 +81,12 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           site_type: editSite.site_type || 'Poultry',
           address: editSite.address || '',
           area_size_hectares: (editSite.area_size_hectares || 1.0).toString(),
-          current_latitude: editSite.current_latitude || 8.3683,
-          current_longitude: editSite.current_longitude || 124.8637,
+          current_latitude: editSite.current_latitude ?? editSite.latitude ?? 8.3683,
+          current_longitude: editSite.current_longitude ?? editSite.longitude ?? 124.8637,
           notes: editSite.notes || '',
         });
-        if (editSite.site_photo_url) {
-          setPhotoPreview(editSite.site_photo_url);
+        if (editSite.site_photo_url || editSite.site_photo_thumbnail) {
+          setPhotoPreview(editSite.site_photo_url || editSite.site_photo_thumbnail);
         }
       } else {
         const draft = offlineStorage.getDraft<typeof form>(SITE_DRAFT_KEY);
@@ -188,29 +188,55 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
     if (editSite) {
       try {
-        await offlineStorage.updateOfflineSite(editSite.id, {
-          site_code: form.site_code,
-          site_name: form.site_name,
-          site_type: form.site_type,
-          address: form.address || form.site_name,
-          area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
-          current_latitude: form.current_latitude,
-          current_longitude: form.current_longitude,
-          site_photo_url: photoPreview || editSite.site_photo_url || '',
-          site_photo_thumbnail: photoPreview || editSite.site_photo_thumbnail || '',
-          notes: form.notes,
-          lastModified: new Date().toISOString(),
-        });
+        const isOfflineOnly = typeof editSite.id === 'string' && editSite.id.startsWith('temp_');
+        if (!isOfflineOnly && navigator.onLine) {
+          const { error: updateErr } = await supabase
+            .from('inspection_sites')
+            .update({
+              site_code: form.site_code,
+              site_name: form.site_name,
+              site_type: form.site_type,
+              address: form.address || form.site_name,
+              area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+              latitude: form.current_latitude,
+              longitude: form.current_longitude,
+              current_latitude: form.current_latitude,
+              current_longitude: form.current_longitude,
+              notes: form.notes,
+              ...(photoPreview ? { site_photo_url: photoPreview, site_photo_thumbnail: photoPreview } : {})
+            })
+            .eq('id', editSite.id);
 
-        setToastMsg(`Offline site "${form.site_name}" updated locally.`);
+          if (updateErr) throw updateErr;
+          setToastMsg(`Site "${form.site_name}" updated.`);
+        } else {
+          await offlineStorage.updateOfflineSite(editSite.id, {
+            site_code: form.site_code,
+            site_name: form.site_name,
+            site_type: form.site_type,
+            address: form.address || form.site_name,
+            area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+            current_latitude: form.current_latitude,
+            current_longitude: form.current_longitude,
+            site_photo_url: photoPreview || editSite.site_photo_url || '',
+            site_photo_thumbnail: photoPreview || editSite.site_photo_thumbnail || '',
+            notes: form.notes,
+            lastModified: new Date().toISOString(),
+          });
+          setToastMsg(`Site "${form.site_name}" updated locally.`);
+        }
+
         setShowToast(true);
+        window.dispatchEvent(new CustomEvent('site_synced'));
 
         if (onSiteCreated) {
           onSiteCreated({ ...editSite, ...sitePayload });
         }
         onClose();
       } catch (err: any) {
-        console.error('Error updating offline site locally:', err);
+        console.error('Error updating site:', err);
+        setToastMsg(err.message || 'Failed to update site');
+        setShowToast(true);
       } finally {
         setLoading(false);
       }
@@ -307,7 +333,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>Register Monitoring Site</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>{editSite ? 'Update Site Details' : 'Register Monitoring Site'}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onClose} style={{ color: '#ffffff' }}>Cancel</IonButton>
           </IonButtons>
@@ -512,12 +538,12 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             {loading ? (
               <>
                 <IonSpinner name="crescent" />
-                &nbsp;Registering Site...
+                &nbsp;{editSite ? 'Updating Site...' : 'Registering Site...'}
               </>
             ) : (
               <>
-                <IonIcon icon={addCircleOutline} slot="start" />
-                Save & Register Monitoring Site
+                <IonIcon icon={editSite ? checkmarkCircleOutline : addCircleOutline} slot="start" />
+                {editSite ? 'Update Site Details' : 'Save & Register Monitoring Site'}
               </>
             )}
           </IonButton>
