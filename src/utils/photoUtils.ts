@@ -2,6 +2,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import piexif from 'piexifjs';
 import { supabase } from '../services/supabase';
+import { getSignedPhotoUrl } from '../services/photoStorageService';
 import { GpsSource } from '../types/site';
 
 export interface InspectionPhotoRecord {
@@ -237,7 +238,7 @@ export const dataURLtoBlob = (dataurl: string): Blob => {
 };
 
 /**
- * Upload Photo Blob to Supabase Storage Bucket ('sensor-photos')
+ * Upload Photo Blob to Supabase Storage Bucket ('site-photos')
  */
 export const uploadPhotoToSupabase = async (
   blob: Blob,
@@ -247,7 +248,7 @@ export const uploadPhotoToSupabase = async (
     const filename = `site_${siteId}/${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
     
     const { data, error } = await supabase.storage
-      .from('sensor-photos')
+      .from('site-photos')
       .upload(filename, blob, {
         contentType: 'image/jpeg',
         upsert: true,
@@ -258,11 +259,7 @@ export const uploadPhotoToSupabase = async (
       return null;
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from('sensor-photos')
-      .getPublicUrl(data.path);
-
-    return publicUrlData.publicUrl;
+    return await getSignedPhotoUrl('site-photos', data.path);
   } catch (err) {
     console.error('Error uploading photo to Supabase storage:', err);
     return null;
