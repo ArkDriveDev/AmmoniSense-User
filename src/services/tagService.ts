@@ -95,41 +95,87 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     photo_url: payload.photo_url || null,
     photo_thumbnail_url: payload.photo_thumbnail_url || null,
     device_uid: payload.device_uid?.trim() || null,
+    sensor_data_id: payload.sensor_data_id ? Number(payload.sensor_data_id) : null,
     inspection_schedule_id: payload.inspection_schedule_id,
     inspection_site_id: resolvedSiteId,
     notes: toUpperClean(payload.notes),
+    offline_temp_id: payload.offline_temp_id || null,
   };
 
   try {
     const user = (await supabase.auth.getUser()).data.user;
+
+    // 1. If BLE was used (device_uid is present), insert into sensor_data FIRST
+    if (clean.device_uid && !clean.sensor_data_id) {
+      try {
+        const { data: sRec, error: sErr } = await supabase
+          .from('sensor_data')
+          .insert([{
+            device_uid: clean.device_uid,
+            ammonia: clean.ammonia,
+            temperature: clean.temperature,
+            humidity: clean.humidity,
+            battery: clean.battery,
+            latitude: clean.latitude,
+            longitude: clean.longitude,
+            submitted_by: user?.id || null,
+          }])
+          .select('id')
+          .maybeSingle();
+
+        if (!sErr && sRec?.id) {
+          clean.sensor_data_id = sRec.id;
+        } else if (sErr) {
+          console.warn('[tagService] sensor_data insert failed, continuing with sensor_data_id = null:', sErr.message);
+          clean.sensor_data_id = null;
+        }
+      } catch (err) {
+        console.warn('[tagService] Failed to insert raw sensor reading:', err);
+        clean.sensor_data_id = null;
+      }
+    }
+
     let { data, error } = await supabase
       .from('inspection_tags')
       .insert([{ ...clean, created_by: user?.id }])
       .select()
       .single();
 
-    // Retry without inspection_site_id if FK / column constraint fires
-    if (error && (error.code === '23503' || error.code === '22P02' || error.message?.includes('inspection_site'))) {
-      console.warn('[tagService] site constraint notice — retrying with inspection_site_id=null.');
-      clean.inspection_site_id = null;
-      const { data: r1, error: e1 } = await supabase
-        .from('inspection_tags')
-        .insert([{ ...clean, inspection_site_id: null, created_by: user?.id }])
-        .select()
-        .single();
-      data = r1; error = e1;
+    // Resilient FK retry handling:
+    if (error && (error.code === '23503' || error.code === '22P02')) {
+      console.warn('[tagService] FK constraint error on tag insert — retrying with safe fallbacks:', error.message);
+      if (clean.sensor_data_id) {
+        clean.sensor_data_id = null;
+        const res = await supabase.from('inspection_tags').insert([{ ...clean, created_by: user?.id }]).select().single();
+        data = res.data; error = res.error;
+      }
+      if (error && clean.inspection_site_id) {
+        clean.inspection_site_id = null;
+        const res = await supabase.from('inspection_tags').insert([{ ...clean, created_by: user?.id }]).select().single();
+        data = res.data; error = res.error;
+      }
+      if (error && clean.device_uid) {
+        clean.device_uid = null;
+        const res = await supabase.from('inspection_tags').insert([{ ...clean, created_by: user?.id }]).select().single();
+        data = res.data; error = res.error;
+      }
+      if (error) {
+        const res = await supabase.from('inspection_tags').insert([{
+          ...clean,
+          inspection_schedule_id: null,
+          inspection_site_id: null,
+          device_uid: null,
+          sensor_data_id: null,
+          created_by: user?.id,
+        }]).select().single();
+        data = res.data; error = res.error;
+      }
     }
 
-    // Retry without device_uid if FK constraint fires (fk_inspection_tags_device)
-    if (error && (error.code === '23503' || error.message?.includes('device_uid'))) {
-      console.warn('[tagService] device_uid FK violation — retrying with device_uid=null.');
-      clean.device_uid = null;
-      const { data: r2, error: e2 } = await supabase
-        .from('inspection_tags')
-        .insert([{ ...clean, device_uid: null, created_by: user?.id }])
-        .select()
-        .single();
-      data = r2; error = e2;
+    if (error && error.code === '23505') {
+      console.warn('[tagService] Duplicate tag detected, treating as saved.');
+      window.dispatchEvent(new CustomEvent('tags_updated'));
+      return formatTag({ ...clean, id: Date.now() }, false);
     }
 
     if (!error && data) {
@@ -141,9 +187,9 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
   }
 
   const tempId = `temp_tag_${Date.now()}`;
-  const offlineRec = formatTag({ ...clean, id: tempId, created_at: new Date().toISOString() }, true);
+  const offlineRec = formatTag({ ...clean, id: tempId, offline_temp_id: tempId, created_at: new Date().toISOString() }, true);
   offlineStorage.saveOfflineTag(offlineRec);
-  await offlineStorage.enqueueItem('INSPECTION_TAG', { ...clean, temp_id: tempId });
+  await offlineStorage.enqueueItem('INSPECTION_TAG', { ...clean, temp_id: tempId, offline_temp_id: tempId });
   window.dispatchEvent(new CustomEvent('tags_updated'));
   return offlineRec;
 }
