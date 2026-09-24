@@ -16,13 +16,13 @@ import {
 } from '@ionic/react';
 
 import { useEffect, useState } from 'react';
-import { fetchMyDevices } from '../../services/deviceService';
+import { fetchMyDevices, Device } from '../../services/deviceService';
 import { refreshOutline, hardwareChipOutline, wifiOutline, timeOutline } from 'ionicons/icons';
 import { useLocation } from 'react-router-dom';
 
 export default function UserDevices() {
   const location = useLocation();
-  const [devices, setDevices] = useState<DeviceRecord[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
