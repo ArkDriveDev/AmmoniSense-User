@@ -1,7 +1,8 @@
 import { supabase } from './supabase';
 import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
 import offlineStorage from './OfflineStorageService';
-import { deleteStorageFiles } from './photoStorageService';
+import { deleteStorageFiles, uploadSitePhoto } from './photoStorageService';
+import { dataUrlToBlob, createThumbnail } from '../utils/thumbnailUtils';
 
 /**
  * Register Monitoring Site with photo & GPS without grid cells.
@@ -47,6 +48,34 @@ export const registerSiteWithPhoto = async (
       throw new Error('Failed to register inspection site: ' + (siteErr?.message || 'Error'));
     }
     createdSite = newSite;
+
+    // 2. Post-insert photo upload to fixed path `${siteId}/site_photo.jpg` if raw photo data is present
+    const rawPhoto = (payload as any).site_photo_url || payload.photo_url;
+    if (rawPhoto && typeof rawPhoto === 'string' && rawPhoto.startsWith('data:')) {
+      try {
+        const photoBlob = dataUrlToBlob(rawPhoto);
+        const thumbDataUrl = await createThumbnail(rawPhoto);
+        const thumbBlob = thumbDataUrl ? dataUrlToBlob(thumbDataUrl) : null;
+        const uploaded = await uploadSitePhoto(photoBlob, thumbBlob, createdSite.id);
+        const { error: updErr } = await supabase
+          .from('inspection_sites')
+          .update({
+            site_photo_url: uploaded.site_photo_url,
+            site_photo_thumbnail: uploaded.site_photo_thumbnail,
+            site_photo_storage_path: uploaded.site_photo_storage_path,
+            site_photo_thumbnail_storage_path: uploaded.site_photo_thumbnail_storage_path,
+          })
+          .eq('id', createdSite.id);
+        if (!updErr) {
+          createdSite.site_photo_url = uploaded.site_photo_url;
+          createdSite.site_photo_thumbnail = uploaded.site_photo_thumbnail;
+          createdSite.site_photo_storage_path = uploaded.site_photo_storage_path;
+          createdSite.site_photo_thumbnail_storage_path = uploaded.site_photo_thumbnail_storage_path;
+        }
+      } catch (photoErr) {
+        console.warn('[siteService] Post-registration site photo upload failed:', photoErr);
+      }
+    }
 
     createdLocation = {
       inspection_site_id: createdSite.id,
