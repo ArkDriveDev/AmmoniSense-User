@@ -3,11 +3,36 @@
 
 import { OfflineSite } from '../types/site';
 
+export type QueueAction = 'insert' | 'update';
+
+export type QueueItemType =
+  | 'inspection_tag'
+  | 'inspection_schedule'
+  | 'inspection_site'
+  | 'sensor_data'
+  | 'SENSOR_READING'
+  | 'SITE_REGISTRATION'
+  | 'DEVICE_TAG'
+  | 'INSPECTION_SCHEDULE'
+  | 'INSPECTION_TAG';
+
+export interface EnqueueOptions {
+  action?: QueueAction;
+  targetId?: number | string | null;
+  tempId?: string | null;
+  photoStoreId?: string;
+}
+
 export interface QueueItem {
   id: string;
-  type: 'SENSOR_READING' | 'SITE_REGISTRATION' | 'DEVICE_TAG' | 'INSPECTION_SCHEDULE' | 'INSPECTION_TAG';
+  type: QueueItemType;
+  action: QueueAction;
+  targetId: number | string | null;
+  tempId: string | null;
+  data: any;
   payload: any;
   photoStoreId?: string;
+  createdAt: string;
   timestamp: string;
   status: 'pending' | 'syncing' | 'failed';
   retryCount: number;
@@ -138,17 +163,35 @@ class OfflineStorageService {
   // ==========================================
 
   async enqueueItem(
-    type: QueueItem['type'],
-    payload: any,
-    photoStoreId?: string
+    type: QueueItemType,
+    data: any,
+    optionsOrPhotoId?: EnqueueOptions | string
   ): Promise<QueueItem> {
     const db = await this.initDB();
+    const isOptionsObj = typeof optionsOrPhotoId === 'object' && optionsOrPhotoId !== null;
+    const photoStoreId = typeof optionsOrPhotoId === 'string'
+      ? optionsOrPhotoId
+      : optionsOrPhotoId?.photoStoreId;
+    const action: QueueAction = (isOptionsObj && optionsOrPhotoId.action) ? optionsOrPhotoId.action : 'insert';
+    const targetId = isOptionsObj && optionsOrPhotoId.targetId !== undefined
+      ? optionsOrPhotoId.targetId
+      : (data?.id && !String(data?.id).startsWith('temp_') ? data.id : null);
+    const tempId = isOptionsObj && optionsOrPhotoId.tempId !== undefined
+      ? optionsOrPhotoId.tempId
+      : (data?.temp_id || data?.offline_temp_id || (String(data?.id).startsWith('temp_') ? String(data.id) : null));
+    const now = new Date().toISOString();
+
     const item: QueueItem = {
       id: `queue_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       type,
-      payload,
+      action,
+      targetId,
+      tempId,
+      data,
+      payload: data,
       photoStoreId,
-      timestamp: new Date().toISOString(),
+      createdAt: now,
+      timestamp: now,
       status: 'pending',
       retryCount: 0,
     };
@@ -227,6 +270,7 @@ class OfflineStorageService {
         const item: QueueItem = getReq.result;
         if (item) {
           item.payload = payload;
+          item.data = payload;
           const putReq = store.put(item);
           putReq.onsuccess = () => resolve();
           putReq.onerror = () => reject(putReq.error);
