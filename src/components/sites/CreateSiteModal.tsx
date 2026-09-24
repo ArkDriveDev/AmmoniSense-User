@@ -135,7 +135,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
   const handleTakeSitePhoto = async () => {
     setCapturingPhoto(true);
     try {
-      const result = await captureSitePhoto(form.site_name || 'New Site');
+      const result = await captureSitePhoto(form.site_name || 'New Site', editSite?.id);
       setPhotoRecord(result.photoRecord);
       setPhotoPreview(result.dataUrl || result.photoRecord.photo_url);
 
