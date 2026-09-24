@@ -2,7 +2,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import piexif from 'piexifjs';
 import { supabase } from '../services/supabase';
-import { getSignedPhotoUrl } from '../services/photoStorageService';
+import { getSignedPhotoUrl, sanitizeNumericId } from '../services/photoStorageService';
 import { GpsSource } from '../types/site';
 
 export interface InspectionPhotoRecord {
@@ -241,8 +241,9 @@ export const uploadPhotoToSupabase = async (
   siteId: string | number = 'general'
 ): Promise<string | null> => {
   try {
-    // Fixed filename — upsert replaces the previous file at this path automatically
-    const filename = `${siteId}/site_photo.jpg`;
+    const cleanSiteId = sanitizeNumericId(siteId);
+    if (!cleanSiteId) return null;
+    const filename = `${cleanSiteId}/site_photo.jpg`;
 
     const { data, error } = await supabase.storage
       .from('site-photos')
