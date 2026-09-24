@@ -6,13 +6,15 @@ import {
 } from '@ionic/react';
 import {
   addOutline, calendarOutline, timeOutline, pricetagOutline, personOutline,
-  mapOutline, listOutline, syncOutline, trashOutline
+  mapOutline, listOutline, syncOutline, trashOutline, createOutline
 } from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchScheduleById, deleteSchedule } from '../../services/scheduleService';
 import { fetchTags } from '../../services/tagService';
 import TagList from '../../components/inspection/TagList';
 import AddTagModal from '../../components/inspection/AddTagModal';
+import EditTagModal from '../../components/inspection/EditTagModal';
+import CreateScheduleModal from '../../components/inspection/CreateScheduleModal';
 import ScheduleTagsMap from '../../components/inspection/ScheduleTagsMap';
 import syncService from '../../services/SyncService';
 import { InspectionSchedule, InspectionTag } from '../../types/inspection';
@@ -31,6 +33,8 @@ export default function ScheduleDetail() {
   const [tags, setTags] = useState<InspectionTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddTag, setShowAddTag] = useState(false);
+  const [showEditSchedule, setShowEditSchedule] = useState(false);
+  const [editingTag, setEditingTag] = useState<InspectionTag | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [resyncing, setResyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -92,6 +96,9 @@ export default function ScheduleDetail() {
           <IonButtons slot="start"><IonBackButton defaultHref="/schedules" style={{ '--color': '#ffffff' }} /></IonButtons>
           <IonTitle style={{ fontWeight: 700 }}>{schedule?.schedule_name || 'Schedule'}</IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={() => setShowEditSchedule(true)} style={{ '--color': '#ffffff' }} title="Update schedule">
+              <IonIcon icon={createOutline} slot="icon-only" />
+            </IonButton>
             <IonButton onClick={handleDeleteSchedule} disabled={deleting} style={{ '--color': '#ff6b6b' }} title="Delete schedule">
               <IonIcon icon={trashOutline} slot="icon-only" />
             </IonButton>
@@ -137,8 +144,17 @@ export default function ScheduleDetail() {
                   {schedule.notes && (
                     <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#475569', background: '#F8FAFC', padding: '8px', borderRadius: '8px' }}>{schedule.notes}</p>
                   )}
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9', fontSize: '13px' }}>
                     <span style={{ color: '#475569' }}><IonIcon icon={pricetagOutline} color="primary" /> {tags.length} Tag{tags.length !== 1 ? 's' : ''}</span>
+                    <IonButton
+                      size="small"
+                      fill="outline"
+                      color="primary"
+                      onClick={() => setShowEditSchedule(true)}
+                      style={{ '--border-radius': '8px', fontSize: '12px', height: '30px' }}
+                    >
+                      <IonIcon icon={createOutline} slot="start" /> Update Details
+                    </IonButton>
                   </div>
                 </IonCardContent>
               </IonCard>
@@ -170,9 +186,28 @@ export default function ScheduleDetail() {
             {viewMode === 'map' ? (
               <ScheduleTagsMap tags={tags} height="360px" />
             ) : (
-              <TagList tags={tags} />
+              <TagList tags={tags} onEditTag={(tag) => setEditingTag(tag)} />
             )}
           </>
+        )}
+
+        {schedule && (
+          <CreateScheduleModal
+            isOpen={showEditSchedule}
+            onClose={() => setShowEditSchedule(false)}
+            siteId={schedule.inspection_site_id}
+            editSchedule={schedule}
+            onCreated={load}
+          />
+        )}
+
+        {editingTag && (
+          <EditTagModal
+            isOpen={!!editingTag}
+            onClose={() => setEditingTag(null)}
+            tag={editingTag}
+            onUpdated={load}
+          />
         )}
 
         {schedule && (
