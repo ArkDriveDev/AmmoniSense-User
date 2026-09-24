@@ -15,6 +15,20 @@ export interface UploadedPhotoPair {
   isOffline: boolean;
 }
 
+export interface UploadedSitePhoto {
+  site_photo_url: string | null;
+  site_photo_thumbnail: string | null;
+  site_photo_storage_path: string | null;
+  site_photo_thumbnail_storage_path: string | null;
+}
+
+export interface UploadedTagPhoto {
+  photo_url: string | null;
+  photo_thumbnail_url: string | null;
+  photo_storage_path: string | null;
+  photo_thumbnail_storage_path: string | null;
+}
+
 export async function captureInspectionPhoto(): Promise<PhotoCaptureResult | null> {
   try {
     const photo = await Camera.getPhoto({
@@ -117,4 +131,106 @@ export async function uploadPhotoPair(
     photoStoreId,
     isOffline: true,
   };
+}
+
+/**
+ * Upload a site photo (full + thumbnail) to the 'site-photos' bucket.
+ * Returns signed URLs and storage paths for both files.
+ */
+export async function uploadSitePhoto(
+  blob: Blob,
+  thumbnailBlob: Blob | null,
+  siteId: string | number = 'general'
+): Promise<UploadedSitePhoto> {
+  const ts = Date.now();
+  const rand = Math.random().toString(36).slice(-6);
+  const path = `${siteId}/${ts}-${rand}.jpg`;
+  const thumbPath = `${siteId}/${ts}-${rand}-thumb.jpg`;
+
+  const { error: upErr } = await supabase.storage
+    .from('site-photos')
+    .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+  if (upErr) throw new Error('[photoStorageService] Site photo upload failed: ' + upErr.message);
+
+  let thumbStorePath: string | null = null;
+  if (thumbnailBlob) {
+    const { error: thErr } = await supabase.storage
+      .from('site-photos')
+      .upload(thumbPath, thumbnailBlob, { contentType: 'image/jpeg', upsert: true });
+    if (!thErr) thumbStorePath = thumbPath;
+    else console.warn('[photoStorageService] Site thumbnail upload failed:', thErr.message);
+  }
+
+  const expiresIn = 60 * 60 * 24 * 365; // 1 year
+  const photoUrl = await getSignedPhotoUrl('site-photos', path, expiresIn);
+  const thumbUrl = thumbStorePath
+    ? await getSignedPhotoUrl('site-photos', thumbStorePath, expiresIn)
+    : photoUrl;
+
+  return {
+    site_photo_url: photoUrl,
+    site_photo_thumbnail: thumbUrl,
+    site_photo_storage_path: path,
+    site_photo_thumbnail_storage_path: thumbStorePath ?? path,
+  };
+}
+
+/**
+ * Upload a tag photo (full + thumbnail) to the inspection-photos / inspection-thumbnails buckets.
+ * Returns signed URLs and storage paths for both files.
+ */
+export async function uploadTagPhoto(
+  blob: Blob,
+  thumbnailBlob: Blob | null,
+  tagRef: string | number = 'tag'
+): Promise<UploadedTagPhoto> {
+  const ts = Date.now();
+  const rand = Math.random().toString(36).slice(-6);
+  const path = `${tagRef}/${ts}-${rand}.jpg`;
+  const thumbPath = `${tagRef}/${ts}-${rand}-thumb.jpg`;
+
+  const { error: upErr } = await supabase.storage
+    .from('inspection-photos')
+    .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+  if (upErr) throw new Error('[photoStorageService] Tag photo upload failed: ' + upErr.message);
+
+  let thumbStorePath: string | null = null;
+  if (thumbnailBlob) {
+    const { error: thErr } = await supabase.storage
+      .from('inspection-thumbnails')
+      .upload(thumbPath, thumbnailBlob, { contentType: 'image/jpeg', upsert: true });
+    if (!thErr) thumbStorePath = thumbPath;
+    else console.warn('[photoStorageService] Tag thumbnail upload failed:', thErr.message);
+  }
+
+  const expiresIn = 60 * 60 * 24 * 365;
+  const photoUrl = await getSignedPhotoUrl('inspection-photos', path, expiresIn);
+  const thumbUrl = thumbStorePath
+    ? await getSignedPhotoUrl('inspection-thumbnails', thumbStorePath, expiresIn)
+    : photoUrl;
+
+  return {
+    photo_url: photoUrl,
+    photo_thumbnail_url: thumbUrl,
+    photo_storage_path: path,
+    photo_thumbnail_storage_path: thumbStorePath ?? path,
+  };
+}
+
+/**
+ * Delete one or more files from a Supabase Storage bucket.
+ * Silently ignores missing files — best-effort cleanup.
+ */
+export async function deleteStorageFiles(
+  bucket: string,
+  paths: (string | null | undefined)[]
+): Promise<void> {
+  const valid = paths.filter((p): p is string => !!p && !p.startsWith('data:') && !p.startsWith('blob:') && !p.startsWith('http'));
+  if (valid.length === 0) return;
+  try {
+    const { error } = await supabase.storage.from(bucket).remove(valid);
+    if (error) console.warn(`[photoStorageService] Storage delete notice (${bucket}):`, error.message);
+  } catch (err) {
+    console.warn(`[photoStorageService] deleteStorageFiles exception (${bucket}):`, err);
+  }
 }
