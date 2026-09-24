@@ -110,9 +110,13 @@ class SyncService {
     try {
       const queue = await offlineStorage.getQueue();
       const typeOrder: Record<string, number> = {
+        'inspection_site': 1,
         'SITE_REGISTRATION': 1,
+        'inspection_schedule': 2,
         'INSPECTION_SCHEDULE': 2,
+        'inspection_tag': 3,
         'INSPECTION_TAG': 3,
+        'sensor_data': 4,
         'SENSOR_READING': 4,
         'DEVICE_TAG': 5,
       };
@@ -170,10 +174,12 @@ class SyncService {
 
   private async processItem(item: QueueItem): Promise<void> {
     switch (item.type) {
+      case 'sensor_data':
       case 'SENSOR_READING':
         await this.syncSensorReading(item);
         break;
 
+      case 'inspection_site':
       case 'SITE_REGISTRATION':
         await this.syncSiteRegistration(item);
         break;
@@ -182,10 +188,12 @@ class SyncService {
         await this.syncDeviceTag(item);
         break;
 
+      case 'inspection_schedule':
       case 'INSPECTION_SCHEDULE':
         await this.syncInspectionSchedule(item);
         break;
 
+      case 'inspection_tag':
       case 'INSPECTION_TAG':
         await this.syncInspectionTag(item);
         break;
@@ -196,7 +204,19 @@ class SyncService {
   }
 
   private async syncSensorReading(item: QueueItem): Promise<void> {
-    const payload = { ...item.payload };
+    const payload = { ...(item.data || item.payload) };
+
+    if (item.action === 'update') {
+      const targetId = item.targetId || payload.id;
+      if (!targetId) throw new Error('Cannot update sensor_data: targetId is required');
+      const { id: _id, created_at: _ca, ...updFields } = payload;
+      const { error: updErr } = await supabase
+        .from('sensor_data')
+        .update(updFields)
+        .eq('id', targetId);
+      if (updErr) throw new Error(`sensor_data update error: ${updErr.message}`);
+      return;
+    }
 
     // 1. Upload photo if present in photo_store
     if (item.photoStoreId && !payload.photo_url) {
@@ -266,9 +286,29 @@ class SyncService {
   }
 
   private async syncSiteRegistration(item: QueueItem): Promise<void> {
+    const payload = item.data || item.payload;
+    if (item.action === 'update') {
+      let targetId = item.targetId || payload?.id;
+      if (typeof targetId === 'string' && targetId.startsWith('temp_')) {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        targetId = map[targetId] || targetId;
+      }
+      if (!targetId || (typeof targetId === 'string' && targetId.startsWith('temp_'))) {
+        throw new Error(`Cannot update site: real DB id missing for target ${targetId}`);
+      }
+      const { id: _id, temp_id: _tid, created_at: _ca, ...siteUpdates } = payload;
+      const { error: updErr } = await supabase
+        .from('inspection_sites')
+        .update(siteUpdates)
+        .eq('id', targetId);
+      if (updErr) throw new Error(`inspection_sites update error: ${updErr.message}`);
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('site_synced'));
+      return;
+    }
+
     let regResult: any = null;
     try {
-      regResult = await registerSiteWithPhoto(item.payload);
+      regResult = await registerSiteWithPhoto(payload);
     } catch (error: any) {
       throw new Error(`inspection_sites insert error: ${error.message}`);
     }
@@ -325,7 +365,26 @@ class SyncService {
   }
 
   private async syncInspectionSchedule(item: QueueItem): Promise<void> {
-    const { temp_id, ...payload } = item.payload;
+    const { temp_id, ...payload } = item.data || item.payload;
+
+    if (item.action === 'update') {
+      let targetId = item.targetId || payload.id;
+      if (typeof targetId === 'string' && targetId.startsWith('temp_')) {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        targetId = map[targetId] || targetId;
+      }
+      if (!targetId || (typeof targetId === 'string' && targetId.startsWith('temp_'))) {
+        throw new Error(`Cannot update schedule: real DB id missing for target ${targetId}`);
+      }
+      const { id: _id, tags_count: _tc, created_at: _ca, ...schedUpdates } = payload;
+      const { error: updErr } = await supabase
+        .from('inspection_schedules')
+        .update(schedUpdates)
+        .eq('id', targetId);
+      if (updErr) throw new Error(`inspection_schedules update error: ${updErr.message}`);
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
+      return;
+    }
 
     // Resolve temp site ID → real BIGINT id before inserting
     if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
@@ -390,7 +449,26 @@ class SyncService {
   }
 
   private async syncInspectionTag(item: QueueItem): Promise<void> {
-    const { temp_id, ...payload } = item.payload;
+    const { temp_id, ...payload } = item.data || item.payload;
+
+    if (item.action === 'update') {
+      let targetId = item.targetId || payload.id;
+      if (typeof targetId === 'string' && targetId.startsWith('temp_')) {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        targetId = map[targetId] || targetId;
+      }
+      if (!targetId || (typeof targetId === 'string' && targetId.startsWith('temp_'))) {
+        throw new Error(`Cannot update tag: real DB id missing for target ${targetId}`);
+      }
+      const { id: _id, offline_temp_id: _otid, created_at: _ca, ...tagUpdates } = payload;
+      const { error: updErr } = await supabase
+        .from('inspection_tags')
+        .update(tagUpdates)
+        .eq('id', targetId);
+      if (updErr) throw new Error(`inspection_tags update error: ${updErr.message}`);
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
+      return;
+    }
 
     // Check if tag with offline_temp_id already exists in Supabase to prevent duplicates
     if (temp_id) {
