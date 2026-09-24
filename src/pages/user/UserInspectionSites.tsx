@@ -13,6 +13,7 @@ import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
 import CreateSiteModal from '../../components/sites/CreateSiteModal';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
+import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
 
 export default function UserInspectionSites() {
   const navigate = useNavigate();
@@ -101,7 +102,7 @@ export default function UserInspectionSites() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>{s.site_name}</h2>
                         {s.isOffline && <PendingSyncBadge />}
-                        <IonBadge style={{ background: '#EBF3FA', color: '#1D5D9B', fontSize: '11px' }}>{s.site_type || 'Agricultural'}</IonBadge>
+                        <SiteTypeBadge siteType={s.site_type} />
                       </div>
                       <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <IonIcon icon={locationOutline} color="primary" />
