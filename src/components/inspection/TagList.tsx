@@ -6,9 +6,10 @@ import TagCard from './TagCard';
 interface Props {
   tags: InspectionTag[];
   onSelectTag?: (tag: InspectionTag) => void;
+  onEditTag?: (tag: InspectionTag) => void;
 }
 
-export const TagList: React.FC<Props> = ({ tags, onSelectTag }) => {
+export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag }) => {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -50,7 +51,7 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag }) => {
         </div>
       ) : (
         filtered.map((tag) => (
-          <TagCard key={tag.id} tag={tag} onClick={() => onSelectTag?.(tag)} />
+          <TagCard key={tag.id} tag={tag} onClick={() => (onSelectTag ? onSelectTag(tag) : onEditTag?.(tag))} onEdit={onEditTag} />
         ))
       )}
     </div>

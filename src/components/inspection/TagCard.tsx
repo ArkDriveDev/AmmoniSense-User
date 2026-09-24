@@ -1,11 +1,12 @@
 import React from 'react';
-import { IonCard, IonCardContent, IonBadge, IonIcon } from '@ionic/react';
-import { thermometerOutline, waterOutline, batteryChargingOutline, locationOutline, cloudOfflineOutline } from 'ionicons/icons';
+import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
+import { thermometerOutline, waterOutline, batteryChargingOutline, locationOutline, cloudOfflineOutline, createOutline } from 'ionicons/icons';
 import { InspectionTag } from '../../types/inspection';
 
 interface Props {
   tag: InspectionTag;
   onClick?: () => void;
+  onEdit?: (tag: InspectionTag) => void;
 }
 
 const statusBadgeColor = (status: string) => {
@@ -18,7 +19,7 @@ const statusBadgeColor = (status: string) => {
   }
 };
 
-export const TagCard: React.FC<Props> = ({ tag, onClick }) => {
+export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit }) => {
   const photo = tag.photo_thumbnail_url || tag.photo_url;
 
   return (
@@ -37,13 +38,30 @@ export const TagCard: React.FC<Props> = ({ tag, onClick }) => {
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
               <h4 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {tag.tag_name}
               </h4>
-              <IonBadge color={statusBadgeColor(tag.status)}>
-                {(Number(tag.ammonia) || 0).toFixed(2)} PPM ({tag.status || 'NORMAL'})
-              </IonBadge>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <IonBadge color={statusBadgeColor(tag.status)}>
+                  {(Number(tag.ammonia) || 0).toFixed(2)} PPM ({tag.status || 'NORMAL'})
+                </IonBadge>
+                {onEdit && (
+                  <IonButton
+                    size="small"
+                    fill="clear"
+                    color="primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(tag);
+                    }}
+                    title="Update tag details"
+                    style={{ margin: 0, height: '24px' }}
+                  >
+                    <IonIcon icon={createOutline} slot="icon-only" style={{ fontSize: '16px' }} />
+                  </IonButton>
+                )}
+              </div>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
               <span><IonIcon icon={thermometerOutline} /> {(Number(tag.temperature) || 0).toFixed(1)}°C</span>
