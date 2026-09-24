@@ -5,6 +5,7 @@ import offlineStorage, { QueueItem } from './OfflineStorageService';
 import { supabase } from './supabase';
 import { registerSiteWithPhoto } from './siteService';
 import { uploadPhotoPair, getSignedPhotoUrl } from './photoStorageService';
+import { calculateAmmoniaStatus } from '../types/inspection';
 
 export type SyncEventType = 'status_change' | 'sync_start' | 'sync_progress' | 'sync_complete' | 'sync_error';
 export type SyncEventListener = (event: { type: SyncEventType; isOnline: boolean; pendingCount: number; activeItem?: QueueItem; message?: string }) => void;
@@ -515,52 +516,51 @@ class SyncService {
 
     const { data: user } = await supabase.auth.getUser();
 
-    // If BLE was used (device_uid is present), insert raw reading into sensor_data FIRST
-    if (payload.device_uid && !payload.sensor_data_id) {
+    // Step 1: Always create a sensor_data row (readings live ONLY in sensor_data)
+    let sensorDataId: number | null = payload.sensor_data_id ? Number(payload.sensor_data_id) : null;
+    if (!sensorDataId) {
       try {
+        const devUid = payload.device_uid || 'MANUAL-ENTRY';
+        await this.ensureDeviceExists(devUid);
+
         const { data: sRec, error: sErr } = await supabase
           .from('sensor_data')
           .insert([{
-            device_uid: payload.device_uid,
-            ammonia: payload.ammonia,
-            temperature: payload.temperature,
-            humidity: payload.humidity,
-            battery: payload.battery,
-            latitude: payload.latitude,
-            longitude: payload.longitude,
-            submitted_by: user.user?.id || null,
+            device_uid: devUid,
+            ammonia: Number(payload.ammonia) || 0,
+            temperature: Number(payload.temperature) || 0,
+            humidity: Number(payload.humidity) || 0,
+            battery: payload.battery !== undefined && payload.battery !== null ? Number(payload.battery) : 100,
+            latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
+            longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
+            status: calculateAmmoniaStatus(payload.ammonia ?? 0),
+            submitted_by: payload.created_by || user.user?.id || null,
           }])
           .select('id')
-          .maybeSingle();
+          .single();
 
         if (!sErr && sRec?.id) {
-          payload.sensor_data_id = sRec.id;
+          sensorDataId = sRec.id;
         } else if (sErr) {
-          console.warn('[SyncService] sensor_data insert notice, continuing with sensor_data_id = null:', sErr.message);
-          payload.sensor_data_id = null;
+          console.warn('[SYNC] sensor_data insert failed, tag will have no reading link:', sErr.message);
         }
-      } catch (err) {
-        console.warn('[SyncService] Failed to insert raw sensor reading:', err);
-        payload.sensor_data_id = null;
+      } catch (err: any) {
+        console.warn('[SYNC] Failed to insert raw sensor reading:', err?.message);
       }
     }
 
+    // Step 2: Save tag WITHOUT reading values
     const tagRecord: any = {
-      tag_name: payload.tag_name || 'Inspection Tag',
-      inspection_schedule_id: payload.inspection_schedule_id ?? null,
-      inspection_site_id: payload.inspection_site_id ?? null,
-      ammonia: Number(payload.ammonia) || 0,
-      temperature: Number(payload.temperature) || 0,
-      humidity: Number(payload.humidity) || 0,
-      battery: payload.battery !== undefined && payload.battery !== null ? Number(payload.battery) : 100,
-      status: (payload.status || 'NORMAL').toUpperCase(),
+      tag_name: (payload.tag_name || 'TAG').toUpperCase(),
+      inspection_schedule_id: payload.inspection_schedule_id || null,
+      inspection_site_id: payload.inspection_site_id || null,
+      sensor_data_id: sensorDataId,
+      device_uid: payload.device_uid || null,
       latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
       photo_thumbnail_url: payload.photo_thumbnail_url || null,
-      device_uid: payload.device_uid || null,
-      sensor_data_id: payload.sensor_data_id || null,
-      notes: payload.notes || null,
+      notes: payload.notes?.toUpperCase() || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
       created_by: payload.created_by || user.user?.id || null,
     };
