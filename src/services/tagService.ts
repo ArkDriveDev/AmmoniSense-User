@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
 import { InspectionTag, CreateTagPayload, calculateAmmoniaStatus, toUpperClean } from '../types/inspection';
-import { getSignedPhotoUrl } from './photoStorageService';
+import { getSignedPhotoUrl, deleteStorageFiles } from './photoStorageService';
 import { autoRegisterDevice } from './deviceService';
 
 const parseNum = (v: any, fallback: number): number =>
@@ -106,6 +106,8 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     longitude: parseNum(payload.longitude, 0),
     photo_url: payload.photo_url || null,
     photo_thumbnail_url: payload.photo_thumbnail_url || null,
+    photo_storage_path: (payload as any).photo_storage_path || null,
+    photo_thumbnail_storage_path: (payload as any).photo_thumbnail_storage_path || null,
     device_uid: payload.device_uid?.trim() || null,
     sensor_data_id: payload.sensor_data_id ? Number(payload.sensor_data_id) : null,
     inspection_schedule_id: payload.inspection_schedule_id,
@@ -158,6 +160,8 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
       longitude: clean.longitude ?? null,
       photo_url: clean.photo_url ?? null,
       photo_thumbnail_url: clean.photo_thumbnail_url ?? null,
+      photo_storage_path: clean.photo_storage_path ?? null,
+      photo_thumbnail_storage_path: clean.photo_thumbnail_storage_path ?? null,
       notes: clean.notes || null,
       offline_temp_id: clean.offline_temp_id || null,
       created_by: user?.id,
@@ -218,11 +222,33 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
 
 export async function updateTag(
   tagId: number | string,
-  updates: { tag_name?: string; notes?: string }
+  updates: {
+    tag_name?: string;
+    notes?: string;
+    photo_url?: string | null;
+    photo_thumbnail_url?: string | null;
+    photo_storage_path?: string | null;
+    photo_thumbnail_storage_path?: string | null;
+    /** Storage paths of the OLD photo to delete from bucket */
+    _old_photo_storage_path?: string | null;
+    _old_photo_thumbnail_storage_path?: string | null;
+  }
 ): Promise<void> {
   const clean: any = {};
   if (updates.tag_name !== undefined) clean.tag_name = toUpperClean(updates.tag_name);
   if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
+  if (updates.photo_url !== undefined) clean.photo_url = updates.photo_url;
+  if (updates.photo_thumbnail_url !== undefined) clean.photo_thumbnail_url = updates.photo_thumbnail_url;
+  if (updates.photo_storage_path !== undefined) clean.photo_storage_path = updates.photo_storage_path;
+  if (updates.photo_thumbnail_storage_path !== undefined) clean.photo_thumbnail_storage_path = updates.photo_thumbnail_storage_path;
+
+  // Delete old photo files from bucket if a replacement was provided
+  if (updates.photo_storage_path !== undefined && updates._old_photo_storage_path) {
+    await deleteStorageFiles('inspection-photos', [updates._old_photo_storage_path]);
+  }
+  if (updates.photo_thumbnail_storage_path !== undefined && updates._old_photo_thumbnail_storage_path) {
+    await deleteStorageFiles('inspection-thumbnails', [updates._old_photo_thumbnail_storage_path]);
+  }
 
   const isOffline = typeof tagId === 'string' && tagId.startsWith('temp_');
   let synced = false;
