@@ -68,9 +68,11 @@ export interface InspectionTag {
   photo_url?: string | null;
   photo_thumbnail_url?: string | null;
   device_uid?: string | null;
+  sensor_data_id?: number | string | null;
   inspection_schedule_id: number | string;
   inspection_site_id?: number | string | null;
   notes?: string | null;
+  offline_temp_id?: string | null;
   created_by?: string | null;
   created_at?: string;
   isOffline?: boolean;
@@ -87,8 +89,10 @@ export interface CreateTagPayload {
   photo_url?: string | null;
   photo_thumbnail_url?: string | null;
   device_uid?: string | null;
+  sensor_data_id?: number | string | null;
   inspection_schedule_id: number | string;
   inspection_site_id?: number | string | null;
   notes?: string;
+  offline_temp_id?: string | null;
   status?: AmmoniaStatus;
 }
