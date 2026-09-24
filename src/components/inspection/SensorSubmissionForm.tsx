@@ -168,7 +168,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         setCellLat(siteLat);
         setCellLng(siteLng);
       }
-      fetchDevicesForSite(selectedSiteId);
+      fetchDevices();
     }
   }, [selectedSiteId]);
 
@@ -207,24 +207,17 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     }
   };
 
-  const fetchDevicesForSite = async (siteId: number | string) => {
-    // If it is a temporary offline site ID or non-numeric, do not query Supabase
-    if (!siteId || (typeof siteId === 'string' && (siteId.startsWith('temp_') || isNaN(Number(siteId))))) {
-      setDevices([]);
-      setSelectedDeviceUid('ESP32-AMMONIA-NODE-01');
-      return;
-    }
-
+  const fetchDevices = async () => {
     try {
-      const numericSiteId = Number(siteId);
       const { data } = await supabase
         .from('devices')
-        .select('id, device_uid')
-        .eq('inspection_site_id', numericSiteId);
+        .select('id, device_uid');
 
       if (data && data.length > 0) {
         setDevices(data);
-        setSelectedDeviceUid(data[0].device_uid);
+        if (!selectedDeviceUid || selectedDeviceUid === 'ESP32-AMMONIA-NODE-01') {
+          setSelectedDeviceUid(data[0].device_uid);
+        }
       } else {
         setDevices([]);
         setSelectedDeviceUid('ESP32-AMMONIA-NODE-01');
