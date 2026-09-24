@@ -17,8 +17,7 @@ import {
 
 import { useEffect, useState } from 'react';
 import { fetchMyDevices } from '../../services/deviceService';
-import type { DeviceRecord } from '../../services/deviceService';
-import { refreshOutline, hardwareChipOutline, wifiOutline, timeOutline, linkOutline } from 'ionicons/icons';
+import { refreshOutline, hardwareChipOutline, wifiOutline, timeOutline } from 'ionicons/icons';
 import { useLocation } from 'react-router-dom';
 
 export default function UserDevices() {
@@ -97,7 +96,6 @@ export default function UserDevices() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {devices.map((d) => {
               const isRecentlySeen = d.last_seen_at && (new Date().getTime() - new Date(d.last_seen_at).getTime() < 120000);
-              const isUnlinked = d.inspection_site_id === null || d.inspection_site_id === undefined;
               return (
                 <IonCard key={d.id} className="premium-card" style={{ margin: 0 }}>
                   <IonCardContent style={{ padding: '18px' }}>
@@ -140,16 +138,6 @@ export default function UserDevices() {
                         <IonBadge style={{ background: '#E2E8F0', color: '#475569', fontSize: '10px', fontWeight: 700 }}>
                           {d.status || 'ACTIVE'}
                         </IonBadge>
-                        {isUnlinked ? (
-                          <IonBadge style={{ background: '#fef9c3', color: '#92400e', fontSize: '10px', fontWeight: 700, borderRadius: '6px' }}>
-                            <IonIcon icon={linkOutline} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
-                            Not linked to site
-                          </IonBadge>
-                        ) : (
-                          <IonBadge style={{ background: '#ecfdf5', color: '#047857', fontSize: '10px', fontWeight: 700, borderRadius: '6px' }}>
-                            Linked to site
-                          </IonBadge>
-                        )}
                       </div>
                     </div>
                   </IonCardContent>
