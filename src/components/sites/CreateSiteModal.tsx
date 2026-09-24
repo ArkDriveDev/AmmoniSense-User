@@ -202,8 +202,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
           current_latitude: form.current_latitude,
           current_longitude: form.current_longitude,
-          latitude: form.current_latitude,
-          longitude: form.current_longitude,
           notes: form.notes,
           ...(photoPreview ? { site_photo_url: photoPreview, site_photo_thumbnail: photoPreview } : {})
         };
