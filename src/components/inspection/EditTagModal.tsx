@@ -72,7 +72,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
           const blob = dataURLtoBlob(newPhotoDataUrl);
           const thumbDataUrl = await createThumbnail(newPhotoDataUrl);
           const thumbBlob = thumbDataUrl ? dataURLtoBlob(thumbDataUrl) : null;
-          const siteId = tag.inspection_site_id ?? 'general';
+          const siteId = tag.inspection_site_id ?? 0;
           const uploaded = await uploadTagPhoto(blob, thumbBlob, tag.id, siteId);
 
           updates.photo_url = uploaded.photo_url;
