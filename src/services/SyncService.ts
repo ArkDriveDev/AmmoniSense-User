@@ -391,6 +391,24 @@ class SyncService {
   private async syncInspectionTag(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.payload;
 
+    // Check if tag with offline_temp_id already exists in Supabase to prevent duplicates
+    if (temp_id) {
+      try {
+        const { data: existingTag } = await supabase
+          .from('inspection_tags')
+          .select('id')
+          .eq('offline_temp_id', temp_id)
+          .maybeSingle();
+        if (existingTag) {
+          console.log(`[SyncService] Tag with temp_id ${temp_id} already synced, skipping duplicate.`);
+          offlineStorage.removeOfflineTag(temp_id);
+          return;
+        }
+      } catch (err) {
+        console.warn('[SyncService] Duplicate check notice:', err);
+      }
+    }
+
     // Preserve zero-value readings correctly
     const parseNum = (v: any, fallback: number): number =>
       v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
