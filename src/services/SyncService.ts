@@ -283,6 +283,8 @@ class SyncService {
       if (payload.is_active !== undefined) siteUpdates.is_active = payload.is_active;
       if (payload.site_photo_url !== undefined) siteUpdates.site_photo_url = payload.site_photo_url;
       if (payload.site_photo_thumbnail !== undefined) siteUpdates.site_photo_thumbnail = payload.site_photo_thumbnail;
+      if (payload.site_photo_storage_path !== undefined) siteUpdates.site_photo_storage_path = payload.site_photo_storage_path;
+      if (payload.site_photo_thumbnail_storage_path !== undefined) siteUpdates.site_photo_thumbnail_storage_path = payload.site_photo_thumbnail_storage_path;
 
       const lat = payload.current_latitude !== undefined ? payload.current_latitude : payload.latitude;
       const lng = payload.current_longitude !== undefined ? payload.current_longitude : payload.longitude;
@@ -576,9 +578,13 @@ class SyncService {
 
     if (photoData && photoData.startsWith('data:')) {
       try {
-        const uploaded = await uploadPhotoPair(photoData, thumbData || photoData, payload.tag_name || 'tag');
+        const siteRef = payload.inspection_site_id || 'general';
+        const tagRef = payload.offline_temp_id || payload.tag_name || 'tag';
+        const uploaded = await uploadPhotoPair(photoData, thumbData || photoData, tagRef, siteRef);
         payload.photo_url = uploaded.photoUrl;
         payload.photo_thumbnail_url = uploaded.thumbnailUrl;
+        payload.photo_storage_path = uploaded.photo_storage_path;
+        payload.photo_thumbnail_storage_path = uploaded.photo_thumbnail_storage_path;
       } catch (e) {
         console.warn('[SyncService] Storage upload notice during tag sync:', e);
       }
@@ -630,6 +636,8 @@ class SyncService {
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
       photo_thumbnail_url: payload.photo_thumbnail_url || null,
+      photo_storage_path: payload.photo_storage_path || null,
+      photo_thumbnail_storage_path: payload.photo_thumbnail_storage_path || null,
       notes: payload.notes?.toUpperCase() || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
       created_by: payload.created_by || user.user?.id || null,
