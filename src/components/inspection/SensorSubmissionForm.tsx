@@ -36,7 +36,6 @@ import syncService from '../../services/SyncService';
 import {
   InspectionPhotoRecord,
   step1_takeAndUploadPhoto,
-  step4_markPhotoAsUsed
 } from '../../utils/photoUtils';
 import bleService, { BLEReading } from '../../services/bleService';
 import bleCentralService, { BLECentralReading } from '../../services/bleCentralService';
@@ -325,11 +324,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         console.warn('Notice registering device:', devErr);
       }
 
-      // Only use inspection_photo_id if it is a valid database record ID
-      const validPhotoId = (photoRecord?.id && typeof photoRecord.id === 'number' && photoRecord.id < 1000000000)
-        ? photoRecord.id
-        : null;
-
       const numericSiteId = (
         selectedSiteId &&
         typeof selectedSiteId !== 'string' ||
@@ -347,7 +341,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         longitude: cellLng,
         submitted_by: userId,
         photo_url: photoRecord?.photo_url || null,
-        inspection_photo_id: validPhotoId,
         inspection_site_id: numericSiteId,
       };
 
@@ -362,30 +355,13 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         .select('id')
         .maybeSingle();
 
-      // Retry without inspection_photo_id if foreign key or schema violation
-      if (sensorError && (sensorError.message?.includes('inspection_photo') || sensorError.code === '23503')) {
-        const retryPayload = { ...sensorPayload, inspection_photo_id: null };
-        const { data: retryInsert, error: retryErr } = await supabase
-          .from('sensor_data')
-          .insert([retryPayload])
-          .select('id')
-          .maybeSingle();
-
-        if (!retryErr && retryInsert) {
-          firstInsert = retryInsert;
-          sensorError = null;
-        } else if (retryErr) {
-          sensorError = retryErr;
-        }
-      }
-
       // Retry without inspection_site_id if column not yet in schema cache (migration pending)
       if (sensorError && (
         sensorError.message?.includes('inspection_site_id') ||
         sensorError.code === '42703' ||
         sensorError.code === 'PGRST204'
       )) {
-        const { inspection_site_id: _dropped, inspection_photo_id: _dropped2, ...minimalPayload } = sensorPayload;
+        const { inspection_site_id: _dropped, ...minimalPayload } = sensorPayload;
         const { data: fallbackInsert, error: fallbackErr } = await supabase
           .from('sensor_data')
           .insert([minimalPayload])
@@ -405,11 +381,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       }
 
       insertedSensorData = firstInsert;
-      const sensorDataId = insertedSensorData?.id;
-
-      if (validPhotoId && sensorDataId) {
-        await step4_markPhotoAsUsed(validPhotoId, sensorDataId);
-      }
 
       setToastMsg(`🎉 Inspection Success! Reading submitted!`);
       setToastColor('success');
