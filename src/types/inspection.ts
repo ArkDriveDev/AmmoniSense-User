@@ -70,6 +70,8 @@ export interface InspectionTag {
   longitude: number;
   photo_url?: string | null;
   photo_thumbnail_url?: string | null;
+  photo_storage_path?: string | null;
+  photo_thumbnail_storage_path?: string | null;
   device_uid?: string | null;
   sensor_data_id?: number | string | null;
   inspection_schedule_id: number | string;
@@ -91,6 +93,8 @@ export interface CreateTagPayload {
   longitude: number;
   photo_url?: string | null;
   photo_thumbnail_url?: string | null;
+  photo_storage_path?: string | null;
+  photo_thumbnail_storage_path?: string | null;
   device_uid?: string | null;
   sensor_data_id?: number | string | null;
   inspection_schedule_id: number | string;
