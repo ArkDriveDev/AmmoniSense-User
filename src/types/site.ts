@@ -23,6 +23,24 @@ export interface OfflineSite {
   isDeleted?: boolean;
 }
 
+export interface InspectionSite {
+  id: number | string;
+  site_code: string;
+  site_name: string;
+  site_type: string;
+  current_latitude: number;
+  current_longitude: number;
+  address: string;
+  area_size_hectares: number;
+  site_photo_url?: string | null;
+  site_photo_thumbnail?: string | null;
+  offline_temp_id?: string | null;
+  is_active?: boolean;
+  notes?: string | null;
+  created_at?: string;
+  created_by?: string | null;
+}
+
 export interface CreateSitePayload {
   site_code: string;
   site_name: string;
@@ -32,13 +50,12 @@ export interface CreateSitePayload {
   latitude: number;
   longitude: number;
   notes?: string;
-  photo_record_id?: number;
   photo_url?: string;
+  site_photo_url?: string;
+  site_photo_thumbnail?: string;
   gps_source?: GpsSource;
   temp_id?: string;
 }
-
-// OdorZone removed — replaced by inspection_tags in the new schema
 
 export interface SiteRegistrationResult {
   site: any;
