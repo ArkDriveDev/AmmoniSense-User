@@ -58,10 +58,16 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     try {
       let pUrl = photoDataUrl;
       let tUrl = thumbDataUrl;
+      let pPath: string | null = null;
+      let tPath: string | null = null;
       if (photoDataUrl) {
-        const uploaded = await uploadPhotoPair(photoDataUrl, thumbDataUrl, tagName);
+        const cleanName = toUpperClean(tagName) || 'TAG';
+        const siteRef = siteId || 'general';
+        const uploaded = await uploadPhotoPair(photoDataUrl, thumbDataUrl, cleanName, siteRef);
         pUrl = uploaded.photoUrl;
         tUrl = uploaded.thumbnailUrl;
+        pPath = uploaded.photo_storage_path || null;
+        tPath = uploaded.photo_thumbnail_storage_path || null;
       }
       await createTag({
         tag_name: toUpperClean(tagName),
@@ -73,6 +79,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         longitude: lng,
         photo_url: pUrl,
         photo_thumbnail_url: tUrl,
+        photo_storage_path: pPath,
+        photo_thumbnail_storage_path: tPath,
         device_uid: deviceUid,
         inspection_schedule_id: scheduleId,
         inspection_site_id: siteId || undefined,
