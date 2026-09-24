@@ -477,39 +477,27 @@ class SyncService {
       }
     }
 
-    // Resolve temp site ID if present — tags do NOT require inspection_site_id!
-    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
-      const tempSiteId = payload.inspection_site_id;
-      try {
-        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-        if (map[tempSiteId]) payload.inspection_site_id = map[tempSiteId];
-      } catch { /* ignore */ }
+    // Validate inspection_site_id: check tempIdMap, verify existence in inspection_sites
+    let siteId: number | null = null;
+    if (typeof payload.inspection_site_id === 'string' && payload.inspection_site_id.startsWith('temp_')) {
+      const mappings = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+      payload.inspection_site_id = mappings[payload.inspection_site_id] || null;
     }
-
-    // Fallback: look up schedule's site if still unresolved
-    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
-      if (payload.inspection_schedule_id && typeof payload.inspection_schedule_id === 'number') {
-        try {
-          const { data: schedSite } = await supabase
-            .from('inspection_schedules')
-            .select('inspection_site_id')
-            .eq('id', payload.inspection_schedule_id)
-            .maybeSingle();
-          if (schedSite?.inspection_site_id) {
-            payload.inspection_site_id = schedSite.inspection_site_id;
-          }
-        } catch { /* ignore */ }
+    if (payload.inspection_site_id && !isNaN(Number(payload.inspection_site_id))) {
+      siteId = Number(payload.inspection_site_id);
+    }
+    if (siteId) {
+      const { data: site } = await supabase
+        .from('inspection_sites')
+        .select('id')
+        .eq('id', siteId)
+        .maybeSingle();
+      if (!site) {
+        console.warn('[SYNC] Site missing, nulling site_id:', siteId);
+        siteId = null;
       }
     }
-
-    // If inspection_site_id is still unresolved or non-numeric, null it out (do not require it)
-    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)) || !payload.inspection_site_id.trim())) {
-      payload.inspection_site_id = null;
-    } else if (payload.inspection_site_id !== null && payload.inspection_site_id !== undefined) {
-      payload.inspection_site_id = Number(payload.inspection_site_id) || null;
-    } else {
-      payload.inspection_site_id = null;
-    }
+    payload.inspection_site_id = siteId;
 
     let photoData = payload.photo_url;
     let thumbData = payload.photo_thumbnail_url;
