@@ -296,3 +296,48 @@ export async function updateTag(
 
   window.dispatchEvent(new CustomEvent('tags_updated'));
 }
+
+export async function deleteTag(tagId: number | string): Promise<void> {
+  const strId = String(tagId);
+  const isTemp = strId.startsWith('temp_');
+
+  // 1. Fetch photo storage paths before deleting (online only)
+  let photoStoragePath: string | null = null;
+  let thumbStoragePath: string | null = null;
+  if (!isTemp) {
+    try {
+      const { data } = await supabase
+        .from('inspection_tags')
+        .select('photo_storage_path, photo_thumbnail_storage_path')
+        .eq('id', tagId)
+        .maybeSingle();
+      photoStoragePath = data?.photo_storage_path ?? null;
+      thumbStoragePath = data?.photo_thumbnail_storage_path ?? null;
+    } catch { /* non-fatal */ }
+  }
+
+  // 2. Remove from offline cache
+  try {
+    const kept = offlineStorage.getOfflineTags().filter((t: any) => String(t.id) !== strId);
+    localStorage.setItem('offline_inspection_tags', JSON.stringify(kept));
+  } catch (e) {
+    console.warn('[tagService] deleteTag offline cache purge notice:', e);
+  }
+
+  // 3. Delete from Supabase
+  if (!isTemp) {
+    try {
+      const { error } = await supabase.from('inspection_tags').delete().eq('id', tagId);
+      if (error) throw new Error(error.message);
+    } catch (err) {
+      console.error('[tagService] deleteTag Supabase error:', err);
+      throw err;
+    }
+  }
+
+  // 4. Best-effort storage cleanup
+  await deleteStorageFiles('inspection-photos', [photoStoragePath]);
+  await deleteStorageFiles('inspection-thumbnails', [thumbStoragePath]);
+
+  window.dispatchEvent(new CustomEvent('tags_updated'));
+}
