@@ -194,41 +194,63 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     if (editSite) {
       try {
         const isOfflineOnly = typeof editSite.id === 'string' && editSite.id.startsWith('temp_');
-        if (!isOfflineOnly && navigator.onLine) {
-          const { error: updateErr } = await supabase
-            .from('inspection_sites')
-            .update({
-              site_code: form.site_code,
-              site_name: form.site_name,
-              site_type: form.site_type,
-              address: form.address || form.site_name,
-              area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
-              latitude: form.current_latitude,
-              longitude: form.current_longitude,
-              current_latitude: form.current_latitude,
-              current_longitude: form.current_longitude,
-              notes: form.notes,
-              ...(photoPreview ? { site_photo_url: photoPreview, site_photo_thumbnail: photoPreview } : {})
-            })
-            .eq('id', editSite.id);
+        const siteUpdateData = {
+          site_code: form.site_code,
+          site_name: form.site_name,
+          site_type: form.site_type,
+          address: form.address || form.site_name,
+          area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
+          current_latitude: form.current_latitude,
+          current_longitude: form.current_longitude,
+          latitude: form.current_latitude,
+          longitude: form.current_longitude,
+          notes: form.notes,
+          ...(photoPreview ? { site_photo_url: photoPreview, site_photo_thumbnail: photoPreview } : {})
+        };
 
-          if (updateErr) throw updateErr;
-          setToastMsg(`Site "${form.site_name}" updated.`);
-        } else {
+        let synced = false;
+        if (!isOfflineOnly && navigator.onLine) {
+          try {
+            const { error: updateErr } = await supabase
+              .from('inspection_sites')
+              .update(siteUpdateData)
+              .eq('id', editSite.id);
+            if (!updateErr) {
+              synced = true;
+              setToastMsg(`Site "${form.site_name}" updated.`);
+            } else {
+              console.warn('[CreateSiteModal] Supabase update failed, queueing offline:', updateErr);
+            }
+          } catch (err) {
+            console.warn('[CreateSiteModal] Network failed during update, queueing offline:', err);
+          }
+        }
+
+        if (!synced) {
           await offlineStorage.updateOfflineSite(editSite.id, {
-            site_code: form.site_code,
-            site_name: form.site_name,
-            site_type: form.site_type,
-            address: form.address || form.site_name,
-            area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
-            current_latitude: form.current_latitude,
-            current_longitude: form.current_longitude,
+            ...siteUpdateData,
             site_photo_url: photoPreview || editSite.site_photo_url || '',
             site_photo_thumbnail: photoPreview || editSite.site_photo_thumbnail || '',
-            notes: form.notes,
             lastModified: new Date().toISOString(),
           });
-          setToastMsg(`Site "${form.site_name}" updated locally.`);
+
+          const queue = await offlineStorage.getQueue();
+          const strId = String(editSite.id);
+          const existingQueueItem = queue.find((q) =>
+            q.tempId === strId || q.payload?.temp_id === strId || (q.targetId && String(q.targetId) === strId)
+          );
+
+          if (existingQueueItem && existingQueueItem.action === 'insert') {
+            const updatedPayload = { ...existingQueueItem.payload, ...siteUpdateData };
+            await offlineStorage.updateQueueItemPayload(existingQueueItem.id, updatedPayload);
+          } else {
+            await offlineStorage.enqueueItem('inspection_site', siteUpdateData, {
+              action: 'update',
+              targetId: !isOfflineOnly ? Number(editSite.id) : null,
+              tempId: isOfflineOnly ? strId : null,
+            });
+          }
+          setToastMsg(`Site "${form.site_name}" updated locally & queued for sync.`);
         }
 
         setShowToast(true);
@@ -293,7 +315,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
       await offlineStorage.saveOfflineSite(offlineSiteRecord);
 
-      await offlineStorage.enqueueItem('SITE_REGISTRATION', sitePayload);
+      await offlineStorage.enqueueItem('inspection_site', sitePayload, {
+        action: 'insert',
+        tempId,
+      });
       offlineStorage.clearDraft(SITE_DRAFT_KEY);
 
       setToastMsg(`📶 Offline Mode: Site "${form.site_name}" saved locally & queued for auto-sync!`);
