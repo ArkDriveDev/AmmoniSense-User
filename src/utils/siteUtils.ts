@@ -76,3 +76,67 @@ export function getSiteTypeMeta(siteType?: string): SiteTypeMeta {
     borderColor: '#BFDBFE',
   };
 }
+
+export interface SiteMapPinMeta {
+  emoji: string;
+  pinColor: string;
+  fillColor: string;
+  label: string;
+}
+
+export function getSiteMapPinMeta(siteType?: string): SiteMapPinMeta {
+  const norm = (siteType || '').trim().toLowerCase();
+
+  if (norm.includes('poultry')) {
+    return {
+      emoji: '🐔',
+      pinColor: '#D97706',
+      fillColor: '#FEF3C7',
+      label: 'Poultry Farm',
+    };
+  }
+
+  if (norm.includes('piggery') || norm.includes('pig') || norm.includes('swine')) {
+    return {
+      emoji: '🐷',
+      pinColor: '#DB2777',
+      fillColor: '#FCE7F3',
+      label: 'Piggery Farm',
+    };
+  }
+
+  if (norm.includes('agri') || norm.includes('crop') || norm.includes('farm')) {
+    return {
+      emoji: '🌱',
+      pinColor: '#059669',
+      fillColor: '#D1FAE5',
+      label: 'Agricultural Zone',
+    };
+  }
+
+  if (norm.includes('indus') || norm.includes('factory') || norm.includes('facility')) {
+    return {
+      emoji: '🏭',
+      pinColor: '#4F46E5',
+      fillColor: '#EEF2FF',
+      label: 'Industrial Facility',
+    };
+  }
+
+  if (norm.includes('river') || norm.includes('water')) {
+    return {
+      emoji: '💧',
+      pinColor: '#0284C7',
+      fillColor: '#E0F2FE',
+      label: 'River / Waterway',
+    };
+  }
+
+  return {
+    emoji: '🏢',
+    pinColor: '#1D5D9B',
+    fillColor: '#EBF3FA',
+    label: siteType || 'Inspection Site',
+  };
+}
+
