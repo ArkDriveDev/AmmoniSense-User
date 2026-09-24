@@ -436,7 +436,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       }
 
 
-      await offlineStorage.enqueueItem('SENSOR_READING', {
+      await offlineStorage.enqueueItem('sensor_data', {
         device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
         ammonia: parseFloat(ammonia) || 0,
         temperature: parseFloat(temperature) || 0,
@@ -446,7 +446,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         latitude: cellLat,
         longitude: cellLng,
         photo_url: photoRecord?.photo_url || null,
-      }, photoStoreId);
+      }, {
+        action: 'insert',
+        photoStoreId,
+      });
 
       offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
 
