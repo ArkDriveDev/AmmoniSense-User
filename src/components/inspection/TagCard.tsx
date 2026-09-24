@@ -1,12 +1,13 @@
 import React from 'react';
 import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
-import { thermometerOutline, waterOutline, batteryChargingOutline, locationOutline, cloudOfflineOutline, createOutline } from 'ionicons/icons';
+import { thermometerOutline, waterOutline, batteryChargingOutline, locationOutline, cloudOfflineOutline, createOutline, trashOutline } from 'ionicons/icons';
 import { InspectionTag } from '../../types/inspection';
 
 interface Props {
   tag: InspectionTag;
   onClick?: () => void;
   onEdit?: (tag: InspectionTag) => void;
+  onDelete?: (tag: InspectionTag) => void;
 }
 
 const statusBadgeColor = (status: string) => {
@@ -19,7 +20,7 @@ const statusBadgeColor = (status: string) => {
   }
 };
 
-export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit }) => {
+export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => {
   const photo = tag.photo_thumbnail_url || tag.photo_url;
 
   return (
@@ -59,6 +60,21 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit }) => {
                     style={{ margin: 0, height: '24px' }}
                   >
                     <IonIcon icon={createOutline} slot="icon-only" style={{ fontSize: '16px' }} />
+                  </IonButton>
+                )}
+                {onDelete && (
+                  <IonButton
+                    size="small"
+                    fill="clear"
+                    color="danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(tag);
+                    }}
+                    title="Delete tag"
+                    style={{ margin: 0, height: '24px' }}
+                  >
+                    <IonIcon icon={trashOutline} slot="icon-only" style={{ fontSize: '15px' }} />
                   </IonButton>
                 )}
               </div>

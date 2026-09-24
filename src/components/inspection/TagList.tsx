@@ -7,9 +7,10 @@ interface Props {
   tags: InspectionTag[];
   onSelectTag?: (tag: InspectionTag) => void;
   onEditTag?: (tag: InspectionTag) => void;
+  onDeleteTag?: (tag: InspectionTag) => void;
 }
 
-export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag }) => {
+export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag, onDeleteTag }) => {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -51,7 +52,7 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag }) => {
         </div>
       ) : (
         filtered.map((tag) => (
-          <TagCard key={tag.id} tag={tag} onClick={() => (onSelectTag ? onSelectTag(tag) : onEditTag?.(tag))} onEdit={onEditTag} />
+          <TagCard key={tag.id} tag={tag} onClick={() => (onSelectTag ? onSelectTag(tag) : onEditTag?.(tag))} onEdit={onEditTag} onDelete={onDeleteTag} />
         ))
       )}
     </div>

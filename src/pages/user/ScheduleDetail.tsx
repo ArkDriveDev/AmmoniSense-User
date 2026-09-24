@@ -182,7 +182,7 @@ export default function ScheduleDetail() {
             {viewMode === 'map' ? (
               <ScheduleTagsMap tags={tags} height="360px" />
             ) : (
-              <TagList tags={tags} onEditTag={(tag) => setEditingTag(tag)} />
+              <TagList tags={tags} onEditTag={(tag) => setEditingTag(tag)} onDeleteTag={(tag) => setEditingTag(tag)} />
             )}
           </>
         )}
@@ -203,6 +203,7 @@ export default function ScheduleDetail() {
             onClose={() => setEditingTag(null)}
             tag={editingTag}
             onUpdated={load}
+            onDeleted={load}
           />
         )}
 
