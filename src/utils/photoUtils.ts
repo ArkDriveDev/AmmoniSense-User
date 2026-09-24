@@ -310,70 +310,25 @@ export const step1_takeAndUploadPhoto = async (
       ? Number(siteId)
       : null;
 
-  // 6. Insert record into `inspection_photos` table with is_used = false
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id || null;
-
-  let inserted: any = null;
-  let dbError: any = null;
-
-  const basePhotoPayload = {
+  return {
+    id: null,
     photo_url: photoUrlToSave,
+    photo_thumbnail_url: photoUrlToSave,
     latitude,
     longitude,
-    inspection_site_id: numericSiteId,
-    is_used: false,
-  };
-
-  // Insert with captured_by (correct column name per inspection_photos schema)
-  const res = await supabase
-    .from('inspection_photos')
-    .insert([{ ...basePhotoPayload, captured_by: userId }])
-    .select('*')
-    .maybeSingle();
-
-  if (!res.error && res.data) {
-    inserted = res.data;
-  } else {
-    dbError = res.error;
-    console.warn('Fallback: inspection_photos table write notice:', dbError?.message);
-  }
-
-  if (!inserted) {
-    return {
-      id: null,
-      photo_url: photoUrlToSave,
-      latitude,
-      longitude,
-      dataUrl: finalDataUrl,
-    };
-  }
-
-  return {
-    ...inserted,
     dataUrl: finalDataUrl,
+    captured_at: new Date().toISOString(),
   };
 };
 
 /**
- * STEP 3: Mark `inspection_photos` record as used and link `sensor_data_id`
+ * @deprecated inspection_photos table dropped. Photos live directly on tags & sites.
  */
 export const step4_markPhotoAsUsed = async (
-  photoId: number | null | undefined,
-  sensorDataId: number
+  _photoId: number | null | undefined,
+  _sensorDataId: number
 ): Promise<void> => {
-  if (!photoId) return;
-  try {
-    await supabase
-      .from('inspection_photos')
-      .update({
-        sensor_data_id: sensorDataId,
-        is_used: true,
-      })
-      .eq('id', photoId);
-  } catch (err) {
-    console.warn('Error linking photo to sensor_data:', err);
-  }
+  // No-op: inspection_photos table is dropped
 };
 
 /**
