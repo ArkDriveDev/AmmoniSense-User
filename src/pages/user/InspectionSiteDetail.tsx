@@ -128,7 +128,7 @@ export default function InspectionSiteDetail() {
               </div>
             ) : (
               schedules.map((s) => (
-                <ScheduleCard key={s.id} schedule={s} onClick={() => navigate(`/schedules/${s.id}`)} />
+                <ScheduleCard key={s.id} schedule={s} tagCount={s.tags_count} onClick={() => navigate(`/schedules/${s.id}`)} />
               ))
             )}
           </>
