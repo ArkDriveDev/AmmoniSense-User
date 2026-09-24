@@ -88,21 +88,24 @@ export const AdminSensorDataViewer: React.FC = () => {
     try {
       const queue = await offlineStorage.getQueue();
       const pendingReadings = queue
-        .filter(q => q.type === 'SENSOR_READING')
-        .map(q => ({
-          id: q.id,
-          device_uid: q.payload.device_uid || 'ESP32-AMMONIA-NODE-01',
-          ammonia: q.payload.ammonia || 0,
-          temperature: q.payload.temperature,
-          humidity: q.payload.humidity,
-          battery: q.payload.battery,
-          status: q.payload.status || 'LOW',
-          latitude: q.payload.latitude,
-          longitude: q.payload.longitude,
-          created_at: q.timestamp,
-          photo_url: q.payload.photo_url,
-          is_pending_sync: true,
-        }));
+        .filter(q => q.type === 'SENSOR_READING' || q.type === 'sensor_data')
+        .map(q => {
+          const p = q.data || q.payload || {};
+          return {
+            id: q.id,
+            device_uid: p.device_uid || 'ESP32-AMMONIA-NODE-01',
+            ammonia: p.ammonia || 0,
+            temperature: p.temperature,
+            humidity: p.humidity,
+            battery: p.battery,
+            status: p.status || 'LOW',
+            latitude: p.latitude,
+            longitude: p.longitude,
+            created_at: q.createdAt || q.timestamp,
+            photo_url: p.photo_url,
+            is_pending_sync: true,
+          };
+        });
 
       setRecords([...pendingReadings, ...serverRecords]);
     } catch (e) {
