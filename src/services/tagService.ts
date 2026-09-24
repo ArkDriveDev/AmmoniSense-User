@@ -208,7 +208,10 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
   const tempId = `temp_tag_${Date.now()}`;
   const offlineRec = formatTag({ ...clean, id: tempId, offline_temp_id: tempId, created_at: new Date().toISOString() }, true);
   offlineStorage.saveOfflineTag(offlineRec);
-  await offlineStorage.enqueueItem('INSPECTION_TAG', { ...clean, temp_id: tempId, offline_temp_id: tempId });
+  await offlineStorage.enqueueItem('inspection_tag', { ...clean, temp_id: tempId, offline_temp_id: tempId }, {
+    action: 'insert',
+    tempId,
+  });
   window.dispatchEvent(new CustomEvent('tags_updated'));
   return offlineRec;
 }
@@ -222,19 +225,48 @@ export async function updateTag(
   if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
 
   const isOffline = typeof tagId === 'string' && tagId.startsWith('temp_');
+  let synced = false;
+
   if (!isOffline && navigator.onLine) {
-    const { error } = await supabase
-      .from('inspection_tags')
-      .update(clean)
-      .eq('id', tagId);
-    if (error) throw error;
-  } else {
-    const all = offlineStorage.getOfflineTags();
-    const target = all.find((t: any) => String(t.id) === String(tagId));
-    if (target) {
-      Object.assign(target, clean);
-      offlineStorage.saveOfflineTag(target);
+    try {
+      const { error } = await supabase
+        .from('inspection_tags')
+        .update(clean)
+        .eq('id', tagId);
+      if (!error) synced = true;
+      else console.warn('[tagService] Supabase tag update failed, queueing offline update:', error);
+    } catch (err) {
+      console.warn('[tagService] Network failed during tag update, queueing offline:', err);
     }
   }
+
+  // Update local cache if present
+  const all = offlineStorage.getOfflineTags();
+  const target = all.find((t: any) => String(t.id) === String(tagId));
+  if (target) {
+    Object.assign(target, clean);
+    offlineStorage.saveOfflineTag(target);
+  }
+
+  // If not synced directly to Supabase, enqueue or update in offline queue
+  if (!synced) {
+    const queue = await offlineStorage.getQueue();
+    const strId = String(tagId);
+    const existingQueueItem = queue.find((q) =>
+      q.tempId === strId || q.payload?.temp_id === strId || (q.targetId && String(q.targetId) === strId)
+    );
+
+    if (existingQueueItem && existingQueueItem.action === 'insert') {
+      const updatedPayload = { ...existingQueueItem.payload, ...clean };
+      await offlineStorage.updateQueueItemPayload(existingQueueItem.id, updatedPayload);
+    } else {
+      await offlineStorage.enqueueItem('inspection_tag', clean, {
+        action: 'update',
+        targetId: !isOffline ? Number(tagId) : null,
+        tempId: isOffline ? strId : null,
+      });
+    }
+  }
+
   window.dispatchEvent(new CustomEvent('tags_updated'));
 }
