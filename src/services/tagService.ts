@@ -6,36 +6,47 @@ import { getSignedPhotoUrl } from './photoStorageService';
 const parseNum = (v: any, fallback: number): number =>
   v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
 
-const formatTag = (d: any, isOffline = false): InspectionTag => ({
-  id: d.id,
-  tag_name: d.tag_name,
-  ammonia: parseNum(d.ammonia, 0),
-  temperature: parseNum(d.temperature, 0),
-  humidity: parseNum(d.humidity, 0),
-  battery: parseNum(d.battery, 100),
-  status: d.status || calculateAmmoniaStatus(d.ammonia ?? 0),
-  latitude: parseNum(d.latitude, 0),
-  longitude: parseNum(d.longitude, 0),
-  photo_url: d.photo_url,
-  photo_thumbnail_url: d.photo_thumbnail_url,
-  device_uid: d.device_uid,
-  sensor_data_id: d.sensor_data_id ?? null,
-  inspection_schedule_id: d.inspection_schedule_id,
-  inspection_site_id: d.inspection_site_id ?? null,
-  notes: d.notes,
-  offline_temp_id: d.offline_temp_id ?? null,
-  created_by: d.created_by,
-  created_at: d.created_at,
-  isOffline,
-});
+const formatTag = (d: any, isOffline = false): InspectionTag => {
+  const sensor = d.sensor_data || {};
+  return {
+    id: d.id,
+    tag_name: d.tag_name,
+    ammonia: parseNum(sensor.ammonia ?? d.ammonia, 0),
+    temperature: parseNum(sensor.temperature ?? d.temperature, 0),
+    humidity: parseNum(sensor.humidity ?? d.humidity, 0),
+    battery: parseNum(sensor.battery ?? d.battery, 100),
+    status: sensor.status || d.status || calculateAmmoniaStatus(sensor.ammonia ?? d.ammonia ?? 0),
+    latitude: parseNum(d.latitude ?? sensor.latitude, 0),
+    longitude: parseNum(d.longitude ?? sensor.longitude, 0),
+    photo_url: d.photo_url,
+    photo_thumbnail_url: d.photo_thumbnail_url,
+    device_uid: d.device_uid || sensor.device_uid || null,
+    sensor_data_id: d.sensor_data_id ?? sensor.id ?? null,
+    inspection_schedule_id: d.inspection_schedule_id,
+    inspection_site_id: d.inspection_site_id ?? null,
+    notes: d.notes,
+    offline_temp_id: d.offline_temp_id ?? null,
+    created_by: d.created_by,
+    created_at: d.created_at,
+    isOffline,
+  };
+};
 
 export async function fetchTags(filter?: { scheduleId?: number | string; siteId?: number | string }): Promise<InspectionTag[]> {
   let online: InspectionTag[] = [];
   try {
-    let q = supabase.from('inspection_tags').select('*').order('created_at', { ascending: false });
+    let q = supabase.from('inspection_tags').select('*, sensor_data(*)').order('created_at', { ascending: false });
     if (filter?.scheduleId) q = q.eq('inspection_schedule_id', filter.scheduleId);
     if (filter?.siteId) q = q.eq('inspection_site_id', filter.siteId);
-    const { data } = await q;
+    let { data, error } = await q;
+    if (error) {
+      console.warn('[tagService] sensor_data join notice, falling back:', error.message);
+      let fallbackQ = supabase.from('inspection_tags').select('*').order('created_at', { ascending: false });
+      if (filter?.scheduleId) fallbackQ = fallbackQ.eq('inspection_schedule_id', filter.scheduleId);
+      if (filter?.siteId) fallbackQ = fallbackQ.eq('inspection_site_id', filter.siteId);
+      const res = await fallbackQ;
+      data = res.data;
+    }
     if (data) {
       online = await Promise.all(
         data.map(async (d: any) => {
