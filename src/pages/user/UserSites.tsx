@@ -42,7 +42,6 @@ export default function UserSites() {
   const navigate = useNavigate();
   const [sites, setSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deviceCounts, setDeviceCounts] = useState<Record<string | number, number>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingSite, setEditingSite] = useState<any | null>(null);
 
@@ -114,18 +113,6 @@ export default function UserSites() {
 
       const combinedSites = [...offlineSitesList, ...onlineSitesList];
       setSites(combinedSites);
-
-      const counts: Record<string | number, number> = {};
-      for (const item of onlineSitesList) {
-        try {
-          const { count } = await supabase
-            .from('devices')
-            .select('id', { count: 'exact', head: true })
-            .eq('inspection_site_id', item.id);
-          counts[item.id] = count || 0;
-        } catch {}
-      }
-      setDeviceCounts(counts);
     } catch (err) {
       console.error('Unexpected error loading offline sites:', err);
       setSites(onlineSitesList);
@@ -227,7 +214,7 @@ export default function UserSites() {
                 key={s.id} 
                 className="premium-card premium-card-accent" 
                 style={{ margin: 0, cursor: 'pointer' }}
-                onClick={() => !s.isOffline && navigate(`/devices?site=${s.id}`)}
+                onClick={() => !s.isOffline && navigate(`/inspection-sites/${s.id}`)}
               >
                 <IonCardContent style={{ padding: '18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -259,12 +246,6 @@ export default function UserSites() {
                         >
                           <IonIcon icon={createOutline} slot="icon-only" />
                         </IonButton>
-                        {!s.isOffline && (
-                          <IonBadge style={{ background: 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)', color: '#ffffff', padding: '6px 12px', borderRadius: '20px', fontWeight: 700 }}>
-                            <IonIcon icon={hardwareChipOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                            {deviceCounts[s.id] || 0} Devices
-                          </IonBadge>
-                        )}
                         <IonButton
                           size="small"
                           fill="clear"
