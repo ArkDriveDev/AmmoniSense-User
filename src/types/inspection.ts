@@ -27,19 +27,23 @@ export function toUpperClean(str?: string | null): string {
   return (str || '').trim().toUpperCase();
 }
 
-export type ScheduleStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type ScheduleStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export interface InspectionSchedule {
   id: number | string;
   inspection_site_id: number | string;
   schedule_name: string;
   scheduled_date: string;
-  scheduled_time: string;
+  scheduled_time: string | null;
   status: ScheduleStatus;
-  notes?: string | null;
-  assigned_to?: string | null;
-  created_by?: string | null;
+  started_at?: string | null;       // auto-managed by trigger
+  completed_at?: string | null;     // auto-managed by trigger
   created_at?: string;
+  created_by?: string | null;
+  updated_at?: string;
+  notes?: string | null;
+  offline_temp_id?: string | null;  // required for offline sync
+  // UI-only computed fields
   tags_count?: number;
   site_name?: string;
   isOffline?: boolean;
@@ -52,7 +56,6 @@ export interface CreateSchedulePayload {
   scheduled_time: string;
   notes?: string;
   status?: ScheduleStatus;
-  assigned_to?: string;
 }
 
 export interface InspectionTag {
