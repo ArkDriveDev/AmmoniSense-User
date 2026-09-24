@@ -36,6 +36,7 @@ import {
 } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 import CreateSiteModal from '../../components/sites/CreateSiteModal';
+import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
 
 export default function UserSites() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function UserSites() {
   const [loading, setLoading] = useState(true);
   const [deviceCounts, setDeviceCounts] = useState<Record<string | number, number>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingOfflineSite, setEditingOfflineSite] = useState<OfflineSite | null>(null);
+  const [editingSite, setEditingSite] = useState<any | null>(null);
 
   useEffect(() => {
     fetchSites();
@@ -80,8 +81,15 @@ export default function UserSites() {
               id: l.id,
               site_name: l.site_name,
               location: l.address,
+              address: l.address,
               site_code: l.site_code,
               site_type: l.site_type || 'Agricultural',
+              area_size_hectares: l.area_size_hectares,
+              current_latitude: l.current_latitude || l.latitude,
+              current_longitude: l.current_longitude || l.longitude,
+              notes: l.notes,
+              site_photo_url: l.site_photo_url,
+              site_photo_thumbnail: l.site_photo_thumbnail,
               isOffline: false,
             }));
           }
@@ -138,9 +146,9 @@ export default function UserSites() {
     }
   };
 
-  const handleEditOfflineSite = (e: React.MouseEvent, site: OfflineSite) => {
+  const handleEditSite = (e: React.MouseEvent, site: any) => {
     e.stopPropagation();
-    setEditingOfflineSite(site);
+    setEditingSite(site.offlineRecord || site);
     setShowCreateModal(true);
   };
 
@@ -226,9 +234,7 @@ export default function UserSites() {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>{s.site_name}</h2>
-                        <IonBadge style={{ background: '#EBF3FA', color: '#1D5D9B', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                          {s.site_type}
-                        </IonBadge>
+                        <SiteTypeBadge siteType={s.site_type} />
                         {s.isOffline && <PendingSyncBadge />}
                       </div>
 
@@ -244,17 +250,15 @@ export default function UserSites() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        {s.isOffline && (
-                          <IonButton
-                            size="small"
-                            fill="clear"
-                            color="primary"
-                            onClick={(e) => handleEditOfflineSite(e, s.offlineRecord)}
-                            title="Edit offline site"
-                          >
-                            <IonIcon icon={createOutline} slot="icon-only" />
-                          </IonButton>
-                        )}
+                        <IonButton
+                          size="small"
+                          fill="clear"
+                          color="primary"
+                          onClick={(e) => handleEditSite(e, s)}
+                          title="Update site details"
+                        >
+                          <IonIcon icon={createOutline} slot="icon-only" />
+                        </IonButton>
                         {!s.isOffline && (
                           <IonBadge style={{ background: 'linear-gradient(135deg, #1D5D9B 0%, #0F3C5C 100%)', color: '#ffffff', padding: '6px 12px', borderRadius: '20px', fontWeight: 700 }}>
                             <IonIcon icon={hardwareChipOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
@@ -283,10 +287,10 @@ export default function UserSites() {
           isOpen={showCreateModal}
           onClose={() => {
             setShowCreateModal(false);
-            setEditingOfflineSite(null);
+            setEditingSite(null);
           }}
           onSiteCreated={() => fetchSites()}
-          editSite={editingOfflineSite}
+          editSite={editingSite}
         />
       </IonContent>
     </IonPage>
