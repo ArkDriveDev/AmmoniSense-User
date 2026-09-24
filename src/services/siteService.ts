@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
 import offlineStorage from './OfflineStorageService';
+import { deleteStorageFiles } from './photoStorageService';
 
 /**
  * Register Monitoring Site with photo & GPS without grid cells.
@@ -29,6 +30,8 @@ export const registerSiteWithPhoto = async (
       notes: payload.notes || null,
       site_photo_url: (payload as any).site_photo_url || payload.photo_url || null,
       site_photo_thumbnail: (payload as any).site_photo_thumbnail || (payload as any).site_photo_url || payload.photo_url || null,
+      site_photo_storage_path: payload.site_photo_storage_path || null,
+      site_photo_thumbnail_storage_path: payload.site_photo_thumbnail_storage_path || null,
       created_by: user.id,
       updated_by: user.id,
       is_active: true,
@@ -90,12 +93,29 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
   // 2. If it's an online Supabase site (non-temp ID), cascade delete from Supabase tables
   if (!strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_')) {
     try {
+      // Fetch site photo storage paths for bucket cleanup
+      const { data: siteRow } = await supabase
+        .from('inspection_sites')
+        .select('site_photo_storage_path, site_photo_thumbnail_storage_path')
+        .eq('id', siteId)
+        .maybeSingle();
+
       // Fetch child schedule IDs for cascading tag/photo deletes
       const { data: schedRows } = await supabase
         .from('inspection_schedules')
         .select('id')
         .eq('inspection_site_id', siteId);
       const schedIds = (schedRows || []).map((s: any) => s.id);
+
+      // Fetch all child tag photo storage paths
+      let tagPhotoRows: any[] = [];
+      if (schedIds.length > 0) {
+        const { data } = await supabase
+          .from('inspection_tags')
+          .select('photo_storage_path, photo_thumbnail_storage_path')
+          .in('inspection_schedule_id', schedIds);
+        tagPhotoRows = data || [];
+      }
 
       // Delete inspection_tags under those schedules
       if (schedIds.length > 0) {
@@ -108,8 +128,6 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
       // Delete sensor_data directly linked to this site via inspection_site_id (new FK)
       await supabase.from('sensor_data').delete().eq('inspection_site_id', siteId);
 
-
-
       // Finally delete the site record
       const { error: siteErr } = await supabase
         .from('inspection_sites')
@@ -119,6 +137,19 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
       if (siteErr) {
         throw new Error('Failed to delete inspection site from Supabase: ' + siteErr.message);
       }
+
+      // Best-effort: clean up storage bucket files AFTER DB rows are gone
+      // Remove tag photos
+      const tagPhotoPaths = tagPhotoRows.map((r: any) => r.photo_storage_path).filter(Boolean);
+      const tagThumbPaths = tagPhotoRows.map((r: any) => r.photo_thumbnail_storage_path).filter(Boolean);
+      if (tagPhotoPaths.length > 0) await deleteStorageFiles('inspection-photos', tagPhotoPaths);
+      if (tagThumbPaths.length > 0) await deleteStorageFiles('inspection-thumbnails', tagThumbPaths);
+
+      // Remove site photo
+      await deleteStorageFiles('site-photos', [
+        siteRow?.site_photo_storage_path,
+        siteRow?.site_photo_thumbnail_storage_path,
+      ]);
     } catch (err) {
       console.error('Error deleting site from Supabase:', err);
       throw err;
