@@ -41,7 +41,8 @@ import offlineStorage, { SITE_DRAFT_KEY } from '../../services/OfflineStorageSer
 import syncService from '../../services/SyncService';
 import { GpsSource, OfflineSite } from '../../types/site';
 import PolygonPreview from '../map/PolygonPreview';
-import { uploadSitePhoto, deleteStorageFiles } from '../../services/photoStorageService';
+import { uploadSitePhoto } from '../../services/photoStorageService';
+import { createThumbnail } from '../../utils/thumbnailUtils';
 
 export interface CreateSiteModalProps {
   isOpen: boolean;
@@ -197,17 +198,14 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       try {
         const isOfflineOnly = typeof editSite.id === 'string' && editSite.id.startsWith('temp_');
 
-        // If a new photo was captured, upload it and delete old files first
+        // If a new photo was captured, upload both photo and thumbnail (upsert replaces previous files)
         let updatedPhotoFields: Record<string, string | null> = {};
         if (photoRecord?.dataUrl) {
           try {
             const blob = dataURLtoBlob(photoRecord.dataUrl);
-            const uploaded = await uploadSitePhoto(blob, null, editSite.id);
-            // Delete old storage files (best-effort)
-            await deleteStorageFiles('site-photos', [
-              editSite.site_photo_storage_path,
-              editSite.site_photo_thumbnail_storage_path,
-            ]);
+            const thumbDataUrl = await createThumbnail(photoRecord.dataUrl);
+            const thumbBlob = thumbDataUrl ? dataURLtoBlob(thumbDataUrl) : null;
+            const uploaded = await uploadSitePhoto(blob, thumbBlob, editSite.id);
             updatedPhotoFields = {
               site_photo_url: uploaded.site_photo_url,
               site_photo_thumbnail: uploaded.site_photo_thumbnail,
