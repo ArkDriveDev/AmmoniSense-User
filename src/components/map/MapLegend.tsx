@@ -71,10 +71,33 @@ export const MapLegend: React.FC<MapLegendProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div style={{ borderTop: '1px solid #f1f5f9', margin: '3px 0' }} />
+        <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Site Types</span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#1D5D9B' }} />
-          <span><b>Monitoring Site</b> (Facility)</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '11px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>🐔</span>
+            <span>Poultry</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>🐷</span>
+            <span>Piggery</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>🌱</span>
+            <span>Agricultural</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>🏭</span>
+            <span>Industrial</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>💧</span>
+            <span>Waterway</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>🏢</span>
+            <span>General</span>
+          </div>
         </div>
       </div>
     </div>
