@@ -26,7 +26,6 @@ export interface ReadingMarkerData {
   battery?: number;
   latitude: number;
   longitude: number;
-  grid_cell_id?: string;
   device_uid?: string;
   created_at: string;
   photo_url?: string;
@@ -40,7 +39,6 @@ export interface PhotoTagMarkerData {
   latitude: number;
   longitude: number;
   photo_url: string;
-  grid_cell_id?: string;
   site_id?: number | null;
   site_name?: string;
   is_used?: boolean;
