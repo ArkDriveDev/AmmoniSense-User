@@ -159,7 +159,6 @@ export default function UserMap() {
             latitude: coords.latitude,
             longitude: coords.longitude,
             area_size_hectares: s.area_size_hectares ? Number(s.area_size_hectares) : 1.0,
-            grid_cell_id: s.current_grid_cell_id || 'A1',
             photo_url: s.site_photo_thumbnail || s.site_photo_url,
             isOffline: false,
             is_pending_sync: false,
@@ -195,7 +194,6 @@ export default function UserMap() {
             latitude: coords.latitude,
             longitude: coords.longitude,
             area_size_hectares: os.area_size_hectares ? Number(os.area_size_hectares) : 1.0,
-            grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
             photo_url: os.site_photo_thumbnail || os.site_photo_url || os.photo_url,
             isOffline: true,
             is_pending_sync: true,
@@ -224,7 +222,6 @@ export default function UserMap() {
               latitude: coords.latitude,
               longitude: coords.longitude,
               area_size_hectares: p.area_size_hectares ? Number(p.area_size_hectares) : 1.0,
-              grid_cell_id: p.current_grid_cell_id || p.grid_cell_id || 'A1',
               photo_url: p.site_photo_url || p.photo_url,
               isOffline: true,
               is_pending_sync: true,
@@ -260,7 +257,6 @@ export default function UserMap() {
                 latitude: coords.latitude,
                 longitude: coords.longitude,
                 area_size_hectares: os.area_size_hectares ? Number(os.area_size_hectares) : 1.0,
-                grid_cell_id: os.current_grid_cell_id || os.grid_cell_id || 'A1',
                 photo_url: os.site_photo_thumbnail || os.site_photo_url,
                 isOffline: true,
                 is_pending_sync: true,
@@ -365,8 +361,7 @@ export default function UserMap() {
     const query = searchText.toLowerCase();
     return (
       tag.site_name?.toLowerCase().includes(query) ||
-      tag.id.toString().includes(query) ||
-      tag.grid_cell_id?.toLowerCase().includes(query)
+      tag.id.toString().includes(query)
     );
   });
 
@@ -390,7 +385,6 @@ export default function UserMap() {
     return (
       reading.device_uid?.toLowerCase().includes(query) ||
       reading.ammonia.toString().includes(query) ||
-      reading.grid_cell_id?.toLowerCase().includes(query) ||
       severity.includes(query)
     );
   });
