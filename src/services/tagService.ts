@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
 import { InspectionTag, CreateTagPayload, calculateAmmoniaStatus, toUpperClean } from '../types/inspection';
+import { getSignedPhotoUrl } from './photoStorageService';
 
 const parseNum = (v: any, fallback: number): number =>
   v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
@@ -18,9 +19,11 @@ const formatTag = (d: any, isOffline = false): InspectionTag => ({
   photo_url: d.photo_url,
   photo_thumbnail_url: d.photo_thumbnail_url,
   device_uid: d.device_uid,
+  sensor_data_id: d.sensor_data_id ?? null,
   inspection_schedule_id: d.inspection_schedule_id,
   inspection_site_id: d.inspection_site_id ?? null,
   notes: d.notes,
+  offline_temp_id: d.offline_temp_id ?? null,
   created_by: d.created_by,
   created_at: d.created_at,
   isOffline,
@@ -33,7 +36,22 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
     if (filter?.scheduleId) q = q.eq('inspection_schedule_id', filter.scheduleId);
     if (filter?.siteId) q = q.eq('inspection_site_id', filter.siteId);
     const { data } = await q;
-    if (data) online = data.map((d: any) => formatTag(d, false));
+    if (data) {
+      online = await Promise.all(
+        data.map(async (d: any) => {
+          const t = formatTag(d, false);
+          if (t.photo_thumbnail_url && !t.photo_thumbnail_url.startsWith('data:')) {
+            const signed = await getSignedPhotoUrl('inspection-thumbnails', t.photo_thumbnail_url);
+            if (signed) t.photo_thumbnail_url = signed;
+          }
+          if (t.photo_url && !t.photo_url.startsWith('data:')) {
+            const signed = await getSignedPhotoUrl('inspection-photos', t.photo_url);
+            if (signed) t.photo_url = signed;
+          }
+          return t;
+        })
+      );
+    }
   } catch (err) {
     console.warn('[tagService] Online fetch tags notice:', err);
   }
