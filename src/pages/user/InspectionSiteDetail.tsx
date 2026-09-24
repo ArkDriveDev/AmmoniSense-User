@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonBackButton,
-  IonButtons, IonButton, IonIcon, IonSpinner, IonBadge, IonCard, IonCardContent
+  IonButtons, IonButton, IonIcon, IonSpinner, IonCard, IonCardContent
 } from '@ionic/react';
-import { addOutline, calendarOutline, pricetagOutline, locationOutline, chevronForwardOutline } from 'ionicons/icons';
+import { addOutline, calendarOutline, pricetagOutline, locationOutline, createOutline } from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { fetchSchedules } from '../../services/scheduleService';
+import { getSignedPhotoUrl } from '../../services/photoStorageService';
 import ScheduleCard from '../../components/inspection/ScheduleCard';
 import CreateScheduleModal from '../../components/inspection/CreateScheduleModal';
+import CreateSiteModal from '../../components/sites/CreateSiteModal';
+import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
 
 export default function InspectionSiteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,13 +21,20 @@ export default function InspectionSiteDetail() {
   const [tagCount, setTagCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [showCreateSchedule, setShowCreateSchedule] = useState(false);
+  const [showEditSite, setShowEditSite] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
       const { data: siteData } = await supabase.from('inspection_sites').select('*').eq('id', id).maybeSingle();
-      setSite(siteData);
+      let displayPhoto = siteData?.site_photo_thumbnail || siteData?.site_photo_url;
+      if (displayPhoto && !displayPhoto.startsWith('data:') && !displayPhoto.startsWith('blob:') && !displayPhoto.includes('token=')) {
+        const signed = await getSignedPhotoUrl('site-photos', displayPhoto);
+        if (signed) displayPhoto = signed;
+      }
+      setSite(siteData ? { ...siteData, display_photo: displayPhoto } : null);
+
       const [sched, tagRes] = await Promise.all([
         fetchSchedules(id),
         supabase.from('inspection_tags').select('id', { count: 'exact', head: true }).eq('inspection_site_id', id),
@@ -41,7 +51,11 @@ export default function InspectionSiteDetail() {
   useEffect(() => {
     fetchData();
     window.addEventListener('schedules_updated', fetchData);
-    return () => window.removeEventListener('schedules_updated', fetchData);
+    window.addEventListener('site_synced', fetchData);
+    return () => {
+      window.removeEventListener('schedules_updated', fetchData);
+      window.removeEventListener('site_synced', fetchData);
+    };
   }, [fetchData]);
 
   return (
@@ -51,6 +65,9 @@ export default function InspectionSiteDetail() {
           <IonButtons slot="start"><IonBackButton defaultHref="/inspection-sites" style={{ '--color': '#ffffff' }} /></IonButtons>
           <IonTitle style={{ fontWeight: 700 }}>{site?.site_name || 'Site Detail'}</IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={() => setShowEditSite(true)} style={{ '--color': '#ffffff' }} title="Update site details">
+              <IonIcon icon={createOutline} slot="start" /> Edit
+            </IonButton>
             <IonButton onClick={() => setShowCreateSchedule(true)} style={{ '--color': '#ffffff' }}>
               <IonIcon icon={addOutline} slot="start" /> Schedule
             </IonButton>
@@ -67,14 +84,27 @@ export default function InspectionSiteDetail() {
             {site && (
               <IonCard style={{ margin: '0 0 16px 0', borderRadius: '14px' }}>
                 <IonCardContent style={{ padding: '16px' }}>
-                  {site.site_photo_thumbnail && (
-                    <img src={site.site_photo_thumbnail} alt="Site" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '10px', marginBottom: '12px' }} />
+                  {site.display_photo && (
+                    <img src={site.display_photo} alt="Site" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '10px', marginBottom: '12px' }} />
                   )}
-                  <h2 style={{ margin: '0 0 4px 0', fontWeight: 800, fontSize: '20px', color: '#0F172A' }}>{site.site_name}</h2>
-                  <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <IonIcon icon={locationOutline} color="primary" /> {site.address || 'No address'}
-                  </p>
-                  <IonBadge style={{ marginRight: '8px', background: '#EBF3FA', color: '#1D5D9B' }}>{site.site_type || 'Agricultural'}</IonBadge>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                    <div>
+                      <h2 style={{ margin: '0 0 4px 0', fontWeight: 800, fontSize: '20px', color: '#0F172A' }}>{site.site_name}</h2>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <IonIcon icon={locationOutline} color="primary" /> {site.address || 'No address'}
+                      </p>
+                    </div>
+                    <IonButton
+                      size="small"
+                      fill="outline"
+                      color="primary"
+                      onClick={() => setShowEditSite(true)}
+                      style={{ '--border-radius': '8px', fontSize: '12px', height: '32px' }}
+                    >
+                      <IonIcon icon={createOutline} slot="start" /> Update
+                    </IonButton>
+                  </div>
+                  <SiteTypeBadge siteType={site.site_type} />
                   <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '13px', color: '#475569' }}>
                     <span><IonIcon icon={calendarOutline} color="primary" /> {schedules.length} Schedule{schedules.length !== 1 ? 's' : ''}</span>
                     <span><IonIcon icon={pricetagOutline} color="success" /> {tagCount} Tag{tagCount !== 1 ? 's' : ''}</span>
@@ -109,6 +139,14 @@ export default function InspectionSiteDetail() {
             onClose={() => setShowCreateSchedule(false)}
             siteId={id}
             onCreated={fetchData}
+          />
+        )}
+        {site && (
+          <CreateSiteModal
+            isOpen={showEditSite}
+            onClose={() => setShowEditSite(false)}
+            editSite={site}
+            onSiteCreated={fetchData}
           />
         )}
       </IonContent>
