@@ -5,7 +5,7 @@ import {
   IonSegment, IonSegmentButton, IonLabel
 } from '@ionic/react';
 import {
-  addOutline, calendarOutline, timeOutline, pricetagOutline, personOutline,
+  addOutline, calendarOutline, timeOutline, pricetagOutline,
   mapOutline, listOutline, syncOutline, trashOutline, createOutline
 } from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -128,11 +128,7 @@ export default function ScheduleDetail() {
                         <span><IonIcon icon={calendarOutline} /> {schedule.scheduled_date}</span>
                         <span><IonIcon icon={timeOutline} /> {schedule.scheduled_time || '09:00'}</span>
                       </div>
-                      {schedule.assigned_to && (
-                        <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <IonIcon icon={personOutline} /> {schedule.assigned_to}
-                        </p>
-                      )}
+
                       {schedule.site_name && (
                         <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94A3B8' }}>Site: {schedule.site_name}</p>
                       )}

@@ -61,7 +61,7 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           scheduled_date: date,
           scheduled_time: time,
           notes: toUpperClean(notes),
-          status: 'PENDING',
+          status: 'SCHEDULED',
         });
       }
       onCreated?.();
