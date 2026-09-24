@@ -22,10 +22,12 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
   const mapRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
 
-  const [lat, lng] = center;
-  const validLat = isNaN(lat) || lat === 0 ? 8.3683 : lat;
-  const validLng = isNaN(lng) || lng === 0 ? 124.8637 : lng;
-  const validArea = isNaN(areaHectares) || areaHectares <= 0 ? 1.0 : areaHectares;
+  const rawLat = center && center[0] != null ? Number(center[0]) : NaN;
+  const rawLng = center && center[1] != null ? Number(center[1]) : NaN;
+  const validLat = (!rawLat || isNaN(rawLat) || rawLat === 0) ? 8.3683 : rawLat;
+  const validLng = (!rawLng || isNaN(rawLng) || rawLng === 0) ? 124.8637 : rawLng;
+  const numArea = Number(areaHectares);
+  const validArea = (!numArea || isNaN(numArea) || numArea <= 0) ? 1.0 : numArea;
 
   // Initialize Map
   useEffect(() => {
@@ -51,7 +53,28 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
     layerGroupRef.current = layerGroup;
     mapRef.current = map;
 
+    // Invalidate size once container / modal transition completes
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 100),
+      setTimeout(() => map.invalidateSize(), 300),
+      setTimeout(() => map.invalidateSize(), 600),
+    ];
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      });
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
     return () => {
+      timers.forEach(clearTimeout);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -64,6 +87,8 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
     if (!mapRef.current || !layerGroupRef.current) return;
 
     const map = mapRef.current;
+    map.invalidateSize();
+
     const layerGroup = layerGroupRef.current;
     layerGroup.clearLayers();
 
@@ -108,10 +133,15 @@ export const PolygonPreview: React.FC<PolygonPreviewProps> = ({
     layerGroup.addLayer(centerMarker);
     layerGroup.addLayer(labelMarker);
 
-    // Fit view to geometry with padding
+    // Fit view to geometry with padding if map dimensions are valid
     try {
       const bounds = circle.getBounds();
-      map.fitBounds(bounds.pad(0.35));
+      const mapSize = map.getSize();
+      if (mapSize && mapSize.x > 0 && mapSize.y > 0 && bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.35));
+      } else {
+        map.setView([validLat, validLng], 15);
+      }
     } catch {
       map.setView([validLat, validLng], 15);
     }
