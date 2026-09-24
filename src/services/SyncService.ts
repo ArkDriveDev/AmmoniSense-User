@@ -529,44 +529,72 @@ class SyncService {
     }
 
     const { data: user } = await supabase.auth.getUser();
+
+    // If BLE was used (device_uid is present), insert raw reading into sensor_data FIRST
+    if (payload.device_uid && !payload.sensor_data_id) {
+      try {
+        const { data: sRec, error: sErr } = await supabase
+          .from('sensor_data')
+          .insert([{
+            device_uid: payload.device_uid,
+            ammonia: payload.ammonia,
+            temperature: payload.temperature,
+            humidity: payload.humidity,
+            battery: payload.battery,
+            latitude: payload.latitude,
+            longitude: payload.longitude,
+            submitted_by: user.user?.id || null,
+          }])
+          .select('id')
+          .maybeSingle();
+
+        if (!sErr && sRec?.id) {
+          payload.sensor_data_id = sRec.id;
+        } else if (sErr) {
+          console.warn('[SyncService] sensor_data insert notice, continuing with sensor_data_id = null:', sErr.message);
+          payload.sensor_data_id = null;
+        }
+      } catch (err) {
+        console.warn('[SyncService] Failed to insert raw sensor reading:', err);
+        payload.sensor_data_id = null;
+      }
+    }
+
+    const tagRecord: any = {
+      ...payload,
+      offline_temp_id: temp_id || payload.offline_temp_id || null,
+      created_by: user.user?.id,
+    };
+
     let { error } = await supabase
       .from('inspection_tags')
-      .insert([{ ...payload, created_by: user.user?.id }]);
+      .insert([tagRecord]);
 
-    // Retry without inspection_site_id if FK / column constraint fires
-    if (error && (
-      error.code === '23503' ||
-      error.code === '22P02' ||
-      error.message?.includes('inspection_site') ||
-      error.message?.includes('inspection_tags_inspection_site_id_fkey')
-    )) {
-      console.warn('[SyncService] inspection_tags site constraint notice — retrying with inspection_site_id: null.');
-      payload.inspection_site_id = null;
-      const { error: retrySiteErr } = await supabase
-        .from('inspection_tags')
-        .insert([{ ...payload, inspection_site_id: null, created_by: user.user?.id }]);
-      error = retrySiteErr ?? null;
+    // Resilient FK retry handling:
+    if (error && (error.code === '23503' || error.code === '22P02')) {
+      console.warn('[SyncService] FK constraint error on tag sync — retrying with safe fallbacks:', error.message);
+      for (const fk of ['sensor_data_id', 'inspection_site_id', 'device_uid'] as const) {
+        if (error && tagRecord[fk]) {
+          tagRecord[fk] = null;
+          const res = await supabase.from('inspection_tags').insert([tagRecord]);
+          error = res.error;
+        }
+      }
+      if (error) {
+        const res = await supabase.from('inspection_tags').insert([{
+          ...tagRecord,
+          inspection_schedule_id: null,
+          inspection_site_id: null,
+          device_uid: null,
+          sensor_data_id: null,
+        }]);
+        error = res.error;
+      }
     }
 
-    // Retry without device_uid if device FK constraint fires
-    if (error && (error.code === '23503' || error.message?.includes('fk_inspection_tags_device') || error.message?.includes('device_uid'))) {
-      console.warn('[SyncService] inspection_tags FK on device_uid — retrying without device_uid.');
-      payload.device_uid = null;
-      const { error: retryDevErr } = await supabase
-        .from('inspection_tags')
-        .insert([{ ...payload, device_uid: null, created_by: user.user?.id }]);
-      error = retryDevErr ?? null;
-    }
-
-    // Retry without both device_uid and inspection_site_id as a resilient fallback
-    if (error && error.code === '23503') {
-      console.warn('[SyncService] inspection_tags FK error — retrying with null site and null device.');
-      payload.device_uid = null;
-      payload.inspection_site_id = null;
-      const { error: retryBothErr } = await supabase
-        .from('inspection_tags')
-        .insert([{ ...payload, device_uid: null, inspection_site_id: null, created_by: user.user?.id }]);
-      error = retryBothErr ?? null;
+    if (error && error.code === '23505') {
+      console.warn('[SyncService] Duplicate tag detected during sync, treating as success.');
+      error = null;
     }
 
     if (error) throw new Error(`inspection_tags insert error: ${error.message}`);
