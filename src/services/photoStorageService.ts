@@ -103,37 +103,53 @@ export function sanitizeNumericId(id: string | number | null | undefined): strin
 
 export async function uploadPhotoPair(
   dataUrl: string,
-  thumbnailDataUrl: string,
-  tagRef: string | number = 'tag',
-  siteId: string | number = 'general'
+  thumbnailDataUrl: string | null | undefined,
+  tagId: string | number,
+  siteId: string | number
 ): Promise<UploadedPhotoPair> {
-  // Fixed filenames — upsert replaces the old file automatically
-  const pName = `${siteId}/tags/${tagRef}/photo.jpg`;
-  const tName = `${siteId}/tags/${tagRef}/photo_thumb.jpg`;
+  const cleanSiteId = sanitizeNumericId(siteId);
+  const cleanTagId = sanitizeNumericId(tagId);
+  if (!cleanSiteId || !cleanTagId) {
+    throw new Error(`[photoStorageService] Numeric IDs required. Got siteId: ${siteId}, tagId: ${tagId}`);
+  }
+
+  const pName = `${cleanSiteId}/tags/${cleanTagId}/photo.jpg`;
+  const tName = `${cleanSiteId}/tags/${cleanTagId}/photo_thumb.jpg`;
 
   try {
     const photoBlob = dataUrlToBlob(dataUrl);
-    const thumbBlob = dataUrlToBlob(thumbnailDataUrl);
+    const thumbBlob = thumbnailDataUrl ? dataUrlToBlob(thumbnailDataUrl) : null;
 
-    const [pRes, tRes] = await Promise.all([
+    const uploads: Promise<any>[] = [
       supabase.storage.from('inspection-photos').upload(pName, photoBlob, {
         contentType: 'image/jpeg',
         upsert: true,
       }),
-      supabase.storage.from('inspection-thumbnails').upload(tName, thumbBlob, {
-        contentType: 'image/jpeg',
-        upsert: true,
-      }),
-    ]);
+    ];
+    if (thumbBlob) {
+      uploads.push(
+        supabase.storage.from('inspection-thumbnails').upload(tName, thumbBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        })
+      );
+    }
 
-    if (!pRes.error && !tRes.error) {
+    const [pRes, tRes] = await Promise.all(uploads);
+
+    if (!pRes.error) {
       const pUrl = (await getSignedPhotoUrl('inspection-photos', pName)) || pName;
-      const tUrl = (await getSignedPhotoUrl('inspection-thumbnails', tName)) || tName;
+      let tUrl: string | null = null;
+      let thumbPathResult: string | null = null;
+      if (thumbBlob && tRes && !tRes.error) {
+        tUrl = (await getSignedPhotoUrl('inspection-thumbnails', tName)) || tName;
+        thumbPathResult = tName;
+      }
       return {
         photoUrl: pUrl,
-        thumbnailUrl: tUrl,
+        thumbnailUrl: tUrl || '',
         photo_storage_path: pName,
-        photo_thumbnail_storage_path: tName,
+        photo_thumbnail_storage_path: thumbPathResult ?? undefined,
         isOffline: false,
       };
     }
@@ -144,7 +160,7 @@ export async function uploadPhotoPair(
   const photoStoreId = await offlineStorage.savePhoto(dataUrl);
   return {
     photoUrl: dataUrl,
-    thumbnailUrl: thumbnailDataUrl,
+    thumbnailUrl: thumbnailDataUrl || '',
     photoStoreId,
     isOffline: true,
   };
