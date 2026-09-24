@@ -45,7 +45,7 @@ interface PolygonDrawerProps {
   height?: string;
   selectedSiteId?: number | null;
   sites?: Array<{ id: number; site_name: string; site_code?: string }>;
-  onSaveOdorZone?: (zone: PolygonZoneDraft) => void;
+  onSavePolygon?: (zone: PolygonZoneDraft) => void;
 }
 
 export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
@@ -55,7 +55,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
   height = '420px',
   selectedSiteId: initialSiteId = null,
   sites = [],
-  onSaveOdorZone,
+  onSavePolygon,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -66,9 +66,9 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
   // Draw State
   const [vertices, setVertices] = useState<[number, number][]>([]);
 
-  // Odor Zone Form State
+  // Coverage Zone Form State
   const [siteId, setSiteId] = useState<number | null>(initialSiteId || (sites.length > 0 ? sites[0].id : null));
-  const [zoneName, setZoneName] = useState<string>('Odor Impact Zone 1');
+  const [zoneName, setZoneName] = useState<string>('Coverage Zone 1');
   const [notes, setNotes] = useState<string>('');
 
   // Computed Surface Area (Hectares)
@@ -102,7 +102,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap | AmmoniSense Odor Zone Drawer',
+      attribution: '&copy; OpenStreetMap | AmmoniSense Polygon Drawer',
       maxZoom: 20,
     }).addTo(map);
 
@@ -212,7 +212,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     }
 
     if (!siteId) {
-      alert('Please select a monitoring site for this odor zone.');
+      alert('Please select a monitoring site for this coverage zone.');
       return;
     }
 
@@ -223,7 +223,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
 
       const zone: PolygonZoneDraft = {
         site_id: siteId,
-        zone_name: zoneName.trim() || 'Odor Impact Zone',
+        zone_name: zoneName.trim() || 'Coverage Zone',
         polygon_geojson: polygonGeojson,
         center_latitude: center?.lat || null,
         center_longitude: center?.lng || null,
@@ -232,7 +232,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
         notes: notes.trim() || null,
       };
 
-      if (onSaveOdorZone) onSaveOdorZone(zone);
+      if (onSavePolygon) onSavePolygon(zone);
       handleClear();
     } catch (err: any) {
       alert('Error creating polygon: ' + err.message);
@@ -247,7 +247,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IonBadge style={{ background: '#f97316', color: '#ffffff', fontSize: '12px', fontWeight: 700 }}>
-                🟧 Odor Zone Boundary
+              🟩 Coverage Zone Boundary
               </IonBadge>
               <IonBadge style={{ background: '#E2E8F0', color: '#334155', fontSize: '11px', fontWeight: 700 }}>
                 {vertices.length} Vertices
@@ -283,7 +283,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
           boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
           border: '1px solid rgba(255,255,255,0.2)'
         }}>
-          📍 Tap map to add odor zone vertices ({vertices.length}/3+ points)
+          📍 Tap map to add coverage zone vertices ({vertices.length}/3+ points)
         </div>
 
         {/* Drawing Action Buttons (Undo / Clear) */}
@@ -298,7 +298,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
         </div>
       </div>
 
-      {/* Odor Zone Meta Form Controls */}
+      {/* Coverage Zone Meta Form Controls */}
       <IonCard className="premium-card" style={{ margin: '12px 0 0 0', padding: '14px' }}>
         <IonCardContent style={{ padding: '0' }}>
           {sites.length > 0 && (
@@ -320,11 +320,11 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
           )}
 
           <IonItem lines="full" style={{ marginBottom: '8px' }}>
-            <IonLabel position="stacked" style={{ fontWeight: 700 }}>Odor Zone Name</IonLabel>
+            <IonLabel position="stacked" style={{ fontWeight: 700 }}>Coverage Zone Name</IonLabel>
             <IonInput
               value={zoneName}
               onIonChange={(e) => setZoneName(e.detail.value!)}
-              placeholder="e.g. Silang Odor Plume Zone 1"
+              placeholder="e.g. Silang Coverage Zone 1"
             />
           </IonItem>
 
@@ -347,7 +347,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
             style={{ marginTop: '14px', fontWeight: 700 }}
           >
             <IonIcon icon={saveOutline} slot="start" />
-            Save 🟧 Odor Zone Polygon
+            Save 🟩 Coverage Zone Polygon
           </IonButton>
         </IonCardContent>
       </IonCard>
