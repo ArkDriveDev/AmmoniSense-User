@@ -240,25 +240,13 @@ class SyncService {
       .select('id')
       .maybeSingle();
 
-    // Retry without inspection_photo_id if FK violation
-    if (error && (error.message?.includes('inspection_photo') || error.code === '23503')) {
-      const retryPayload = { ...payload, device_uid: deviceUid, inspection_photo_id: null };
-      const { data: r2, error: e2 } = await supabase
-        .from('sensor_data')
-        .insert([retryPayload])
-        .select('id')
-        .maybeSingle();
-      if (!e2 && r2) { inserted = r2; error = null; }
-      else if (e2) { error = e2; }
-    }
-
     // Retry without inspection_site_id if column missing from schema cache
     if (error && (
       error.message?.includes('inspection_site_id') ||
       error.code === '42703' ||
       error.code === 'PGRST204'
     )) {
-      const { inspection_site_id: _s, inspection_photo_id: _p, ...minPayload } = payload;
+      const { inspection_site_id: _s, ...minPayload } = payload;
       const { data: r3, error: e3 } = await supabase
         .from('sensor_data')
         .insert([{ ...minPayload, device_uid: deviceUid }])
@@ -270,18 +258,6 @@ class SyncService {
 
     if (error) {
       throw new Error(`sensor_data insert error: ${error.message}`);
-    }
-
-    // 4. Mark photo as used in inspection_photos table if payload has photo_url
-    if (payload.photo_url && inserted?.id) {
-      try {
-        await supabase
-          .from('inspection_photos')
-          .update({ sensor_data_id: inserted.id, is_used: true })
-          .eq('photo_url', payload.photo_url);
-      } catch (e) {
-        console.warn('Could not update inspection_photos table:', e);
-      }
     }
   }
 
