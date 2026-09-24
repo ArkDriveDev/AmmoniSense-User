@@ -440,42 +440,39 @@ class SyncService {
       }
     }
 
-    // Resolve temp schedule ID → real BIGINT id before inserting
-    if (typeof payload.inspection_schedule_id === 'string'
-        && payload.inspection_schedule_id.startsWith('temp_sched_')) {
+    // Validate inspection_schedule_id: check tempIdMap, fallback to offline_temp_id query, verify existence
+    let scheduleId: number | null = null;
+    if (typeof payload.inspection_schedule_id === 'string' && payload.inspection_schedule_id.startsWith('temp_sched_')) {
       const tempSchedId = payload.inspection_schedule_id;
-      // 1. Check in-memory localStorage map
       try {
         const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-        if (map[tempSchedId]) {
-          payload.inspection_schedule_id = map[tempSchedId];
-        }
+        if (map[tempSchedId]) scheduleId = Number(map[tempSchedId]) || null;
       } catch { /* ignore parse errors */ }
 
-      // 2. Fallback: query DB by offline_temp_id if still unresolved
-      if (typeof payload.inspection_schedule_id === 'string'
-          && payload.inspection_schedule_id.startsWith('temp_sched_')) {
+      if (!scheduleId) {
         const { data: sched } = await supabase
           .from('inspection_schedules')
-          .select('id, inspection_site_id')
+          .select('id')
           .eq('offline_temp_id', tempSchedId)
           .maybeSingle();
-        if (sched?.id) {
-          payload.inspection_schedule_id = sched.id;
-          if (!payload.inspection_site_id && sched.inspection_site_id) {
-            payload.inspection_site_id = sched.inspection_site_id;
-          }
-          // Persist resolved mapping for future tags
-          try {
-            const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-            map[tempSchedId] = sched.id;
-            localStorage.setItem('tempIdMap', JSON.stringify(map));
-          } catch { /* ignore */ }
-        } else {
-          throw new Error(`Cannot resolve schedule temp ID: ${tempSchedId}. Schedule may not have synced yet.`);
-        }
+        if (sched?.id) scheduleId = sched.id;
+      }
+    } else if (payload.inspection_schedule_id && !isNaN(Number(payload.inspection_schedule_id))) {
+      scheduleId = Number(payload.inspection_schedule_id);
+    }
+
+    if (scheduleId) {
+      const { data: schedule } = await supabase
+        .from('inspection_schedules')
+        .select('id')
+        .eq('id', scheduleId)
+        .maybeSingle();
+      if (!schedule) {
+        console.warn('[SYNC] Schedule missing, nulling schedule_id:', scheduleId);
+        scheduleId = null;
       }
     }
+    payload.inspection_schedule_id = scheduleId;
 
     // Validate inspection_site_id: check tempIdMap, verify existence in inspection_sites
     let siteId: number | null = null;
