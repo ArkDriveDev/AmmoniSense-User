@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getSiteMapPinMeta } from '../../utils/siteUtils';
 
 export interface SiteMarkerData {
   id: string | number;
@@ -319,23 +320,24 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     if (!showSitesLayer || !showSitePolygonsLayer) return;
 
     sites.forEach((site) => {
-      const pinColor = site.isOffline ? '#EF4444' : '#1D5D9B';
+      const pinMeta = getSiteMapPinMeta(site.site_type);
+      const polyColor = site.isOffline ? '#EF4444' : pinMeta.pinColor;
       const validArea = site.area_size_hectares && site.area_size_hectares > 0 ? site.area_size_hectares : 1.0;
       const areaSqMeters = validArea * 10000;
       const radiusMeters = Math.sqrt(areaSqMeters / Math.PI);
 
       const areaCircle = L.circle([site.latitude, site.longitude], {
         radius: radiusMeters,
-        color: pinColor,
-        fillColor: pinColor,
+        color: polyColor,
+        fillColor: polyColor,
         fillOpacity: 0.18,
         weight: 2,
         dashArray: '6, 6',
       });
 
       areaCircle.bindTooltip(
-        `<div style="font-weight: 700; font-size: 11px; color: ${pinColor};">` +
-        `<b>${site.site_name}</b><br/>Coverage: ${validArea.toFixed(2)} Ha (${Math.round(areaSqMeters).toLocaleString()} m²)` +
+        `<div style="font-weight: 700; font-size: 11px; color: ${polyColor};">` +
+        `<b>${pinMeta.emoji} ${site.site_name}</b><br/>${pinMeta.label} • ${validArea.toFixed(2)} Ha` +
         `</div>`,
         { sticky: true, opacity: 0.95 }
       );
@@ -357,7 +359,8 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     if (!showSitesLayer) return;
 
     sites.forEach((site) => {
-      const pinColor = site.isOffline ? '#EF4444' : '#1D5D9B';
+      const pinMeta = getSiteMapPinMeta(site.site_type);
+      const pinColor = site.isOffline ? '#EF4444' : pinMeta.pinColor;
       const isPending = site.is_pending_sync || site.isOffline;
 
       const customIcon = L.divIcon({
@@ -366,12 +369,12 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
           <div style="
             position: relative;
             background: ${pinColor};
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
             border: 2.5px solid #ffffff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -379,9 +382,10 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
           ">
             <span style="
               transform: rotate(45deg);
-              font-size: 15px;
-              color: white;
-            ">🏢</span>
+              font-size: 16px;
+              line-height: 1;
+              display: block;
+            ">${pinMeta.emoji}</span>
             ${isPending ? `
               <span style="
                 position: absolute;
@@ -397,8 +401,8 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
             ` : ''}
           </div>
         `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
       });
 
       const marker = L.marker([site.latitude, site.longitude], { icon: customIcon });
