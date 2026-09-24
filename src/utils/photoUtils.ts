@@ -263,7 +263,7 @@ export const uploadPhotoToSupabase = async (
 };
 
 /**
- * STEP 1: Take Photo & Save to `inspection_photos` table (is_used = false)
+ * STEP 1: Take Photo & Upload to Storage
  */
 export const step1_takeAndUploadPhoto = async (
   siteId?: number | string,
