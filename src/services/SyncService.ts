@@ -4,7 +4,7 @@
 import offlineStorage, { QueueItem } from './OfflineStorageService';
 import { supabase } from './supabase';
 import { registerSiteWithPhoto } from './siteService';
-import { uploadPhotoPair } from './photoStorageService';
+import { uploadPhotoPair, getSignedPhotoUrl } from './photoStorageService';
 
 export type SyncEventType = 'status_change' | 'sync_start' | 'sync_progress' | 'sync_complete' | 'sync_error';
 export type SyncEventListener = (event: { type: SyncEventType; isOnline: boolean; pendingCount: number; activeItem?: QueueItem; message?: string }) => void;
@@ -620,7 +620,7 @@ class SyncService {
       const filePath = `user_submissions/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('sensor-photos')
+        .from('inspection-photos')
         .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
 
       if (uploadError) {
@@ -628,11 +628,8 @@ class SyncService {
         return null;
       }
 
-      const { data: urlData } = supabase.storage
-        .from('sensor-photos')
-        .getPublicUrl(filePath);
-
-      return urlData?.publicUrl || null;
+      const signedUrl = await getSignedPhotoUrl('inspection-photos', filePath);
+      return signedUrl || null;
     } catch (err) {
       console.error('[SyncService] Error uploading photo blob:', err);
       return null;
