@@ -6,17 +6,13 @@ import { getSignedPhotoUrl } from '../services/photoStorageService';
 import { GpsSource } from '../types/site';
 
 export interface InspectionPhotoRecord {
-  id: number | null;
+  id?: number | string | null;
   photo_url: string;
+  photo_thumbnail_url?: string | null;
   latitude: number;
   longitude: number;
-  inspection_site_id: number | null;
-  is_used: boolean;
-  is_site_photo?: boolean;
-  sensor_data_id: number | null;
-  captured_by: string | null;
-  captured_at: string;
   dataUrl?: string;
+  captured_at?: string;
 }
 
 export interface StampOptions {
@@ -349,11 +345,6 @@ export const step1_takeAndUploadPhoto = async (
       photo_url: photoUrlToSave,
       latitude,
       longitude,
-      inspection_site_id: numericSiteId,
-      is_used: false,
-      sensor_data_id: null,
-      captured_by: userId,
-      captured_at: new Date().toISOString(),
       dataUrl: finalDataUrl,
     };
   }
@@ -481,43 +472,15 @@ export const captureSitePhoto = async (
   const publicUrl = await uploadPhotoToSupabase(blob, 'site_registration');
   const photoUrlToSave = publicUrl || finalDataUrl;
 
-  // 6. Insert into inspection_photos table with is_site_photo = true
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id || null;
-
-  const { data: inserted, error: dbError } = await supabase
-    .from('inspection_photos')
-    .insert([
-      {
-        photo_url: photoUrlToSave,
-        latitude,
-        longitude,
-        is_used: true,
-        is_site_photo: true,
-        captured_by: userId,
-      },
-    ])
-    .select('*')
-    .single();
-
-  const photoRecord: InspectionPhotoRecord = dbError || !inserted
-    ? {
-        id: Date.now(),
-        photo_url: photoUrlToSave,
-        latitude,
-        longitude,
-        inspection_site_id: null,
-        is_used: true,
-        is_site_photo: true,
-        sensor_data_id: null,
-        captured_by: userId,
-        captured_at: new Date().toISOString(),
-        dataUrl: finalDataUrl,
-      }
-    : {
-        ...inserted,
-        dataUrl: finalDataUrl,
-      };
+  const photoRecord: InspectionPhotoRecord = {
+    id: null,
+    photo_url: photoUrlToSave,
+    photo_thumbnail_url: photoUrlToSave,
+    latitude,
+    longitude,
+    dataUrl: finalDataUrl,
+    captured_at: new Date().toISOString(),
+  };
 
   return {
     photoRecord,
