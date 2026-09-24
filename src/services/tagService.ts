@@ -212,3 +212,29 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
   window.dispatchEvent(new CustomEvent('tags_updated'));
   return offlineRec;
 }
+
+export async function updateTag(
+  tagId: number | string,
+  updates: { tag_name?: string; notes?: string }
+): Promise<void> {
+  const clean: any = {};
+  if (updates.tag_name !== undefined) clean.tag_name = toUpperClean(updates.tag_name);
+  if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
+
+  const isOffline = typeof tagId === 'string' && tagId.startsWith('temp_');
+  if (!isOffline && navigator.onLine) {
+    const { error } = await supabase
+      .from('inspection_tags')
+      .update(clean)
+      .eq('id', tagId);
+    if (error) throw error;
+  } else {
+    const all = offlineStorage.getOfflineTags();
+    const target = all.find((t: any) => String(t.id) === String(tagId));
+    if (target) {
+      Object.assign(target, clean);
+      offlineStorage.saveOfflineTag(target);
+    }
+  }
+  window.dispatchEvent(new CustomEvent('tags_updated'));
+}
