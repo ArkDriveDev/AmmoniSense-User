@@ -43,12 +43,7 @@ export function useUserDashboardData() {
 
       const siteIds = sites.map(s => s.id);
 
-      let deviceQuery = supabase.from('devices').select('*');
-      if (siteIds.length > 0) {
-        deviceQuery = deviceQuery.in('inspection_site_id', siteIds);
-      }
-
-      const { data: devices } = await deviceQuery;
+      const { data: devices } = await supabase.from('devices').select('*');
 
       const deviceUids = devices?.map(d => d.device_uid) || [];
       let sensorData: any[] = [];
