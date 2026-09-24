@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
 import { InspectionTag, CreateTagPayload, calculateAmmoniaStatus, toUpperClean } from '../types/inspection';
 import { getSignedPhotoUrl } from './photoStorageService';
+import { autoRegisterDevice } from './deviceService';
 
 const parseNum = (v: any, fallback: number): number =>
   v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
@@ -116,68 +117,75 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
   try {
     const user = (await supabase.auth.getUser()).data.user;
 
-    // 1. If BLE was used (device_uid is present), insert into sensor_data FIRST
-    if (clean.device_uid && !clean.sensor_data_id) {
-      try {
-        const { data: sRec, error: sErr } = await supabase
-          .from('sensor_data')
-          .insert([{
-            device_uid: clean.device_uid,
-            ammonia: clean.ammonia,
-            temperature: clean.temperature,
-            humidity: clean.humidity,
-            battery: clean.battery,
-            latitude: clean.latitude,
-            longitude: clean.longitude,
-            submitted_by: user?.id || null,
-          }])
-          .select('id')
-          .maybeSingle();
+    // Step 1: Always create a sensor_data row
+    let sensorDataId: number | null = clean.sensor_data_id;
+    try {
+      const devUid = clean.device_uid || 'MANUAL-ENTRY';
+      await autoRegisterDevice(devUid);
 
-        if (!sErr && sRec?.id) {
-          clean.sensor_data_id = sRec.id;
-        } else if (sErr) {
-          console.warn('[tagService] sensor_data insert failed, continuing with sensor_data_id = null:', sErr.message);
-          clean.sensor_data_id = null;
-        }
-      } catch (err) {
-        console.warn('[tagService] Failed to insert raw sensor reading:', err);
-        clean.sensor_data_id = null;
+      const { data: sRec, error: sErr } = await supabase
+        .from('sensor_data')
+        .insert([{
+          device_uid: devUid,
+          ammonia: clean.ammonia,
+          temperature: clean.temperature,
+          humidity: clean.humidity,
+          battery: clean.battery,
+          latitude: clean.latitude,
+          longitude: clean.longitude,
+          status: clean.status || calculateAmmoniaStatus(clean.ammonia ?? 0),
+          submitted_by: user?.id || null,
+        }])
+        .select('id')
+        .single();
+
+      if (!sErr && sRec?.id) {
+        sensorDataId = sRec.id;
+        clean.sensor_data_id = sRec.id;
       }
+    } catch (e: any) {
+      console.warn('[tagService] sensor_data insert failed, tag will have no reading link:', e?.message);
     }
+
+    // Step 2: Save tag WITHOUT reading values
+    const tagPayload: any = {
+      tag_name: clean.tag_name || 'TAG',
+      inspection_schedule_id: clean.inspection_schedule_id || null,
+      inspection_site_id: clean.inspection_site_id || null,
+      sensor_data_id: sensorDataId,
+      device_uid: clean.device_uid || null,
+      latitude: clean.latitude ?? null,
+      longitude: clean.longitude ?? null,
+      photo_url: clean.photo_url ?? null,
+      photo_thumbnail_url: clean.photo_thumbnail_url ?? null,
+      notes: clean.notes || null,
+      offline_temp_id: clean.offline_temp_id || null,
+      created_by: user?.id,
+    };
 
     let { data, error } = await supabase
       .from('inspection_tags')
-      .insert([{ ...clean, created_by: user?.id }])
+      .insert([tagPayload])
       .select()
       .single();
 
     // Resilient FK retry handling:
     if (error && (error.code === '23503' || error.code === '22P02')) {
       console.warn('[tagService] FK constraint error on tag insert — retrying with safe fallbacks:', error.message);
-      if (clean.sensor_data_id) {
-        clean.sensor_data_id = null;
-        const res = await supabase.from('inspection_tags').insert([{ ...clean, created_by: user?.id }]).select().single();
-        data = res.data; error = res.error;
-      }
-      if (error && clean.inspection_site_id) {
-        clean.inspection_site_id = null;
-        const res = await supabase.from('inspection_tags').insert([{ ...clean, created_by: user?.id }]).select().single();
-        data = res.data; error = res.error;
-      }
-      if (error && clean.device_uid) {
-        clean.device_uid = null;
-        const res = await supabase.from('inspection_tags').insert([{ ...clean, created_by: user?.id }]).select().single();
-        data = res.data; error = res.error;
+      for (const fk of ['sensor_data_id', 'inspection_site_id', 'device_uid'] as const) {
+        if (error && tagPayload[fk]) {
+          tagPayload[fk] = null;
+          const res = await supabase.from('inspection_tags').insert([tagPayload]).select().single();
+          data = res.data; error = res.error;
+        }
       }
       if (error) {
         const res = await supabase.from('inspection_tags').insert([{
-          ...clean,
+          ...tagPayload,
           inspection_schedule_id: null,
           inspection_site_id: null,
           device_uid: null,
           sensor_data_id: null,
-          created_by: user?.id,
         }]).select().single();
         data = res.data; error = res.error;
       }
@@ -191,7 +199,7 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
 
     if (!error && data) {
       window.dispatchEvent(new CustomEvent('tags_updated'));
-      return formatTag(data, false);
+      return formatTag({ ...clean, ...data }, false);
     }
   } catch (err) {
     console.warn('[tagService] Network offline, saving tag to queue:', err);
