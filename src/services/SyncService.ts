@@ -4,8 +4,9 @@
 import offlineStorage, { QueueItem } from './OfflineStorageService';
 import { supabase } from './supabase';
 import { registerSiteWithPhoto } from './siteService';
-import { uploadPhotoPair, getSignedPhotoUrl } from './photoStorageService';
+import { uploadTagPhoto, getSignedPhotoUrl } from './photoStorageService';
 import { calculateAmmoniaStatus } from '../types/inspection';
+import { dataUrlToBlob } from '../utils/thumbnailUtils';
 
 export type SyncEventType = 'status_change' | 'sync_start' | 'sync_progress' | 'sync_complete' | 'sync_error';
 export type SyncEventListener = (event: { type: SyncEventType; isOnline: boolean; pendingCount: number; activeItem?: QueueItem; message?: string }) => void;
@@ -576,19 +577,7 @@ class SyncService {
       if (stored?.dataUrl) photoData = stored.dataUrl;
     }
 
-    if (photoData && photoData.startsWith('data:')) {
-      try {
-        const siteRef = payload.inspection_site_id || 'general';
-        const tagRef = payload.offline_temp_id || payload.tag_name || 'tag';
-        const uploaded = await uploadPhotoPair(photoData, thumbData || photoData, tagRef, siteRef);
-        payload.photo_url = uploaded.photoUrl;
-        payload.photo_thumbnail_url = uploaded.thumbnailUrl;
-        payload.photo_storage_path = uploaded.photo_storage_path;
-        payload.photo_thumbnail_storage_path = uploaded.photo_thumbnail_storage_path;
-      } catch (e) {
-        console.warn('[SyncService] Storage upload notice during tag sync:', e);
-      }
-    }
+
 
     const { data: user } = await supabase.auth.getUser();
 
@@ -650,9 +639,11 @@ class SyncService {
       sensor_data_id: tagRecord.sensor_data_id,
     });
 
-    let { error } = await supabase
+    let { data: newTagData, error } = await supabase
       .from('inspection_tags')
-      .insert([tagRecord]);
+      .insert([tagRecord])
+      .select('id')
+      .maybeSingle();
 
     // Resilient FK retry fallback if any unexpected constraint fires
     if (error && (error.code === '23503' || error.code === '22P02')) {
@@ -663,8 +654,9 @@ class SyncService {
         inspection_site_id: null,
         device_uid: null,
         sensor_data_id: null,
-      }]);
+      }]).select('id').maybeSingle();
       error = res.error;
+      newTagData = res.data;
     }
 
     if (error && error.code === '23505') {
@@ -675,6 +667,23 @@ class SyncService {
     if (error) {
       console.error('[SYNC] Tag insert failed:', error);
       throw error;
+    }
+
+    // Post-insert upload photo using the numeric tag ID
+    if (newTagData?.id && photoData && photoData.startsWith('data:') && tagRecord.inspection_site_id) {
+      try {
+        const photoBlob = dataUrlToBlob(photoData);
+        const thumbBlob = thumbData && thumbData.startsWith('data:') ? dataUrlToBlob(thumbData) : null;
+        const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, newTagData.id, tagRecord.inspection_site_id);
+        await supabase.from('inspection_tags').update({
+          photo_url: uploaded.photo_url,
+          photo_thumbnail_url: uploaded.photo_thumbnail_url,
+          photo_storage_path: uploaded.photo_storage_path,
+          photo_thumbnail_storage_path: uploaded.photo_thumbnail_storage_path,
+        }).eq('id', newTagData.id);
+      } catch (uploadErr) {
+        console.warn('[SyncService] Post-insert photo upload failed during sync:', uploadErr);
+      }
     }
 
     console.log('[SYNC] ✅ Tag saved');
