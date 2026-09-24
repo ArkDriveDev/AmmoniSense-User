@@ -7,12 +7,15 @@ const formatSched = (d: any, isOffline = false): InspectionSchedule => ({
   inspection_site_id: d.inspection_site_id,
   schedule_name: d.schedule_name,
   scheduled_date: d.scheduled_date,
-  scheduled_time: d.scheduled_time,
-  status: d.status || 'PENDING',
-  notes: d.notes,
-  assigned_to: d.assigned_to,
-  created_by: d.created_by,
+  scheduled_time: d.scheduled_time ?? null,
+  status: d.status || 'SCHEDULED',
+  started_at: d.started_at ?? null,
+  completed_at: d.completed_at ?? null,
+  created_by: d.created_by ?? null,
   created_at: d.created_at,
+  updated_at: d.updated_at,
+  notes: d.notes ?? null,
+  offline_temp_id: d.offline_temp_id ?? null,
   site_name: d.inspection_sites?.site_name,
   tags_count: d.tags_count ?? (Array.isArray(d.inspection_tags) ? d.inspection_tags.length : 0),
   isOffline,
@@ -85,8 +88,7 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
     scheduled_date: payload.scheduled_date,
     scheduled_time: payload.scheduled_time,
     notes: toUpperClean(payload.notes),
-    status: payload.status || 'PENDING',
-    assigned_to: payload.assigned_to,
+    status: payload.status || 'SCHEDULED',
   };
 
   try {
@@ -159,7 +161,6 @@ export async function updateSchedule(scheduleId: number | string, updates: Parti
   if (updates.scheduled_time !== undefined) clean.scheduled_time = updates.scheduled_time;
   if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
   if (updates.status !== undefined) clean.status = updates.status;
-  if (updates.assigned_to !== undefined) clean.assigned_to = updates.assigned_to;
 
   const isOffline = typeof scheduleId === 'string' && scheduleId.startsWith('temp_');
   let synced = false;
