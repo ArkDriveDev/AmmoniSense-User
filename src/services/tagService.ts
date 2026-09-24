@@ -1,8 +1,9 @@
 import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
 import { InspectionTag, CreateTagPayload, calculateAmmoniaStatus, toUpperClean } from '../types/inspection';
-import { getSignedPhotoUrl, deleteStorageFiles } from './photoStorageService';
+import { getSignedPhotoUrl, deleteStorageFiles, uploadTagPhoto } from './photoStorageService';
 import { autoRegisterDevice } from './deviceService';
+import { dataUrlToBlob } from '../utils/thumbnailUtils';
 
 const parseNum = (v: any, fallback: number): number =>
   v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
@@ -202,6 +203,28 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     }
 
     if (!error && data) {
+      // Support two-step create-then-upload: if raw base64 dataUrl was passed, upload using the generated numeric tag ID
+      if (clean.photo_url && clean.photo_url.startsWith('data:') && clean.inspection_site_id && data.id) {
+        try {
+          const photoBlob = dataUrlToBlob(clean.photo_url);
+          const thumbBlob = clean.photo_thumbnail_url && clean.photo_thumbnail_url.startsWith('data:')
+            ? dataUrlToBlob(clean.photo_thumbnail_url)
+            : null;
+          const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, data.id, clean.inspection_site_id);
+          await supabase.from('inspection_tags').update({
+            photo_url: uploaded.photo_url,
+            photo_thumbnail_url: uploaded.photo_thumbnail_url,
+            photo_storage_path: uploaded.photo_storage_path,
+            photo_thumbnail_storage_path: uploaded.photo_thumbnail_storage_path,
+          }).eq('id', data.id);
+          data.photo_url = uploaded.photo_url;
+          data.photo_thumbnail_url = uploaded.photo_thumbnail_url;
+          data.photo_storage_path = uploaded.photo_storage_path;
+          data.photo_thumbnail_storage_path = uploaded.photo_thumbnail_storage_path;
+        } catch (photoErr) {
+          console.warn('[tagService] Post-insert tag photo upload notice:', photoErr);
+        }
+      }
       window.dispatchEvent(new CustomEvent('tags_updated'));
       return formatTag({ ...clean, ...data }, false);
     }
@@ -242,11 +265,11 @@ export async function updateTag(
   if (updates.photo_storage_path !== undefined) clean.photo_storage_path = updates.photo_storage_path;
   if (updates.photo_thumbnail_storage_path !== undefined) clean.photo_thumbnail_storage_path = updates.photo_thumbnail_storage_path;
 
-  // Delete old photo files from bucket if a replacement was provided
-  if (updates.photo_storage_path !== undefined && updates._old_photo_storage_path) {
+  // Delete old photo files from bucket ONLY if the path actually changed (e.g. legacy name-based path)
+  if (updates.photo_storage_path !== undefined && updates._old_photo_storage_path && updates._old_photo_storage_path !== updates.photo_storage_path) {
     await deleteStorageFiles('inspection-photos', [updates._old_photo_storage_path]);
   }
-  if (updates.photo_thumbnail_storage_path !== undefined && updates._old_photo_thumbnail_storage_path) {
+  if (updates.photo_thumbnail_storage_path !== undefined && updates._old_photo_thumbnail_storage_path && updates._old_photo_thumbnail_storage_path !== updates.photo_thumbnail_storage_path) {
     await deleteStorageFiles('inspection-thumbnails', [updates._old_photo_thumbnail_storage_path]);
   }
 
