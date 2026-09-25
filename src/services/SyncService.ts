@@ -7,6 +7,7 @@ import { registerSiteWithPhoto } from './siteService';
 import { uploadTagPhoto, getSignedPhotoUrl } from './photoStorageService';
 import { calculateAmmoniaStatus } from '../types/inspection';
 import { dataUrlToBlob } from '../utils/thumbnailUtils';
+import { showToast } from '../utils/toast';
 
 export type SyncEventType = 'status_change' | 'sync_start' | 'sync_progress' | 'sync_complete' | 'sync_error';
 export type SyncEventListener = (event: { type: SyncEventType; isOnline: boolean; pendingCount: number; activeItem?: QueueItem; message?: string }) => void;
@@ -90,7 +91,24 @@ class SyncService {
     } catch (e) {
       console.warn('[SyncService] Could not reset failed items for resync:', e);
     }
-    const result = await this.syncAll();
+    const result = await this.syncAll({ silent: true });
+    if (result.failed > 0) {
+      showToast({
+        message: `⚠️ Re-sync finished: ${result.failed} failed, ${result.success} succeeded.`,
+        color: 'warning',
+      });
+    } else if (result.success > 0) {
+      showToast({
+        message: `🎉 Re-sync complete! ${result.success} record(s) synchronized.`,
+        color: 'success',
+      });
+    } else {
+      showToast({
+        message: 'All offline records are already in sync with server.',
+        color: 'success',
+      });
+    }
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('schedules_updated'));
       window.dispatchEvent(new CustomEvent('tags_updated'));
@@ -99,7 +117,7 @@ class SyncService {
     return result;
   }
 
-  public async syncAll(): Promise<{ success: number; failed: number }> {
+  public async syncAll(options?: { silent?: boolean }): Promise<{ success: number; failed: number }> {
     if (!this.onlineStatus || this.isSyncing) {
       return { success: 0, failed: 0 };
     }
@@ -168,6 +186,12 @@ class SyncService {
     } finally {
       this.isSyncing = false;
       this.notifyListeners('sync_complete');
+      if (!options?.silent && successCount > 0) {
+        showToast({
+          message: `🎉 Auto-sync complete: ${successCount} offline item(s) synchronized!`,
+          color: 'success',
+        });
+      }
     }
 
     return { success: successCount, failed: failedCount };

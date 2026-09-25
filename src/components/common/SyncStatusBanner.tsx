@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IonBadge, IonButton, IonIcon, IonSpinner } from '@ionic/react';
 import { cloudOfflineOutline, cloudDoneOutline, syncOutline, wifiOutline } from 'ionicons/icons';
 import syncService from '../../services/SyncService';
+import { showToast } from '../../utils/toast';
 
 export const SyncStatusBanner: React.FC = () => {
   const [isOnline, setIsOnline] = useState<boolean>(syncService.isOnline());
@@ -27,8 +28,13 @@ export const SyncStatusBanner: React.FC = () => {
   }, []);
 
   const handleResync = async () => {
-    if (!isOnline || syncing) return;
+    if (!isOnline) {
+      showToast({ message: 'Cannot sync while offline. Check internet connection.', color: 'warning' });
+      return;
+    }
+    if (syncing) return;
     setSyncing(true);
+    showToast({ message: '🔄 Initiating re-sync with server...', color: 'primary', duration: 2000 });
     await syncService.resync();
     setSyncing(false);
   };
