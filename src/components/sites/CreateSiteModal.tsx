@@ -180,14 +180,14 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
     const sitePayload = {
       temp_id: tempId,
-      site_code: form.site_code,
-      site_name: form.site_name,
+      site_code: form.site_code.trim().toUpperCase(),
+      site_name: form.site_name.trim().toUpperCase(),
       site_type: form.site_type,
-      address: form.address || form.site_name,
+      address: (form.address || form.site_name).trim().toUpperCase(),
       area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
       latitude: form.current_latitude,
       longitude: form.current_longitude,
-      notes: form.notes,
+      notes: form.notes ? form.notes.trim().toUpperCase() : '',
       photo_url: photoRecord?.photo_url || photoPreview || undefined,
       site_photo_url: photoRecord?.photo_url || photoPreview || undefined,
       site_photo_thumbnail: photoRecord?.photo_thumbnail_url || photoPreview || undefined,
@@ -218,14 +218,14 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         }
 
         const siteUpdateData = {
-          site_code: form.site_code,
-          site_name: form.site_name,
+          site_code: form.site_code.trim().toUpperCase(),
+          site_name: form.site_name.trim().toUpperCase(),
           site_type: form.site_type,
-          address: form.address || form.site_name,
+          address: (form.address || form.site_name).trim().toUpperCase(),
           area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
           current_latitude: form.current_latitude,
           current_longitude: form.current_longitude,
-          notes: form.notes,
+          notes: form.notes ? form.notes.trim().toUpperCase() : '',
           ...(Object.keys(updatedPhotoFields).length > 0
             ? updatedPhotoFields
             : photoPreview
@@ -460,8 +460,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Code</IonLabel>
             <IonInput
               value={form.site_code}
-              onIonChange={e => setForm({ ...form, site_code: e.detail.value! })}
-              placeholder="e.g. SITE-2026-001"
+              onIonInput={e => updateForm({ site_code: (e.detail.value || '').toUpperCase() })}
+              placeholder="E.G. SITE-2026-001"
+              style={{ textTransform: 'uppercase' }}
+              autocapitalize="characters"
             />
           </IonItem>
 
@@ -469,8 +471,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Name *</IonLabel>
             <IonInput
               value={form.site_name}
-              onIonChange={e => setForm({ ...form, site_name: e.detail.value! })}
-              placeholder="e.g. Silang Livestock Farm - Site A"
+              onIonInput={e => updateForm({ site_name: (e.detail.value || '').toUpperCase() })}
+              placeholder="E.G. SILANG LIVESTOCK FARM - SITE A"
+              style={{ textTransform: 'uppercase' }}
+              autocapitalize="characters"
             />
           </IonItem>
 
@@ -478,7 +482,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Category / Type</IonLabel>
             <IonSelect
               value={form.site_type}
-              onIonChange={e => setForm({ ...form, site_type: e.detail.value! })}
+              onIonChange={e => updateForm({ site_type: e.detail.value! })}
             >
               <IonSelectOption value="Poultry">Poultry Farm</IonSelectOption>
               <IonSelectOption value="Piggery">Piggery Farm</IonSelectOption>
@@ -492,8 +496,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Address / Location Description</IonLabel>
             <IonInput
               value={form.address}
-              onIonChange={e => setForm({ ...form, address: e.detail.value! })}
-              placeholder="e.g. Brgy. San Pedro, Silang, Cavite"
+              onIonInput={e => updateForm({ address: (e.detail.value || '').toUpperCase() })}
+              placeholder="E.G. BRGY. SAN PEDRO, SILANG, CAVITE"
+              style={{ textTransform: 'uppercase' }}
+              autocapitalize="characters"
             />
           </IonItem>
 
@@ -581,8 +587,10 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             <IonTextarea
               rows={3}
               value={form.notes}
-              onIonChange={e => setForm({ ...form, notes: e.detail.value! })}
-              placeholder="Facility access details or environmental observations..."
+              onIonInput={e => updateForm({ notes: (e.detail.value || '').toUpperCase() })}
+              placeholder="FACILITY ACCESS DETAILS OR ENVIRONMENTAL OBSERVATIONS..."
+              style={{ textTransform: 'uppercase' }}
+              autocapitalize="characters"
             />
           </IonItem>
 
