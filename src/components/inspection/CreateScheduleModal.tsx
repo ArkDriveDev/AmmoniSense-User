@@ -7,6 +7,7 @@ import {
 import { closeOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { createSchedule, updateSchedule } from '../../services/scheduleService';
 import { toUpperClean, InspectionSchedule } from '../../types/inspection';
+import { showToast } from '../../utils/toast';
 
 interface Props {
   isOpen: boolean;
@@ -43,7 +44,10 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
   }, [isOpen, editSchedule]);
 
   const handleSave = async () => {
-    if (!name.trim()) return alert('Please enter a schedule name');
+    if (!name.trim()) {
+      showToast({ message: 'Please enter a schedule name', color: 'danger' });
+      return;
+    }
     setSaving(true);
     try {
       if (editSchedule) {
@@ -54,6 +58,7 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           notes: toUpperClean(notes),
           status: status as any,
         });
+        showToast({ message: 'Inspection schedule updated successfully!', color: 'success' });
       } else {
         await createSchedule({
           inspection_site_id: siteId,
@@ -63,11 +68,12 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           notes: toUpperClean(notes),
           status: 'SCHEDULED',
         });
+        showToast({ message: 'Inspection schedule created successfully!', color: 'success' });
       }
       onCreated?.();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Failed to save schedule');
+      showToast({ message: err.message || 'Failed to save schedule', color: 'danger' });
     } finally {
       setSaving(false);
     }
