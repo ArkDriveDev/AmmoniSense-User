@@ -15,7 +15,8 @@ import {
   IonButtons,
   IonButton,
   IonAvatar,
-  IonText
+  IonText,
+  IonToast
 } from '@ionic/react';
 import { menuController } from '@ionic/core';
 
@@ -24,6 +25,7 @@ import { supabase } from '../services/supabase';
 import offlineStorage from '../services/OfflineStorageService';
 import nativePermissionsService from '../services/nativePermissionsService';
 import SyncStatusBanner from '../components/common/SyncStatusBanner';
+import { subscribeToast, AppToastOptions } from '../utils/toast';
 import {
   homeOutline,
   businessOutline,
@@ -43,10 +45,30 @@ export default function UserLayout({ children }: any) {
   const location = useLocation();
   const [userName, setUserName] = useState('User');
   const [userEmail, setUserEmail] = useState('');
+  const [toast, setToast] = useState<{
+    isOpen: boolean;
+    message: string;
+    color: string;
+    duration: number;
+  }>({
+    isOpen: false,
+    message: '',
+    color: 'success',
+    duration: 3500,
+  });
 
   useEffect(() => {
     fetchUserProfile();
     nativePermissionsService.initBLEShim();
+    const unsubscribe = subscribeToast((opts: AppToastOptions) => {
+      setToast({
+        isOpen: true,
+        message: opts.message,
+        color: opts.color || 'success',
+        duration: opts.duration || 3500,
+      });
+    });
+    return () => unsubscribe();
   }, []);
 
   const fetchUserProfile = async () => {
@@ -245,6 +267,15 @@ export default function UserLayout({ children }: any) {
         <IonContent style={{ '--background': '#F8FAFC' }}>
           {children}
         </IonContent>
+
+        <IonToast
+          isOpen={toast.isOpen}
+          onDidDismiss={() => setToast(prev => ({ ...prev, isOpen: false }))}
+          message={toast.message}
+          color={toast.color}
+          duration={toast.duration}
+          position="bottom"
+        />
       </IonPage>
     </IonSplitPane>
   );
