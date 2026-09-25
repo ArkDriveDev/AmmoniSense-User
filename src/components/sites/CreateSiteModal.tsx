@@ -43,6 +43,7 @@ import { GpsSource, OfflineSite } from '../../types/site';
 import PolygonPreview from '../map/PolygonPreview';
 import { uploadSitePhoto } from '../../services/photoStorageService';
 import { createThumbnail } from '../../utils/thumbnailUtils';
+import { showToast } from '../../utils/toast';
 
 export interface CreateSiteModalProps {
   isOpen: boolean;
@@ -276,6 +277,9 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             });
           }
           setToastMsg(`Site "${form.site_name}" updated locally & queued for sync.`);
+          showToast({ message: `Site "${form.site_name}" updated locally & queued for sync.`, color: 'warning' });
+        } else {
+          showToast({ message: `Site "${form.site_name}" updated successfully!`, color: 'success' });
         }
 
         setShowToast(true);
@@ -287,7 +291,9 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         onClose();
       } catch (err: any) {
         console.error('Error updating site:', err);
-        setToastMsg(err.message || 'Failed to update site');
+        const errMsg = err.message || 'Failed to update site';
+        setToastMsg(errMsg);
+        showToast({ message: errMsg, color: 'danger' });
         setShowToast(true);
       } finally {
         setLoading(false);
@@ -302,7 +308,9 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
       const result = await registerSiteWithPhoto(sitePayload);
 
-      setToastMsg(`Monitoring Site "${result.site.site_name}" created successfully!`);
+      const successMsg = `Monitoring Site "${result.site.site_name}" created successfully!`;
+      setToastMsg(successMsg);
+      showToast({ message: successMsg, color: 'success' });
       setShowToast(true);
       offlineStorage.clearDraft(SITE_DRAFT_KEY);
 
@@ -346,7 +354,9 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       });
       offlineStorage.clearDraft(SITE_DRAFT_KEY);
 
-      setToastMsg(`📶 Offline Mode: Site "${form.site_name}" saved locally & queued for auto-sync!`);
+      const offlineMsg = `📶 Offline Mode: Site "${form.site_name}" saved locally & queued for auto-sync!`;
+      setToastMsg(offlineMsg);
+      showToast({ message: offlineMsg, color: 'warning' });
       setShowToast(true);
 
       if (onSiteCreated) onSiteCreated(offlineSiteRecord);
