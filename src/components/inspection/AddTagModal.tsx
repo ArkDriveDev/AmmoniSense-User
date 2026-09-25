@@ -12,6 +12,7 @@ import { captureInspectionPhoto, uploadTagPhoto } from '../../services/photoStor
 import { createTag, updateTag } from '../../services/tagService';
 import { toUpperClean } from '../../types/inspection';
 import { dataUrlToBlob } from '../../utils/thumbnailUtils';
+import { showToast } from '../../utils/toast';
 
 interface Props {
   isOpen: boolean;
@@ -94,9 +95,10 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         }
       }
       onCreated?.();
+      showToast({ message: 'Inspection tag saved successfully!', color: 'success' });
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Failed to save tag');
+      showToast({ message: err.message || 'Failed to save tag', color: 'danger' });
     } finally {
       setSaving(false);
     }

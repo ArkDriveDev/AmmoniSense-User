@@ -13,6 +13,7 @@ import { InspectionTag, toUpperClean } from '../../types/inspection';
 import { captureImageWithCameraOrFallback, dataURLtoBlob } from '../../utils/photoUtils';
 import { uploadTagPhoto } from '../../services/photoStorageService';
 import { createThumbnail } from '../../utils/thumbnailUtils';
+import { showToast } from '../../utils/toast';
 
 interface Props {
   isOpen: boolean;
@@ -88,10 +89,11 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
       }
 
       await updateTag(tag.id, updates);
+      showToast({ message: 'Inspection tag updated successfully!', color: 'success' });
       onUpdated?.();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Failed to update tag');
+      showToast({ message: err.message || 'Failed to update tag', color: 'danger' });
     } finally {
       setSaving(false);
     }
@@ -101,10 +103,11 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
     setDeleting(true);
     try {
       await deleteTag(tag.id);
+      showToast({ message: 'Inspection tag deleted successfully!', color: 'success' });
       onDeleted?.();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete tag');
+      showToast({ message: err.message || 'Failed to delete tag', color: 'danger' });
     } finally {
       setDeleting(false);
     }
