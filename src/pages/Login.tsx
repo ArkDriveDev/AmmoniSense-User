@@ -29,6 +29,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastColor, setToastColor] = useState<'success' | 'danger'>('danger');
 
   // Clear any stale/corrupt session on mount to prevent 400 race conditions on Android
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function Login() {
     const trimmedPassword = password;
 
     if (!trimmedEmail || !trimmedPassword) {
+      setToastColor('danger');
       setToastMessage('Please enter email and password');
       setShowToast(true);
       return;
@@ -71,6 +73,7 @@ export default function Login() {
       });
 
       if (error) {
+        setToastColor('danger');
         setToastMessage('Login failed: ' + error.message);
         setShowToast(true);
         setLoading(false);
@@ -90,9 +93,16 @@ export default function Login() {
         console.warn('Post-login permissions notice:', pErr);
       });
 
-      navigate('/dashboard', { replace: true });
+      setToastColor('success');
+      setToastMessage('Login successful! Welcome back.');
+      setShowToast(true);
+
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 800);
     } catch (err: any) {
       console.error('Login error:', err);
+      setToastColor('danger');
       setToastMessage(err?.message || 'An unexpected error occurred');
       setShowToast(true);
     } finally {
@@ -213,8 +223,8 @@ export default function Login() {
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
           message={toastMessage}
-          duration={5000}
-          color="danger"
+          duration={3000}
+          color={toastColor}
           position="bottom"
         />
       </IonContent>
