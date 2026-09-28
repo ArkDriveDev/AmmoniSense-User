@@ -156,7 +156,6 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
       inspection_schedule_id: clean.inspection_schedule_id || null,
       inspection_site_id: clean.inspection_site_id || null,
       sensor_data_id: sensorDataId,
-      device_uid: clean.device_uid || null,
       latitude: clean.latitude ?? null,
       longitude: clean.longitude ?? null,
       photo_url: clean.photo_url ?? null,
@@ -177,7 +176,7 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     // Resilient FK retry handling:
     if (error && (error.code === '23503' || error.code === '22P02')) {
       console.warn('[tagService] FK constraint error on tag insert — retrying with safe fallbacks:', error.message);
-      for (const fk of ['sensor_data_id', 'inspection_site_id', 'device_uid'] as const) {
+      for (const fk of ['sensor_data_id', 'inspection_site_id'] as const) {
         if (error && tagPayload[fk]) {
           tagPayload[fk] = null;
           const res = await supabase.from('inspection_tags').insert([tagPayload]).select().single();
@@ -189,7 +188,6 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
           ...tagPayload,
           inspection_schedule_id: null,
           inspection_site_id: null,
-          device_uid: null,
           sensor_data_id: null,
         }]).select().single();
         data = res.data; error = res.error;
