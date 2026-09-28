@@ -479,7 +479,18 @@ class SyncService {
       if (!targetId || (typeof targetId === 'string' && targetId.startsWith('temp_'))) {
         throw new Error(`Cannot update tag: real DB id missing for target ${targetId}`);
       }
-      const { id: _id, offline_temp_id: _otid, created_at: _ca, ...tagUpdates } = payload;
+      const allowedTagUpdateFields = [
+        'tag_name', 'inspection_schedule_id', 'inspection_site_id',
+        'sensor_data_id', 'latitude', 'longitude',
+        'photo_url', 'photo_thumbnail_url', 'photo_storage_path',
+        'photo_thumbnail_storage_path', 'notes'
+      ];
+      const tagUpdates: Record<string, any> = {};
+      for (const key of allowedTagUpdateFields) {
+        if (payload[key] !== undefined) {
+          tagUpdates[key] = payload[key];
+        }
+      }
       const { error: updErr } = await supabase
         .from('inspection_tags')
         .update(tagUpdates)
@@ -644,7 +655,6 @@ class SyncService {
       inspection_schedule_id: payload.inspection_schedule_id || null,
       inspection_site_id: payload.inspection_site_id || null,
       sensor_data_id: sensorDataId,
-      device_uid: payload.device_uid || null,
       latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
@@ -659,7 +669,6 @@ class SyncService {
     console.log('[SYNC] Final payload:', {
       site_id: tagRecord.inspection_site_id,
       schedule_id: tagRecord.inspection_schedule_id,
-      device_uid: tagRecord.device_uid,
       sensor_data_id: tagRecord.sensor_data_id,
     });
 
@@ -676,7 +685,6 @@ class SyncService {
         ...tagRecord,
         inspection_schedule_id: null,
         inspection_site_id: null,
-        device_uid: null,
         sensor_data_id: null,
       }]).select('id').maybeSingle();
       error = res.error;
