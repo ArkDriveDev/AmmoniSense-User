@@ -198,20 +198,6 @@ export default function Login() {
                         )}
                       </IonButton>
                     </form>
-
-                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                      <IonText color="medium">
-                        <p style={{ fontSize: '14px' }}>
-                          Don't have an inspector account?{' '}
-                          <span 
-                            style={{ color: '#1D5D9B', fontWeight: '700', cursor: 'pointer' }}
-                            onClick={() => navigate('/register')}
-                          >
-                            Register
-                          </span>
-                        </p>
-                      </IonText>
-                    </div>
                   </IonCardContent>
                 </IonCard>
               </IonCol>
