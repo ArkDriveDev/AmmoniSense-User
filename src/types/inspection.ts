@@ -58,6 +58,19 @@ export interface CreateSchedulePayload {
   status?: ScheduleStatus;
 }
 
+export type ViolationCategory =
+  | 'IMPROPER_WASTE_DISPOSAL'
+  | 'ILLEGAL_DUMPING'
+  | 'OPEN_BURNING'
+  | 'FOUL_ODOR'
+  | 'STAGNANT_WATER'
+  | 'WATER_POLLUTION'
+  | 'MANURE_PILING'
+  | 'NOISE'
+  | 'WASTEWATER_DISCHARGE'
+  | 'NO_PERMIT'
+  | 'OTHERS';
+
 export interface InspectionTag {
   id: number | string;
   tag_name: string;
@@ -77,6 +90,7 @@ export interface InspectionTag {
   inspection_schedule_id: number | string;
   inspection_site_id?: number | string | null;
   notes?: string | null;
+  violation_category?: ViolationCategory | null;
   offline_temp_id?: string | null;
   created_by?: string | null;
   created_at?: string;
@@ -99,6 +113,7 @@ export interface CreateTagPayload {
   sensor_data_id?: number | string | null;
   inspection_schedule_id: number | string;
   inspection_site_id?: number | string | null;
+  violation_category?: ViolationCategory | null;
   notes?: string;
   offline_temp_id?: string | null;
   status?: AmmoniaStatus;
