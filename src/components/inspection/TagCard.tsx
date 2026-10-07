@@ -1,7 +1,12 @@
 import React from 'react';
 import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
-import { thermometerOutline, waterOutline, batteryChargingOutline, locationOutline, cloudOfflineOutline, createOutline, trashOutline } from 'ionicons/icons';
+import {
+  thermometerOutline, waterOutline, batteryChargingOutline,
+  locationOutline, cloudOfflineOutline, createOutline, trashOutline,
+  alertCircleOutline
+} from 'ionicons/icons';
 import { InspectionTag } from '../../types/inspection';
+import { getViolationCategoryLabel, getViolationCategoryBadgeColor } from '../../constants/violationCategories';
 
 interface Props {
   tag: InspectionTag;
@@ -79,11 +84,27 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
                 )}
               </div>
             </div>
+            {tag.violation_category && (
+              <div style={{ marginTop: '3px' }}>
+                <IonBadge
+                  color={getViolationCategoryBadgeColor(tag.violation_category)}
+                  style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px' }}
+                >
+                  <IonIcon icon={alertCircleOutline} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
+                  {getViolationCategoryLabel(tag.violation_category)}
+                </IonBadge>
+              </div>
+            )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
               <span><IonIcon icon={thermometerOutline} /> {(Number(tag.temperature) || 0).toFixed(1)}°C</span>
               <span><IonIcon icon={waterOutline} /> {(Number(tag.humidity) || 0).toFixed(1)}%</span>
               <span><IonIcon icon={batteryChargingOutline} /> {tag.battery !== undefined && tag.battery !== null ? Number(tag.battery) : 100}%</span>
             </div>
+            {tag.notes && (
+              <div style={{ marginTop: '3px', fontSize: '11px', color: '#475569', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                "{tag.notes}"
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '11px', color: '#94A3B8' }}>
               <span><IonIcon icon={locationOutline} /> {(Number(tag.latitude) || 0).toFixed(4)}, {(Number(tag.longitude) || 0).toFixed(4)}</span>
               {tag.isOffline && <IonBadge color="warning" style={{ fontSize: '9px' }}><IonIcon icon={cloudOfflineOutline} /> Offline</IonBadge>}
