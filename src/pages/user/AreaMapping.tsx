@@ -29,6 +29,7 @@ import {
 import { supabase } from '../../services/supabase';
 import { fetchTags } from '../../services/tagService';
 import { InspectionTag, calculateAmmoniaStatus } from '../../types/inspection';
+import { getViolationCategoryLabel, getViolationCategoryBadgeColor } from '../../constants/violationCategories';
 
 const STATUS_COLOR: Record<string, string> = {
   NORMAL: '#10B981',
@@ -187,6 +188,11 @@ export default function AreaMapping() {
                                   <IonBadge style={{ background: statusColor, color: '#ffffff', fontSize: '10px', fontWeight: 800 }}>
                                     {tag.status}
                                   </IonBadge>
+                                  {tag.violation_category && (
+                                    <IonBadge color={getViolationCategoryBadgeColor(tag.violation_category)} style={{ fontSize: '10px', fontWeight: 700 }}>
+                                      ⚠️ {getViolationCategoryLabel(tag.violation_category)}
+                                    </IonBadge>
+                                  )}
                                   {tag.isOffline && (
                                     <IonBadge color="warning" style={{ fontSize: '10px' }}>Pending Sync</IonBadge>
                                   )}

@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { InspectionTag } from '../../types/inspection';
 import { getAmmoniaColor } from '../map/FullMapView';
+import { getViolationCategoryLabel } from '../../constants/violationCategories';
 
 interface ScheduleTagsMapProps {
   tags: InspectionTag[];
@@ -58,6 +59,7 @@ export const ScheduleTagsMap: React.FC<ScheduleTagsMapProps> = ({ tags, height =
       const popup = `<div style="font-family:sans-serif;min-width:180px;font-size:12px;color:#1E293B;">
         <div style="font-weight:800;font-size:13px;color:#0F172A;margin-bottom:2px;">${tag.tag_name}</div>
         <div style="display:inline-block;padding:2px 6px;border-radius:4px;background:${color};color:#fff;font-weight:700;font-size:11px;margin-bottom:4px;">${ammoniaVal.toFixed(1)} PPM (${tag.status || 'NORMAL'})</div>
+        ${tag.violation_category ? `<div style="margin-bottom:4px;"><span style="background:#DC2626;color:#fff;font-weight:700;font-size:10px;padding:2px 6px;border-radius:4px;">⚠️ ${getViolationCategoryLabel(tag.violation_category)}</span></div>` : ''}
         <div style="color:#64748B;font-size:11px;">Temp: ${tag.temperature !== undefined && tag.temperature !== null ? tag.temperature : '--'}°C | Hum: ${tag.humidity !== undefined && tag.humidity !== null ? tag.humidity : '--'}% | Bat: ${tag.battery !== undefined && tag.battery !== null ? tag.battery : '--'}%</div>
         ${tag.notes ? `<div style="margin-top:4px;font-style:italic;color:#475569;">"${tag.notes}"</div>` : ''}
         ${photoHtml}
