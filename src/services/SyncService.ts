@@ -483,7 +483,7 @@ class SyncService {
         'tag_name', 'inspection_schedule_id', 'inspection_site_id',
         'sensor_data_id', 'latitude', 'longitude',
         'photo_url', 'photo_thumbnail_url', 'photo_storage_path',
-        'photo_thumbnail_storage_path', 'notes'
+        'photo_thumbnail_storage_path', 'notes', 'violation_category'
       ];
       const tagUpdates: Record<string, any> = {};
       for (const key of allowedTagUpdateFields) {
@@ -662,6 +662,7 @@ class SyncService {
       photo_storage_path: payload.photo_storage_path || null,
       photo_thumbnail_storage_path: payload.photo_thumbnail_storage_path || null,
       notes: payload.notes?.toUpperCase() || null,
+      violation_category: payload.violation_category || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
       created_by: payload.created_by || user.user?.id || null,
     };

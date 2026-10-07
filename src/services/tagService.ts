@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
-import { InspectionTag, CreateTagPayload, calculateAmmoniaStatus, toUpperClean } from '../types/inspection';
+import { InspectionTag, CreateTagPayload, ViolationCategory, calculateAmmoniaStatus, toUpperClean } from '../types/inspection';
 import { getSignedPhotoUrl, deleteStorageFiles, uploadTagPhoto } from './photoStorageService';
 import { autoRegisterDevice } from './deviceService';
 import { dataUrlToBlob } from '../utils/thumbnailUtils';
@@ -27,6 +27,7 @@ const formatTag = (d: any, isOffline = false): InspectionTag => {
     inspection_schedule_id: d.inspection_schedule_id,
     inspection_site_id: d.inspection_site_id ?? null,
     notes: d.notes,
+    violation_category: d.violation_category || null,
     offline_temp_id: d.offline_temp_id ?? null,
     created_by: d.created_by,
     created_at: d.created_at,
@@ -114,6 +115,7 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     inspection_schedule_id: payload.inspection_schedule_id,
     inspection_site_id: resolvedSiteId,
     notes: toUpperClean(payload.notes),
+    violation_category: payload.violation_category || null,
     offline_temp_id: payload.offline_temp_id || null,
   };
 
@@ -163,6 +165,7 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
       photo_storage_path: clean.photo_storage_path ?? null,
       photo_thumbnail_storage_path: clean.photo_thumbnail_storage_path ?? null,
       notes: clean.notes || null,
+      violation_category: clean.violation_category || null,
       offline_temp_id: clean.offline_temp_id || null,
       created_by: user?.id,
     };
@@ -250,6 +253,7 @@ export async function updateTag(
     photo_thumbnail_url?: string | null;
     photo_storage_path?: string | null;
     photo_thumbnail_storage_path?: string | null;
+    violation_category?: ViolationCategory | null;
     /** Storage paths of the OLD photo to delete from bucket */
     _old_photo_storage_path?: string | null;
     _old_photo_thumbnail_storage_path?: string | null;
@@ -258,6 +262,7 @@ export async function updateTag(
   const clean: any = {};
   if (updates.tag_name !== undefined) clean.tag_name = toUpperClean(updates.tag_name);
   if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
+  if (updates.violation_category !== undefined) clean.violation_category = updates.violation_category;
   if (updates.photo_url !== undefined) clean.photo_url = updates.photo_url;
   if (updates.photo_thumbnail_url !== undefined) clean.photo_thumbnail_url = updates.photo_thumbnail_url;
   if (updates.photo_storage_path !== undefined) clean.photo_storage_path = updates.photo_storage_path;
