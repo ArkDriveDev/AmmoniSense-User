@@ -58,6 +58,9 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
 
   const handleSave = async () => {
     if (!tagName.trim()) return alert('Please enter a TAG NAME');
+    if (violationCategory === 'OTHERS' && !notes.trim()) {
+      return alert('Please specify violation details in NOTES when category is "OTHERS"');
+    }
     setSaving(true);
     try {
       // 1. Create tag record first to obtain its numeric database ID

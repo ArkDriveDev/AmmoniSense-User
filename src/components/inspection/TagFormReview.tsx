@@ -47,8 +47,15 @@ export const TagFormReview: React.FC<Props> = ({
       </IonSelect>
     </IonItem>
     <IonItem lines="inset" style={{ marginTop: '8px' }}>
-      <IonLabel position="stacked">NOTES (AUTO-UPPERCASE)</IonLabel>
-      <IonTextarea rows={2} value={notes} placeholder="OBSERVATIONS" onIonInput={(e) => onChangeNotes(toUpperClean(e.detail.value!))} />
+      <IonLabel position="stacked">
+        {violationCategory === 'OTHERS' ? 'NOTES * (REQUIRED FOR "OTHERS")' : 'NOTES (AUTO-UPPERCASE)'}
+      </IonLabel>
+      <IonTextarea
+        rows={2}
+        value={notes}
+        placeholder={violationCategory === 'OTHERS' ? 'SPECIFY VIOLATION DETAILS *' : 'OBSERVATIONS'}
+        onIonInput={(e) => onChangeNotes(toUpperClean(e.detail.value!))}
+      />
     </IonItem>
     <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', marginTop: '12px', fontSize: '13px' }}>
       <div><strong>NH3:</strong> {ammonia.toFixed(2)} PPM | <strong>Temp:</strong> {temperature.toFixed(1)}°C</div>

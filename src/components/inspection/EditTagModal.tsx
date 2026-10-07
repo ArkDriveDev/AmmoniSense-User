@@ -63,6 +63,9 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
 
   const handleSave = async () => {
     if (!tagName.trim()) return alert('Please enter a tag name');
+    if (violationCategory === 'OTHERS' && !notes.trim()) {
+      return alert('Please specify violation details in notes when category is "OTHERS"');
+    }
     setSaving(true);
     try {
       const updates: Parameters<typeof updateTag>[1] = {
@@ -192,8 +195,15 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
           </IonItem>
 
           <IonItem lines="inset" style={{ marginTop: '12px', '--background': '#ffffff', borderRadius: '8px' }}>
-            <IonLabel position="stacked">NOTES</IonLabel>
-            <IonTextarea rows={3} value={notes} onIonInput={(e) => setNotes(toUpperClean(e.detail.value!))} placeholder="OBSERVATIONS OR REASON..." />
+            <IonLabel position="stacked">
+              {violationCategory === 'OTHERS' ? 'NOTES * (REQUIRED FOR "OTHERS")' : 'NOTES'}
+            </IonLabel>
+            <IonTextarea
+              rows={3}
+              value={notes}
+              onIonInput={(e) => setNotes(toUpperClean(e.detail.value!))}
+              placeholder={violationCategory === 'OTHERS' ? 'SPECIFY VIOLATION DETAILS *' : 'OBSERVATIONS OR REASON...'}
+            />
           </IonItem>
 
           {/* Actions */}
