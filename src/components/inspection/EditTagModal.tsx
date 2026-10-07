@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
   IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel, IonInput, IonTextarea, IonSpinner, IonIcon,
-  IonBadge, IonAlert
+  IonBadge, IonAlert, IonSelect, IonSelectOption
 } from '@ionic/react';
 import {
   closeOutline, checkmarkCircleOutline, thermometerOutline, waterOutline,
   batteryChargingOutline, locationOutline, cameraOutline, trashOutline
 } from 'ionicons/icons';
 import { updateTag, deleteTag } from '../../services/tagService';
-import { InspectionTag, toUpperClean } from '../../types/inspection';
+import { InspectionTag, ViolationCategory, toUpperClean } from '../../types/inspection';
+import { VIOLATION_CATEGORIES } from '../../constants/violationCategories';
 import { captureImageWithCameraOrFallback, dataURLtoBlob } from '../../utils/photoUtils';
 import { uploadTagPhoto } from '../../services/photoStorageService';
 import { createThumbnail } from '../../utils/thumbnailUtils';
@@ -26,6 +27,7 @@ interface Props {
 export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated, onDeleted }) => {
   const [tagName, setTagName] = useState('');
   const [notes, setNotes] = useState('');
+  const [violationCategory, setViolationCategory] = useState<ViolationCategory | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
@@ -36,6 +38,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
     if (isOpen && tag) {
       setTagName(tag.tag_name || '');
       setNotes(tag.notes || '');
+      setViolationCategory(tag.violation_category || null);
       setNewPhotoDataUrl(null);
     }
   }, [isOpen, tag]);
@@ -64,6 +67,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
     try {
       const updates: Parameters<typeof updateTag>[1] = {
         tag_name: toUpperClean(tagName),
+        violation_category: violationCategory || null,
         notes: toUpperClean(notes),
       };
 
@@ -168,6 +172,23 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
           <IonItem lines="inset" style={{ '--background': '#ffffff', borderRadius: '8px' }}>
             <IonLabel position="stacked">TAG NAME *</IonLabel>
             <IonInput value={tagName} onIonInput={(e) => setTagName(toUpperClean(e.detail.value!))} placeholder="TAG IDENTIFIER" />
+          </IonItem>
+
+          <IonItem lines="inset" style={{ marginTop: '12px', '--background': '#ffffff', borderRadius: '8px' }}>
+            <IonLabel position="stacked">VIOLATION CATEGORY (MENRO)</IonLabel>
+            <IonSelect
+              value={violationCategory || ''}
+              placeholder="Select Category (Optional)"
+              interface="alert"
+              onIonChange={(e) => setViolationCategory(e.detail.value ? (e.detail.value as ViolationCategory) : null)}
+            >
+              <IonSelectOption value="">None / Compliant (No Violation)</IonSelectOption>
+              {VIOLATION_CATEGORIES.map((cat) => (
+                <IonSelectOption key={cat.value} value={cat.value}>
+                  {cat.label} ({cat.lawReference})
+                </IonSelectOption>
+              ))}
+            </IonSelect>
           </IonItem>
 
           <IonItem lines="inset" style={{ marginTop: '12px', '--background': '#ffffff', borderRadius: '8px' }}>

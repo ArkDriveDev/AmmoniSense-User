@@ -10,7 +10,7 @@ import TagLocationStep from './TagLocationStep';
 import TagFormReview from './TagFormReview';
 import { captureInspectionPhoto, uploadTagPhoto } from '../../services/photoStorageService';
 import { createTag, updateTag } from '../../services/tagService';
-import { toUpperClean } from '../../types/inspection';
+import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { dataUrlToBlob } from '../../utils/thumbnailUtils';
 import { showToast } from '../../utils/toast';
 
@@ -35,11 +35,13 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [thumbDataUrl, setThumbDataUrl] = useState<string>('');
   const [tagName, setTagName] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+  const [violationCategory, setViolationCategory] = useState<ViolationCategory | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
       setStep(1);
+      setViolationCategory(null);
       Geolocation.getCurrentPosition({ enableHighAccuracy: true })
         .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
         .catch(() => {});
@@ -72,6 +74,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         device_uid: deviceUid,
         inspection_schedule_id: scheduleId,
         inspection_site_id: siteId || undefined,
+        violation_category: violationCategory || null,
         notes: toUpperClean(notes),
       });
 
@@ -145,9 +148,10 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         )}
         {step === 4 && (
           <TagFormReview
-            tagName={tagName} notes={notes} ammonia={ammonia} temperature={temp}
-            lat={lat} lng={lng} saving={saving}
+            tagName={tagName} notes={notes} violationCategory={violationCategory}
+            ammonia={ammonia} temperature={temp} lat={lat} lng={lng} saving={saving}
             onChangeTagName={setTagName} onChangeNotes={setNotes}
+            onChangeViolationCategory={setViolationCategory}
             onBack={() => setStep(3)} onSave={handleSave}
           />
         )}
