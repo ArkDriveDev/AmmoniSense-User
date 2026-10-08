@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ammoniGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1D5D9B"/>
+      <stop offset="100%" stop-color="#008B74"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded squircle matching AmmoniSense brand -->
+  <rect width="512" height="512" rx="140" fill="url(#ammoniGrad)"/>
+  
+  <!-- Subtle inner ambient highlight -->
+  <rect width="504" height="504" x="4" y="4" rx="136" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="8"/>
+  
+  <!-- AmmoniSense Leaf Outline Emblem -->
+  <g transform="translate(256, 260) scale(0.62) translate(-256, -256)">
+    <path d="M321.89 171.42C233 114 141 155.22 56 65.22c-19.8-21-8.3 235.5 98.1 332.7 77.79 71 197.9 63.08 238.4-5.92s18.28-163.17-70.61-220.58zM173 253c86 81 175 129 292 147"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="38"/>
+  </g>
+</svg>
