@@ -8,8 +8,8 @@ interface Props {
   tagName: string;
   notes: string;
   violationCategory: ViolationCategory | null;
-  ammonia: number;
-  temperature: number;
+  ammonia: number | null;
+  temperature: number | null;
   lat: number;
   lng: number;
   saving: boolean;
@@ -58,7 +58,10 @@ export const TagFormReview: React.FC<Props> = ({
       />
     </IonItem>
     <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', marginTop: '12px', fontSize: '13px' }}>
-      <div><strong>NH3:</strong> {ammonia.toFixed(2)} PPM | <strong>Temp:</strong> {temperature.toFixed(1)}°C</div>
+      <div>
+        <strong>NH3:</strong> {ammonia !== null && ammonia !== undefined ? `${ammonia.toFixed(2)} PPM` : '—'} |{' '}
+        <strong>Temp:</strong> {temperature !== null && temperature !== undefined ? `${temperature.toFixed(1)}°C` : '—'}
+      </div>
       <div><strong>GPS:</strong> {lat.toFixed(4)}, {lng.toFixed(4)}</div>
     </div>
     <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>

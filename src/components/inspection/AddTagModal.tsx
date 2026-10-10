@@ -26,10 +26,10 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [step, setStep] = useState<number>(1);
   const [lat, setLat] = useState<number>(8.3683);
   const [lng, setLng] = useState<number>(124.8637);
-  const [ammonia, setAmmonia] = useState<number>(0);
-  const [temp, setTemp] = useState<number>(25);
-  const [hum, setHum] = useState<number>(60);
-  const [battery, setBattery] = useState<number>(100);
+  const [ammonia, setAmmonia] = useState<number | null>(null);
+  const [temp, setTemp] = useState<number | null>(null);
+  const [hum, setHum] = useState<number | null>(null);
+  const [battery, setBattery] = useState<number | null>(null);
   const [deviceUid, setDeviceUid] = useState<string>('');
   const [photoDataUrl, setPhotoDataUrl] = useState<string>('');
   const [thumbDataUrl, setThumbDataUrl] = useState<string>('');
@@ -66,10 +66,10 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       // 1. Create tag record first to obtain its numeric database ID
       const createdTag = await createTag({
         tag_name: toUpperClean(tagName),
-        ammonia: (ammonia !== undefined && !isNaN(Number(ammonia))) ? Number(ammonia) : 0,
-        temperature: (temp !== undefined && !isNaN(Number(temp))) ? Number(temp) : 0,
-        humidity: (hum !== undefined && !isNaN(Number(hum))) ? Number(hum) : 0,
-        battery: (battery !== undefined && !isNaN(Number(battery))) ? Number(battery) : 100,
+        ammonia: (ammonia !== undefined && ammonia !== null && !isNaN(Number(ammonia))) ? Number(ammonia) : 0,
+        temperature: (temp !== undefined && temp !== null && !isNaN(Number(temp))) ? Number(temp) : undefined,
+        humidity: (hum !== undefined && hum !== null && !isNaN(Number(hum))) ? Number(hum) : undefined,
+        battery: (battery !== undefined && battery !== null && !isNaN(Number(battery))) ? Number(battery) : undefined,
         latitude: lat,
         longitude: lng,
         photo_url: photoDataUrl || null,
@@ -124,7 +124,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         )}
         {step === 2 && (
           <div>
-            <h4 style={{ margin: '0 0 12px 0' }}>Step 2: BLE Sensor Reading</h4>
+            <h4 style={{ margin: '0 0 12px 0' }}>Step 2: AmmoniSense Sensor Reading</h4>
             <BLEConnectPanel onReadingCaptured={(r) => { setAmmonia(r.ammonia); setTemp(r.temperature); setHum(r.humidity); setBattery(r.battery); if (r.device_uid) setDeviceUid(r.device_uid); }} />
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
               <IonButton fill="outline" onClick={() => setStep(1)}><IonIcon icon={arrowBackOutline} /></IonButton>

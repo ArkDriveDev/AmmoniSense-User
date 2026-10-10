@@ -96,9 +96,9 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
               </div>
             )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
-              <span><IonIcon icon={thermometerOutline} /> {(Number(tag.temperature) || 0).toFixed(1)}°C</span>
-              <span><IonIcon icon={waterOutline} /> {(Number(tag.humidity) || 0).toFixed(1)}%</span>
-              <span><IonIcon icon={batteryChargingOutline} /> {tag.battery !== undefined && tag.battery !== null ? Number(tag.battery) : 100}%</span>
+              <span><IonIcon icon={thermometerOutline} /> {tag.temperature !== undefined && tag.temperature !== null ? `${Number(tag.temperature).toFixed(1)}°C` : '—'}</span>
+              <span><IonIcon icon={waterOutline} /> {tag.humidity !== undefined && tag.humidity !== null ? `${Number(tag.humidity).toFixed(1)}%` : '—'}</span>
+              <span><IonIcon icon={batteryChargingOutline} /> {tag.battery !== undefined && tag.battery !== null ? `${Number(tag.battery)}%` : '—'}</span>
             </div>
             {tag.notes && (
               <div style={{ marginTop: '3px', fontSize: '11px', color: '#475569', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
