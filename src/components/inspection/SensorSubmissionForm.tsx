@@ -705,10 +705,9 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               )}
             </div>
 
-            <IonItem lines="full" style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
-                <IonLabel position="stacked" style={{ margin: 0 }}>Ammonia (NH₃) Reading (ppm)</IonLabel>
-                {/* 10-Second Confirmation Window Badge */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', padding: '0 4px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Ammonia (NH₃) Reading (ppm)</span>
                 {ppmBadgeLabel && (
                   <IonBadge color={ppmBadgeColor} style={{ fontSize: '10px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     {ppmConfirmationStatus === 'confirming' ? (
@@ -720,49 +719,56 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   </IonBadge>
                 )}
               </div>
-              <IonInput
-                type="number"
-                placeholder="— (waiting for AmmoniSense…)"
-                value={ammonia}
-                onIonChange={e => setAmmonia(e.detail.value || '')}
-              />
-            </IonItem>
+              <IonItem lines="full" style={{ borderRadius: '8px' }}>
+                <IonInput
+                  type="number"
+                  placeholder="— (waiting for AmmoniSense…)"
+                  value={ammonia}
+                  onIonChange={e => setAmmonia(e.detail.value || '')}
+                />
+              </IonItem>
+            </div>
 
-            <IonRow>
-              <IonCol size="4">
-                <IonItem lines="full">
-                  <IonLabel position="stacked">Temp (°C)</IonLabel>
-                  <IonInput
-                    type="number"
-                    placeholder="— °C"
-                    value={temperature}
-                    onIonChange={e => setTemperature(e.detail.value || '')}
-                  />
-                </IonItem>
-              </IonCol>
-              <IonCol size="4">
-                <IonItem lines="full">
-                  <IonLabel position="stacked">Humidity (%)</IonLabel>
-                  <IonInput
-                    type="number"
-                    placeholder="— %"
-                    value={humidity}
-                    onIonChange={e => setHumidity(e.detail.value || '')}
-                  />
-                </IonItem>
-              </IonCol>
-              <IonCol size="4">
-                <IonItem lines="full">
-                  <IonLabel position="stacked">Battery (%)</IonLabel>
-                  <IonInput
-                    type="number"
-                    placeholder="— %"
-                    value={battery}
-                    onIonChange={e => setBattery(e.detail.value || '')}
-                  />
-                </IonItem>
-              </IonCol>
-            </IonRow>
+            <IonGrid style={{ padding: 0 }}>
+              <IonRow>
+                <IonCol size="4">
+                  <IonItem lines="full" style={{ borderRadius: '8px' }}>
+                    <IonInput
+                      label="Temp (°C)"
+                      labelPlacement="stacked"
+                      type="number"
+                      placeholder="— °C"
+                      value={temperature}
+                      onIonChange={e => setTemperature(e.detail.value || '')}
+                    />
+                  </IonItem>
+                </IonCol>
+                <IonCol size="4">
+                  <IonItem lines="full" style={{ borderRadius: '8px' }}>
+                    <IonInput
+                      label="Humidity (%)"
+                      labelPlacement="stacked"
+                      type="number"
+                      placeholder="— %"
+                      value={humidity}
+                      onIonChange={e => setHumidity(e.detail.value || '')}
+                    />
+                  </IonItem>
+                </IonCol>
+                <IonCol size="4">
+                  <IonItem lines="full" style={{ borderRadius: '8px' }}>
+                    <IonInput
+                      label="Battery (%)"
+                      labelPlacement="stacked"
+                      type="number"
+                      placeholder="— %"
+                      value={battery}
+                      onIonChange={e => setBattery(e.detail.value || '')}
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
+            </IonGrid>
 
             <IonButton expand="block" color="primary" onClick={() => setCurrentStep(3)} style={{ marginTop: '16px' }}>
               Proceed to STEP 3: Submit All ➔
