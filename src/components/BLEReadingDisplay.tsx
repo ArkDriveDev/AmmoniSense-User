@@ -82,7 +82,7 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
               </span>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
                 <span style={{ fontSize: '42px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '-1px' }}>
-                  {reading.nh3_ppm !== null ? reading.nh3_ppm.toFixed(2) : '—'}
+                  {typeof reading.nh3_ppm === 'number' && !isNaN(reading.nh3_ppm) ? reading.nh3_ppm.toFixed(2) : '—'}
                 </span>
                 <span style={{ fontSize: '18px', fontWeight: 700, opacity: 0.9 }}>PPM</span>
               </div>
@@ -143,7 +143,7 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
                   <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>TEMP</span>
                 </div>
                 <div style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
-                  {reading.temperature !== null ? `${reading.temperature.toFixed(1)}°C` : '—'}
+                  {typeof reading.temperature === 'number' && !isNaN(reading.temperature) ? `${reading.temperature.toFixed(1)}°C` : '—'}
                 </div>
               </IonCardContent>
             </IonCard>
@@ -158,7 +158,7 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
                   <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>HUMIDITY</span>
                 </div>
                 <div style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
-                  {reading.humidity !== null ? `${reading.humidity.toFixed(1)}%` : '—'}
+                  {typeof reading.humidity === 'number' && !isNaN(reading.humidity) ? `${reading.humidity.toFixed(1)}%` : '—'}
                 </div>
               </IonCardContent>
             </IonCard>
@@ -173,9 +173,9 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
                   <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>BATTERY</span>
                 </div>
                 <div style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
-                  {reading.battery_percent !== null ? `${reading.battery_percent}%` : '—'}
+                  {typeof reading.battery_percent === 'number' && !isNaN(reading.battery_percent) ? `${reading.battery_percent}%` : '—'}
                 </div>
-                {reading.battery_voltage !== null && (
+                {typeof reading.battery_voltage === 'number' && !isNaN(reading.battery_voltage) && (
                   <div style={{ fontSize: '10px', color: '#64748B', marginTop: '2px' }}>
                     {reading.battery_voltage.toFixed(2)} V
                   </div>
