@@ -41,7 +41,7 @@ import {
 } from '../../utils/photoUtils';
 import bleService, { BLEReading } from '../../services/bleService';
 import bleCentralService, { BLECentralReading } from '../../services/bleCentralService';
-import bluetoothClassicService, { ensureBluetoothPermissions } from '../../services/bluetoothClassicService';
+import bluetoothClassicService from '../../services/bluetoothClassicService';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
 import { usePpmConfirmation } from '../../hooks/usePpmConfirmation';
 import { autoRegisterDevice } from '../../services/deviceService';
@@ -301,18 +301,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   // STEP 2: CONNECT ESP32 BLUETOOTH / READ SENSOR
   // =========================================================
   const handleStep2_ConnectBluetooth = async () => {
-    if (btConnecting) return; // Ignore duplicate taps while connecting
+    if (btConnecting) return;
     setBtConnecting(true);
     try {
-      const perm = await ensureBluetoothPermissions();
-      if (!perm.granted) {
-        setBtConnecting(false);
-        setToastMsg('Bluetooth permission denied. Please allow Nearby devices permission in Settings.');
-        setToastColor('warning');
-        setShowToast(true);
-        return;
-      }
-
+      // Permissions + scan + pair are handled internally by the new Capacitor SPP plugin
       const reading = await bluetoothClassicService.connect().catch((err) => {
         console.error('SPP connect failed (promise):', err);
         return null;
