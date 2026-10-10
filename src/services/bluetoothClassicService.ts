@@ -342,7 +342,18 @@ class BluetoothClassicService {
 
     // 5. Initiate connection with 10–15s connect timeout (12s)
     this.setStatus('connecting', `Connecting to ${targetDevice.name}...`);
-    const deviceAddress = targetDevice.address || targetDevice.id;
+    const rawAddress = (targetDevice.address || targetDevice.id || '').trim();
+    const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+    if (!rawAddress || !macRegex.test(rawAddress)) {
+      console.error('[BluetoothClassic] Target device does not have a valid MAC address:', rawAddress);
+      this.isConnecting = false;
+      this.setStatus(
+        'device_not_found',
+        'Invalid Bluetooth MAC address. Please pair "AmmoniSense" in phone Bluetooth settings first, then tap Retry.'
+      );
+      return null;
+    }
+    const deviceAddress = rawAddress;
 
     return new Promise<AmmoniSenseReading | null>((resolve) => {
       let isSettled = false;
