@@ -1,6 +1,5 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../types/schema';
 import { parseAmmoniSenseLine, SerialStreamBuffer } from '../utils/serialParser';
 
@@ -278,15 +277,6 @@ class BluetoothClassicService {
     // 2. Fully reset state prior to starting a fresh attempt
     this.resetLocalState();
     this.isConnecting = true;
-
-    // 0. Auto-request Android 12+ Bluetooth permissions (BLUETOOTH_CONNECT, BLUETOOTH_SCAN)
-    if (Capacitor.isNativePlatform()) {
-      try {
-        await BluetoothLowEnergy.requestPermissions();
-      } catch (permErr) {
-        console.warn('[BluetoothClassic] Error requesting permissions:', permErr);
-      }
-    }
 
     // 3. Live check: Verify Bluetooth is actually turned ON right now
     const isEnabled = await this.checkLiveBluetoothEnabled();
