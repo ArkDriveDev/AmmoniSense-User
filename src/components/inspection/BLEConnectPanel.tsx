@@ -132,7 +132,7 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
               <div style={{ background: '#F1F5F9', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
                 <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 700 }}>AMMONIA</div>
                 <div style={{ fontSize: '16px', fontWeight: 800, color: sev === 'NORMAL' ? '#10B981' : '#EF4444' }}>
-                  {latest.nh3_ppm !== null ? `${latest.nh3_ppm.toFixed(2)} PPM` : '—'}
+                  {typeof latest?.nh3_ppm === 'number' && !isNaN(latest.nh3_ppm) ? `${latest.nh3_ppm.toFixed(2)} PPM` : '—'}
                 </div>
                 {badgeLabel && (
                   <div style={{ marginTop: '3px' }}>
@@ -147,9 +147,9 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
               <div style={{ background: '#F1F5F9', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
                 <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 700 }}>TEMP / HUM</div>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginTop: '2px' }}>
-                  {latest.temperature !== null ? `${latest.temperature.toFixed(1)}°C` : '—'}
+                  {typeof latest?.temperature === 'number' && !isNaN(latest.temperature) ? `${latest.temperature.toFixed(1)}°C` : '—'}
                   {' | '}
-                  {latest.humidity !== null ? `${latest.humidity.toFixed(0)}%` : '—'}
+                  {typeof latest?.humidity === 'number' && !isNaN(latest.humidity) ? `${latest.humidity.toFixed(0)}%` : '—'}
                 </div>
               </div>
 
@@ -157,9 +157,9 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
               <div style={{ background: '#F1F5F9', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
                 <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 700 }}>BATTERY</div>
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B', marginTop: '2px' }}>
-                  {latest.battery_percent !== null ? `${latest.battery_percent}%` : '—'}
+                  {typeof latest?.battery_percent === 'number' && !isNaN(latest.battery_percent) ? `${latest.battery_percent}%` : '—'}
                 </div>
-                {latest.battery_voltage !== null && (
+                {typeof latest?.battery_voltage === 'number' && !isNaN(latest.battery_voltage) && (
                   <div style={{ fontSize: '9px', color: '#64748B' }}>
                     {latest.battery_voltage.toFixed(2)} V
                   </div>
