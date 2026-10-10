@@ -1,4 +1,5 @@
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../types/schema';
 import { parseAmmoniSenseLine, SerialStreamBuffer } from '../utils/serialParser';
 
@@ -72,11 +73,17 @@ class BluetoothClassicService {
    */
   private initAppResumeListener() {
     try {
-      App.addListener('appStateChange', async (state) => {
-        if (state.isActive) {
-          await this.checkLiveStateAndNotify();
-        }
-      });
+      if (Capacitor.isNativePlatform()) {
+        App.addListener('appStateChange', async (state) => {
+          if (state.isActive) {
+            await this.checkLiveStateAndNotify();
+          }
+        }).catch(() => {});
+      } else if (typeof window !== 'undefined') {
+        window.addEventListener('focus', () => {
+          this.checkLiveStateAndNotify();
+        });
+      }
     } catch {
       // Browser or testing environment fallback
       if (typeof window !== 'undefined') {
@@ -132,18 +139,26 @@ class BluetoothClassicService {
    * Uses bluetoothSerial.isEnabled() directly.
    */
   public async checkLiveBluetoothEnabled(): Promise<boolean> {
-    const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (!bt || typeof bt.isEnabled !== 'function') {
-      // In development/browser environment
+    try {
+      const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
+      if (!bt || typeof bt.isEnabled !== 'function') {
+        // In development/browser environment
+        return true;
+      }
+
+      return new Promise<boolean>((resolve) => {
+        try {
+          bt.isEnabled(
+            () => resolve(true),
+            () => resolve(false)
+          );
+        } catch {
+          resolve(false);
+        }
+      });
+    } catch {
       return true;
     }
-
-    return new Promise<boolean>((resolve) => {
-      bt.isEnabled(
-        () => resolve(true),
-        () => resolve(false)
-      );
-    });
   }
 
   /**
