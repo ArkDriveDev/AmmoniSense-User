@@ -10,83 +10,97 @@ import {
   IonGrid,
   IonToast,
   IonRefresher,
-  IonRefresherContent
+  IonRefresherContent,
+  IonSpinner
 } from '@ionic/react';
 import {
   bluetoothOutline,
-  searchOutline,
+  refreshOutline,
   cloudUploadOutline,
   checkmarkCircleOutline,
   hardwareChipOutline
 } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
-import BLEScanner from '../../components/BLEScanner';
 import BLEReadingDisplay from '../../components/BLEReadingDisplay';
-import bleCentralService, { BLECentralReading, BLECentralDevice } from '../../services/bleCentralService';
-import type { DeviceRecord } from '../../services/deviceService';
+import bluetoothClassicService from '../../services/bluetoothClassicService';
+import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
 import offlineStorage from '../../services/OfflineStorageService';
-
 
 export default function UserBLESensor() {
   const navigate = useNavigate();
-  const [reading, setReading] = useState<BLECentralReading | null>(null);
-  const [activeDevice, setActiveDevice] = useState<BLECentralDevice | null>(null);
-  const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
-
-  // Auto-registration banner
-  const [regRecord, setRegRecord] = useState<DeviceRecord | null>(null);
-  const [regIsNew, setRegIsNew] = useState<boolean>(false);
-  const [showRegBanner, setShowRegBanner] = useState<boolean>(false);
+  const [reading, setReading] = useState<AmmoniSenseReading | null>(bluetoothClassicService.getLatestReading());
+  const [status, setStatus] = useState<BluetoothConnectionStatus>(bluetoothClassicService.getStatus());
+  const [statusMsg, setStatusMsg] = useState<string>(bluetoothClassicService.getStatusMessage());
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
 
   // Toast
   const [toastMsg, setToastMsg] = useState<string>('');
   const [showToast, setShowToast] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsubTelemetry = bleCentralService.onTelemetry((telemetry) => {
-      setReading(telemetry);
+    bluetoothClassicService.checkLiveStateAndNotify();
+
+    const unsubReading = bluetoothClassicService.onReading((r) => {
+      setReading(r);
     });
 
-    const unsubReg = bleCentralService.onDeviceAutoRegistered((record, isNew) => {
-      setRegRecord(record);
-      setRegIsNew(isNew);
-      setShowRegBanner(true);
-      setTimeout(() => setShowRegBanner(false), 4000);
+    const unsubStatus = bluetoothClassicService.onStatusChange((st, msg) => {
+      setStatus(st);
+      if (msg) setStatusMsg(msg);
+      setIsConnecting(st === 'connecting');
     });
-
-    setActiveDevice(bleCentralService.getActiveDevice());
 
     return () => {
-      unsubTelemetry();
-      unsubReg();
+      unsubReading();
+      unsubStatus();
     };
   }, []);
 
   const handleRefresh = async (event: CustomEvent) => {
-    await bleCentralService.scanForDevices();
+    await bluetoothClassicService.checkLiveStateAndNotify();
     event.detail.complete();
+  };
+
+  const handleConnect = async () => {
+    if (isConnecting) return;
+    setIsConnecting(true);
+    try {
+      await bluetoothClassicService.connect();
+    } catch (err: any) {
+      setToastMsg('Connection failed: ' + (err?.message || 'Error'));
+      setShowToast(true);
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleAutoPopulateAndSubmit = () => {
     if (!reading) {
-      setToastMsg('No active BLE reading available. Connect to a BLE node first.');
+      setToastMsg('No active sensor reading available. Connect to AmmoniSense first.');
       setShowToast(true);
       return;
     }
 
     // Save reading to offline draft / localStorage so inspection tags can load it
-    offlineStorage.saveDraft('draft_ble_central_reading', reading);
+    offlineStorage.saveDraft('draft_ble_central_reading', {
+      device_id: 'AmmoniSense',
+      device_name: 'AmmoniSense',
+      ammonia_ppm: reading.nh3_ppm ?? 0,
+      temperature_c: reading.temperature ?? 0,
+      humidity_pct: reading.humidity ?? 0,
+      battery_pct: reading.battery_percent ?? 0,
+      timestamp: reading.timestamp,
+    });
     navigate('/schedules');
   };
+
+  const isConnected = status === 'connected';
 
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>BLE Central Scanner & Reader</IonTitle>
-          <IonButton slot="end" fill="clear" onClick={() => setShowScannerModal(true)} style={{ color: '#ffffff' }}>
-            <IonIcon icon={searchOutline} />
-          </IonButton>
+          <IonTitle style={{ fontWeight: 700 }}>AmmoniSense Sensor Reader</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -96,42 +110,6 @@ export default function UserBLESensor() {
         </IonRefresher>
 
         <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: 0 }}>
-
-          {/* Auto-Registration Banner */}
-          {showRegBanner && regRecord && (
-            <div
-              style={{
-                background: regIsNew
-                  ? 'linear-gradient(135deg, #064e3b, #047857)'
-                  : 'linear-gradient(135deg, #1e3a8a, #1d4ed8)',
-                borderRadius: '14px',
-                padding: '14px 16px',
-                color: '#ffffff',
-                marginBottom: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                cursor: 'pointer',
-              }}
-              onClick={() => setShowRegBanner(false)}
-            >
-              <IonIcon
-                icon={regIsNew ? checkmarkCircleOutline : hardwareChipOutline}
-                style={{ fontSize: '28px', flexShrink: 0 }}
-              />
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '14px' }}>
-                  {regIsNew ? '✓ Device Auto-Registered' : '↻ Known Device Reconnected'}
-                </div>
-                <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>
-                  {regRecord.device_name || regRecord.device_uid}
-                  {regIsNew ? ' is now registered in Supabase.' : ' — last_seen_at updated.'}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Header Card */}
           <div
             style={{
@@ -147,21 +125,47 @@ export default function UserBLESensor() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>
-                  CENTRAL ROLE (SCANNER / READER ONLY)
+                  PROTOCOL: CLASSIC BLUETOOTH SERIAL (SPP)
                 </span>
                 <h3 style={{ margin: '2px 0 0 0', fontWeight: 800, fontSize: '18px' }}>
-                  {activeDevice ? activeDevice.name : 'Ready for Scanning'}
+                  {isConnected ? 'Connected to AmmoniSense' : 'AmmoniSense ESP32'}
                 </h3>
               </div>
-              <IonButton size="small" fill="outline" color="light" onClick={() => setShowScannerModal(true)} style={{ fontWeight: 700 }}>
-                <IonIcon icon={bluetoothOutline} slot="start" />
-                Scan Devices
+              <IonButton
+                size="small"
+                fill="outline"
+                color="light"
+                onClick={handleConnect}
+                disabled={isConnecting}
+                style={{ fontWeight: 700 }}
+              >
+                {isConnecting ? (
+                  <>
+                    <IonSpinner name="dots" style={{ width: '14px', height: '14px', marginRight: '4px' }} />
+                    Connecting…
+                  </>
+                ) : isConnected ? (
+                  <>
+                    <IonIcon icon={refreshOutline} slot="start" />
+                    Re-connect
+                  </>
+                ) : status === 'failed' || status === 'device_not_found' || status === 'bluetooth_off' ? (
+                  <>
+                    <IonIcon icon={refreshOutline} slot="start" />
+                    Retry
+                  </>
+                ) : (
+                  <>
+                    <IonIcon icon={bluetoothOutline} slot="start" />
+                    Connect
+                  </>
+                )}
               </IonButton>
             </div>
           </div>
 
           {/* Real-time Telemetry Display */}
-          <BLEReadingDisplay reading={reading} />
+          <BLEReadingDisplay reading={reading} isConnected={isConnected} />
 
           {/* Actions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -178,12 +182,6 @@ export default function UserBLESensor() {
             </IonButton>
           </div>
         </IonGrid>
-
-        <BLEScanner
-          isOpen={showScannerModal}
-          onClose={() => setShowScannerModal(false)}
-          onSelectDevice={(device) => setActiveDevice(device)}
-        />
 
         <IonToast
           isOpen={showToast}
