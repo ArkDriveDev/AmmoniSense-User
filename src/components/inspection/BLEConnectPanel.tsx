@@ -60,9 +60,16 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
 
     setIsConnecting(true);
     try {
-      await bluetoothClassicService.connect();
+      await bluetoothClassicService.connect().catch((err) => {
+        console.error('SPP connect failed (promise):', err);
+        setStatus('failed');
+        setStatusMsg('Device not ready. Make sure the AmmoniSense sensor is powered on.');
+        return null;
+      });
     } catch (e: any) {
-      console.warn('[BLEConnectPanel] Connect error:', e);
+      console.error('SPP connect failed:', e);
+      setStatus('failed');
+      setStatusMsg('Device not ready. Make sure the AmmoniSense sensor is powered on.');
     } finally {
       setIsConnecting(false);
     }

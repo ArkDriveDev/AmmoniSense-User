@@ -304,7 +304,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     if (btConnecting) return; // Ignore duplicate taps while connecting
     setBtConnecting(true);
     try {
-      const reading = await bluetoothClassicService.connect();
+      const reading = await bluetoothClassicService.connect().catch((err) => {
+        console.error('SPP connect failed (promise):', err);
+        return null;
+      });
       if (reading) {
         setBtConnected(true);
         setSelectedDeviceUid('AmmoniSense');
@@ -313,7 +316,8 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         setShowToast(true);
       }
     } catch (err: any) {
-      setToastMsg('Bluetooth connection failed: ' + (err.message || 'Error'));
+      console.error('SPP connect failed:', err);
+      setToastMsg('Bluetooth connection failed: ' + (err.message || 'Device not ready'));
       setToastColor('warning');
       setShowToast(true);
     } finally {
