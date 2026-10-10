@@ -58,6 +58,8 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
     // Ignore duplicate taps while connecting
     if (isConnecting) return;
 
+    // Fully reset state before fresh attempt (clean retry)
+    bluetoothClassicService.resetLocalState();
     setIsConnecting(true);
     try {
       await bluetoothClassicService.connect().catch((err) => {
