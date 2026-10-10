@@ -165,18 +165,17 @@ class BluetoothClassicService {
    * Checks live state and notifies listeners if turned off or on.
    */
   public async checkLiveStateAndNotify(): Promise<boolean> {
+    // If not actively connected or connecting, do not ping native Bluetooth needlessly
+    if (this.status !== 'connected' && this.status !== 'connecting') {
+      return true;
+    }
+
     try {
       const isEnabled = await this.checkLiveBluetoothEnabled();
       if (!isEnabled) {
-        if (this.status === 'connected' || this.status === 'connecting') {
-          this.resetLocalState();
-        }
+        this.resetLocalState();
         this.setStatus('bluetooth_off', 'Bluetooth is off. Please turn it on.');
         return false;
-      }
-
-      if (this.status === 'bluetooth_off') {
-        this.setStatus('idle', 'Bluetooth is on. Ready to connect.');
       }
       return true;
     } catch {
