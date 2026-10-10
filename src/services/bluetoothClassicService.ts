@@ -223,14 +223,27 @@ class BluetoothClassicService {
     this.connectedDevice = null;
 
     const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (bt && typeof bt.disconnect === 'function') {
-      try {
-        bt.disconnect(
-          () => {},
-          () => {}
-        );
-      } catch {
-        // ignore disconnect cleanup errors
+    if (bt) {
+      if (typeof bt.unsubscribe === 'function') {
+        try {
+          bt.unsubscribe(() => {}, () => {});
+        } catch {
+          // ignore unsubscribe cleanup errors
+        }
+      }
+      if (typeof bt.clear === 'function') {
+        try {
+          bt.clear(() => {}, () => {});
+        } catch {
+          // ignore clear cleanup errors
+        }
+      }
+      if (typeof bt.disconnect === 'function') {
+        try {
+          bt.disconnect(() => {}, () => {});
+        } catch {
+          // ignore disconnect cleanup errors
+        }
       }
     }
   }
@@ -263,32 +276,7 @@ class BluetoothClassicService {
       return pairedAmmoniSense;
     }
 
-    // 2. Discover unpaired devices if not already paired (with 4s timeout)
-    let discoveredDevices: BluetoothDevice[] = [];
-    try {
-      discoveredDevices = await new Promise<BluetoothDevice[]>((resolve) => {
-        if (typeof bt.discoverUnpaired !== 'function') return resolve([]);
-        const timer = setTimeout(() => resolve([]), 4000);
-        bt.discoverUnpaired(
-          (devs) => {
-            clearTimeout(timer);
-            resolve(devs || []);
-          },
-          () => {
-            clearTimeout(timer);
-            resolve([]);
-          }
-        );
-      });
-    } catch (e) {
-      console.warn('[BluetoothClassic] Error discovering devices:', e);
-    }
-
-    const discoveredAmmoniSense = discoveredDevices.find(
-      (d) => d && d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
-    );
-
-    return discoveredAmmoniSense || null;
+    return null;
   }
 
   /**
