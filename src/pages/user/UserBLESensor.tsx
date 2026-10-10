@@ -38,8 +38,6 @@ export default function UserBLESensor() {
   const [showToast, setShowToast] = useState<boolean>(false);
 
   useEffect(() => {
-    bluetoothClassicService.checkLiveStateAndNotify();
-
     const unsubReading = bluetoothClassicService.onReading((r) => {
       setReading(r);
     });
