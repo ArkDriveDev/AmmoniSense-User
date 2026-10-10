@@ -165,19 +165,23 @@ class BluetoothClassicService {
    * Checks live state and notifies listeners if turned off or on.
    */
   public async checkLiveStateAndNotify(): Promise<boolean> {
-    const isEnabled = await this.checkLiveBluetoothEnabled();
-    if (!isEnabled) {
-      if (this.status === 'connected' || this.status === 'connecting') {
-        this.resetLocalState();
+    try {
+      const isEnabled = await this.checkLiveBluetoothEnabled();
+      if (!isEnabled) {
+        if (this.status === 'connected' || this.status === 'connecting') {
+          this.resetLocalState();
+        }
+        this.setStatus('bluetooth_off', 'Bluetooth is off. Please turn it on.');
+        return false;
       }
-      this.setStatus('bluetooth_off', 'Bluetooth is off. Please turn it on.');
+
+      if (this.status === 'bluetooth_off') {
+        this.setStatus('idle', 'Bluetooth is on. Ready to connect.');
+      }
+      return true;
+    } catch {
       return false;
     }
-
-    if (this.status === 'bluetooth_off') {
-      this.setStatus('idle', 'Bluetooth is on. Ready to connect.');
-    }
-    return true;
   }
 
   /**
@@ -223,7 +227,7 @@ class BluetoothClassicService {
     });
 
     const pairedAmmoniSense = pairedDevices.find(
-      (d) => d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
+      (d) => d && d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
     );
     if (pairedAmmoniSense) {
       return pairedAmmoniSense;
@@ -239,7 +243,7 @@ class BluetoothClassicService {
     });
 
     const discoveredAmmoniSense = discoveredDevices.find(
-      (d) => d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
+      (d) => d && d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
     );
 
     return discoveredAmmoniSense || null;
