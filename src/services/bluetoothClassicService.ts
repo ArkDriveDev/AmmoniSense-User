@@ -1,5 +1,6 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../types/schema';
 import { parseAmmoniSenseLine, SerialStreamBuffer } from '../utils/serialParser';
 
@@ -217,13 +218,18 @@ class BluetoothClassicService {
     if (!bt) return null;
 
     // 1. Check bonded / paired devices first
-    const pairedDevices = await new Promise<BluetoothDevice[]>((resolve) => {
-      if (typeof bt.list !== 'function') return resolve([]);
-      bt.list(
-        (devs) => resolve(devs || []),
-        () => resolve([])
-      );
-    });
+    let pairedDevices: BluetoothDevice[] = [];
+    try {
+      pairedDevices = await new Promise<BluetoothDevice[]>((resolve) => {
+        if (typeof bt.list !== 'function') return resolve([]);
+        bt.list(
+          (devs) => resolve(devs || []),
+          () => resolve([])
+        );
+      });
+    } catch (e) {
+      console.warn('[BluetoothClassic] Error listing paired devices:', e);
+    }
 
     const pairedAmmoniSense = pairedDevices.find(
       (d) => d && d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
@@ -232,14 +238,26 @@ class BluetoothClassicService {
       return pairedAmmoniSense;
     }
 
-    // 2. Discover unpaired devices if not already paired
-    const discoveredDevices = await new Promise<BluetoothDevice[]>((resolve) => {
-      if (typeof bt.discoverUnpaired !== 'function') return resolve([]);
-      bt.discoverUnpaired(
-        (devs) => resolve(devs || []),
-        () => resolve([])
-      );
-    });
+    // 2. Discover unpaired devices if not already paired (with 4s timeout)
+    let discoveredDevices: BluetoothDevice[] = [];
+    try {
+      discoveredDevices = await new Promise<BluetoothDevice[]>((resolve) => {
+        if (typeof bt.discoverUnpaired !== 'function') return resolve([]);
+        const timer = setTimeout(() => resolve([]), 4000);
+        bt.discoverUnpaired(
+          (devs) => {
+            clearTimeout(timer);
+            resolve(devs || []);
+          },
+          () => {
+            clearTimeout(timer);
+            resolve([]);
+          }
+        );
+      });
+    } catch (e) {
+      console.warn('[BluetoothClassic] Error discovering devices:', e);
+    }
 
     const discoveredAmmoniSense = discoveredDevices.find(
       (d) => d && d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
@@ -260,6 +278,15 @@ class BluetoothClassicService {
     // 2. Fully reset state prior to starting a fresh attempt
     this.resetLocalState();
     this.isConnecting = true;
+
+    // 0. Auto-request Android 12+ Bluetooth permissions (BLUETOOTH_CONNECT, BLUETOOTH_SCAN)
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await BluetoothLowEnergy.requestPermissions();
+      } catch (permErr) {
+        console.warn('[BluetoothClassic] Error requesting permissions:', permErr);
+      }
+    }
 
     // 3. Live check: Verify Bluetooth is actually turned ON right now
     const isEnabled = await this.checkLiveBluetoothEnabled();
@@ -290,7 +317,7 @@ class BluetoothClassicService {
       this.isConnecting = false;
       this.setStatus(
         'device_not_found',
-        'Device not found. Make sure the AmmoniSense sensor is powered on and nearby.'
+        'AmmoniSense not found. Please pair "AmmoniSense" in phone Bluetooth settings first, then tap Retry.'
       );
       return null;
     }
@@ -348,13 +375,21 @@ class BluetoothClassicService {
       };
 
       // Call connect (or connectInsecure if regular fails)
-      bt.connect(deviceAddress, onConnectSuccess, (err) => {
-        if (typeof bt.connectInsecure === 'function') {
-          bt.connectInsecure(deviceAddress, onConnectSuccess, onConnectFailure);
-        } else {
-          onConnectFailure(err);
-        }
-      });
+      try {
+        bt.connect(deviceAddress, onConnectSuccess, (err) => {
+          if (typeof bt.connectInsecure === 'function') {
+            try {
+              bt.connectInsecure(deviceAddress, onConnectSuccess, onConnectFailure);
+            } catch (insecErr) {
+              onConnectFailure(insecErr);
+            }
+          } else {
+            onConnectFailure(err);
+          }
+        });
+      } catch (connErr) {
+        onConnectFailure(connErr);
+      }
     });
   }
 
