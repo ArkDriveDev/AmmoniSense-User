@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IonButton, IonBadge, IonSpinner, IonIcon, IonCard, IonCardContent } from '@ionic/react';
 import { bluetoothOutline, refreshOutline, hardwareChipOutline, alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
-import bluetoothClassicService from '../../services/bluetoothClassicService';
+import bluetoothClassicService, { ensureBluetoothPermissions, openBluetoothAppSettings } from '../../services/bluetoothClassicService';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
 import { calculateAmmoniaStatus } from '../../types/inspection';
 import { usePpmConfirmation } from '../../hooks/usePpmConfirmation';
@@ -21,6 +21,7 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
   const [statusMsg, setStatusMsg] = useState<string>(bluetoothClassicService.getStatusMessage());
   const [latest, setLatest] = useState<AmmoniSenseReading | null>(bluetoothClassicService.getLatestReading());
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [permanentlyDenied, setPermanentlyDenied] = useState<boolean>(false);
 
   const isConnected = status === 'connected';
   const ppmVal = latest ? latest.nh3_ppm : null;
@@ -61,7 +62,26 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
     // Fully reset state before fresh attempt (clean retry)
     bluetoothClassicService.resetLocalState();
     setIsConnecting(true);
+    setPermanentlyDenied(false);
+
     try {
+      // 1. Gate connect behind runtime permission check (Android 12+)
+      const perm = await ensureBluetoothPermissions();
+      if (!perm.granted) {
+        setIsConnecting(false);
+        setStatus('failed');
+        if (perm.permanentlyDenied) {
+          setPermanentlyDenied(true);
+          setStatusMsg(
+            'Bluetooth permission is permanently denied. Open Settings → Apps → AmmoniSense → Permissions → Nearby devices and enable it.'
+          );
+        } else {
+          setPermanentlyDenied(false);
+          setStatusMsg('Bluetooth permission denied. Please allow Nearby devices permission in Settings.');
+        }
+        return;
+      }
+
       await bluetoothClassicService.connect().catch((err) => {
         console.error('SPP connect failed (promise):', err);
         setStatus('failed');
@@ -122,11 +142,24 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
             backgroundColor: status === 'bluetooth_off' ? '#FEF2F2' : '#FFFBEB',
             color: status === 'bluetooth_off' ? '#991B1B' : '#92400E',
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: 'column',
             gap: '6px'
           }}>
-            <IonIcon icon={alertCircleOutline} style={{ flexShrink: 0 }} />
-            <span>{statusMsg}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <IonIcon icon={alertCircleOutline} style={{ flexShrink: 0 }} />
+              <span>{statusMsg}</span>
+            </div>
+            {permanentlyDenied && (
+              <IonButton
+                size="small"
+                fill="outline"
+                color="danger"
+                onClick={() => openBluetoothAppSettings()}
+                style={{ alignSelf: 'flex-start', margin: '2px 0 0 0', height: '26px', fontSize: '11px' }}
+              >
+                Open Settings
+              </IonButton>
+            )}
           </div>
         )}
 

@@ -41,7 +41,7 @@ import {
 } from '../../utils/photoUtils';
 import bleService, { BLEReading } from '../../services/bleService';
 import bleCentralService, { BLECentralReading } from '../../services/bleCentralService';
-import bluetoothClassicService from '../../services/bluetoothClassicService';
+import bluetoothClassicService, { ensureBluetoothPermissions } from '../../services/bluetoothClassicService';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
 import { usePpmConfirmation } from '../../hooks/usePpmConfirmation';
 import { autoRegisterDevice } from '../../services/deviceService';
@@ -304,6 +304,15 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     if (btConnecting) return; // Ignore duplicate taps while connecting
     setBtConnecting(true);
     try {
+      const perm = await ensureBluetoothPermissions();
+      if (!perm.granted) {
+        setBtConnecting(false);
+        setToastMsg('Bluetooth permission denied. Please allow Nearby devices permission in Settings.');
+        setToastColor('warning');
+        setShowToast(true);
+        return;
+      }
+
       const reading = await bluetoothClassicService.connect().catch((err) => {
         console.error('SPP connect failed (promise):', err);
         return null;
