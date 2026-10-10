@@ -1,89 +1,27 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
+import { PluginListenerHandle } from '@capacitor/core';
+import { BluetoothSerial } from '@shoerofi/capacitor-bluetooth-serial';
+import type {
+  BluetoothDevice,
+  BluetoothConnectionState,
+} from '@shoerofi/capacitor-bluetooth-serial';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../types/schema';
 import { parseAmmoniSenseLine, SerialStreamBuffer } from '../utils/serialParser';
 
-export interface BluetoothDevice {
-  id: string;
-  name: string;
-  address?: string;
-  class?: number;
-}
-
+export type { BluetoothDevice };
 export type ReadingListener = (reading: AmmoniSenseReading) => void;
 export type StatusListener = (status: BluetoothConnectionStatus, message?: string) => void;
 
-export interface BluetoothPermissionResult {
-  granted: boolean;
-  permanentlyDenied?: boolean;
-}
-
-export async function ensureBluetoothPermissions(): Promise<BluetoothPermissionResult> {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
-    return { granted: true };
-  }
-
-  try {
-    const current = await BluetoothLowEnergy.checkPermissions();
-    if (current.bluetooth === 'granted') {
-      return { granted: true };
-    }
-
-    const requested = await BluetoothLowEnergy.requestPermissions();
-    if (requested.bluetooth === 'granted') {
-      return { granted: true };
-    }
-
-    const after = await BluetoothLowEnergy.checkPermissions();
-    return {
-      granted: false,
-      permanentlyDenied: after.bluetooth === 'denied',
-    };
-  } catch (err) {
-    console.warn('[BluetoothClassic] Error checking/requesting permissions:', err);
-    return { granted: false };
-  }
-}
-
-export async function openBluetoothAppSettings(): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    try {
-      await BluetoothLowEnergy.openAppSettings();
-    } catch (e) {
-      console.warn('Failed to open app settings:', e);
-    }
-  }
-}
-
-declare global {
-  interface Window {
-    bluetoothSerial?: {
-      isEnabled: (success: () => void, failure: (err: any) => void) => void;
-      enable: (success: () => void, failure: (err: any) => void) => void;
-      list: (success: (devices: any[]) => void, failure: (err: any) => void) => void;
-      discoverUnpaired: (success: (devices: any[]) => void, failure: (err: any) => void) => void;
-      connect: (address: string, success: () => void, failure: (err: any) => void) => void;
-      connectInsecure: (address: string, success: () => void, failure: (err: any) => void) => void;
-      disconnect: (success: () => void, failure: (err: any) => void) => void;
-      isConnected: (success: () => void, failure: (err: any) => void) => void;
-      subscribe: (delimiter: string, success: (data: string) => void, failure: (err: any) => void) => void;
-      subscribeRawData: (success: (data: ArrayBuffer) => void, failure: (err: any) => void) => void;
-      unsubscribe: (success: () => void, failure: (err: any) => void) => void;
-      clear: (success: () => void, failure: (err: any) => void) => void;
-      showBluetoothSettings?: (success: () => void, failure: (err: any) => void) => void;
-    };
-  }
-}
-
 class BluetoothClassicService {
   public static readonly TARGET_DEVICE_NAME = 'AmmoniSense';
-  public static readonly CONNECT_TIMEOUT_MS = 12000; // 12-second connect timeout
+  public static readonly CONNECT_TIMEOUT_MS = 15000;
   public static readonly BROADCAST_CHANNEL = 'ammonisense_classic_spp_stream';
 
   private status: BluetoothConnectionStatus = 'idle';
   private statusMessage = '';
   private isConnecting = false;
+  private connectedAddress: string | null = null;
   private connectedDevice: BluetoothDevice | null = null;
   private latestReading: AmmoniSenseReading | null = null;
 
@@ -91,12 +29,20 @@ class BluetoothClassicService {
   private readingListeners: ReadingListener[] = [];
   private statusListeners: StatusListener[] = [];
   private broadcastChannel: BroadcastChannel | null = null;
-  private connectTimeoutTimer: any = null;
+
+  private connectTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+  private notificationListenerHandle: PluginListenerHandle | null = null;
+  private connectionChangeHandle: PluginListenerHandle | null = null;
+  private notificationEventName: string | null = null;
 
   constructor() {
     this.initBroadcastChannel();
     this.initAppResumeListener();
   }
+
+  // ---------------------------------------------------------------------------
+  // Init helpers
+  // ---------------------------------------------------------------------------
 
   private initBroadcastChannel() {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -111,9 +57,6 @@ class BluetoothClassicService {
     }
   }
 
-  /**
-   * Automatically re-check live Bluetooth state when the app resumes from background.
-   */
   private initAppResumeListener() {
     try {
       if (Capacitor.isNativePlatform()) {
@@ -123,125 +66,67 @@ class BluetoothClassicService {
           }
         }).catch(() => {});
       } else if (typeof window !== 'undefined') {
-        window.addEventListener('focus', () => {
-          this.checkLiveStateAndNotify();
-        });
+        window.addEventListener('focus', () => this.checkLiveStateAndNotify());
       }
     } catch {
-      // Browser or testing environment fallback
       if (typeof window !== 'undefined') {
-        window.addEventListener('focus', () => {
-          this.checkLiveStateAndNotify();
-        });
+        window.addEventListener('focus', () => this.checkLiveStateAndNotify());
       }
     }
   }
 
-  public getStatus(): BluetoothConnectionStatus {
-    return this.status;
-  }
+  // ---------------------------------------------------------------------------
+  // Public getters
+  // ---------------------------------------------------------------------------
 
-  public getStatusMessage(): string {
-    return this.statusMessage;
-  }
+  public getStatus(): BluetoothConnectionStatus { return this.status; }
+  public getStatusMessage(): string { return this.statusMessage; }
+  public getConnectedDevice(): BluetoothDevice | null { return this.connectedDevice; }
+  public getLatestReading(): AmmoniSenseReading | null { return this.latestReading; }
 
-  public getConnectedDevice(): BluetoothDevice | null {
-    return this.connectedDevice;
-  }
-
-  public getLatestReading(): AmmoniSenseReading | null {
-    return this.latestReading;
-  }
+  // ---------------------------------------------------------------------------
+  // Listener registration
+  // ---------------------------------------------------------------------------
 
   public onReading(listener: ReadingListener): () => void {
     this.readingListeners.push(listener);
-    return () => {
-      this.readingListeners = this.readingListeners.filter((l) => l !== listener);
-    };
+    return () => { this.readingListeners = this.readingListeners.filter(l => l !== listener); };
   }
 
   public onStatusChange(listener: StatusListener): () => void {
     this.statusListeners.push(listener);
-    return () => {
-      this.statusListeners = this.statusListeners.filter((l) => l !== listener);
-    };
+    return () => { this.statusListeners = this.statusListeners.filter(l => l !== listener); };
   }
 
   private notifyReadingListeners(reading: AmmoniSenseReading) {
-    this.readingListeners.forEach((fn) => fn(reading));
+    this.readingListeners.forEach(fn => fn(reading));
   }
 
   private setStatus(status: BluetoothConnectionStatus, message: string) {
     this.status = status;
     this.statusMessage = message;
-    this.statusListeners.forEach((fn) => fn(status, message));
+    this.statusListeners.forEach(fn => fn(status, message));
   }
 
-  /**
-   * Ensures the Classic SPP Cordova plugin is fully initialized and attached to window.
-   */
-  public async ensurePluginReady(): Promise<boolean> {
-    if (typeof window === 'undefined') return false;
-    if (window.bluetoothSerial) return true;
-    if (!Capacitor.isNativePlatform()) return true;
+  // ---------------------------------------------------------------------------
+  // Bluetooth enabled check
+  // ---------------------------------------------------------------------------
 
-    return new Promise<boolean>((resolve) => {
-      let settled = false;
-      const onReady = () => {
-        if (!settled) {
-          settled = true;
-          resolve(!!window.bluetoothSerial);
-        }
-      };
-      document.addEventListener('deviceready', onReady, { once: true });
-      setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          resolve(!!window.bluetoothSerial);
-        }
-      }, 1500);
-    });
-  }
-
-  /**
-   * Check LIVE Bluetooth state (never cached).
-   * Uses bluetoothSerial.isEnabled() directly.
-   */
   public async checkLiveBluetoothEnabled(): Promise<boolean> {
+    if (!Capacitor.isNativePlatform()) return true;
     try {
-      const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-      if (!bt || typeof bt.isEnabled !== 'function') {
-        // In development/browser environment
-        return true;
-      }
-
-      return new Promise<boolean>((resolve) => {
-        try {
-          bt.isEnabled(
-            () => resolve(true),
-            () => resolve(false)
-          );
-        } catch {
-          resolve(false);
-        }
-      });
+      const result = await BluetoothSerial.isEnabled();
+      return result.enabled;
     } catch {
       return true;
     }
   }
 
-  /**
-   * Checks live state and notifies listeners if turned off or on.
-   */
   public async checkLiveStateAndNotify(): Promise<boolean> {
-    // If not actively connected or connecting, do not ping native Bluetooth needlessly
-    if (this.status !== 'connected' && this.status !== 'connecting') {
-      return true;
-    }
-
+    if (this.status !== 'connected' && this.status !== 'connecting') return true;
     try {
-      const isEnabled = await this.checkLiveBluetoothEnabled();
-      if (!isEnabled) {
+      const enabled = await this.checkLiveBluetoothEnabled();
+      if (!enabled) {
         this.resetLocalState();
         this.setStatus('bluetooth_off', 'Bluetooth is off. Please turn it on.');
         return false;
@@ -252,9 +137,10 @@ class BluetoothClassicService {
     }
   }
 
-  /**
-   * Fully resets all connection state, timers, buffers, and flags.
-   */
+  // ---------------------------------------------------------------------------
+  // State reset
+  // ---------------------------------------------------------------------------
+
   public resetLocalState(): void {
     if (this.connectTimeoutTimer) {
       clearTimeout(this.connectTimeoutTimer);
@@ -263,154 +149,131 @@ class BluetoothClassicService {
 
     this.isConnecting = false;
     this.streamBuffer.reset();
+
+    // Tear down notification listener
+    if (this.notificationListenerHandle) {
+      this.notificationListenerHandle.remove().catch(() => {});
+      this.notificationListenerHandle = null;
+    }
+
+    // Tear down connection-change listener
+    if (this.connectionChangeHandle) {
+      this.connectionChangeHandle.remove().catch(() => {});
+      this.connectionChangeHandle = null;
+    }
+
+    // Disable notifications on the device if we had one connected
+    if (this.connectedAddress && this.notificationEventName) {
+      BluetoothSerial.disableNotifications({ address: this.connectedAddress }).catch(() => {});
+    }
+
+    // Disconnect
+    if (this.connectedAddress) {
+      BluetoothSerial.disconnect({ address: this.connectedAddress }).catch(() => {});
+    }
+
+    this.connectedAddress = null;
     this.connectedDevice = null;
-
-    const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (bt) {
-      if (typeof bt.unsubscribe === 'function') {
-        try {
-          bt.unsubscribe(() => {}, () => {});
-        } catch {
-          // ignore unsubscribe cleanup errors
-        }
-      }
-      if (typeof bt.clear === 'function') {
-        try {
-          bt.clear(() => {}, () => {});
-        } catch {
-          // ignore clear cleanup errors
-        }
-      }
-      if (typeof bt.disconnect === 'function') {
-        try {
-          bt.disconnect(() => {}, () => {});
-        } catch {
-          // ignore disconnect cleanup errors
-        }
-      }
-    }
+    this.notificationEventName = null;
   }
 
-  /**
-   * Finds the AmmoniSense device via paired devices or unpaired discovery.
-   */
-  public async findAmmoniSenseDevice(): Promise<BluetoothDevice | null> {
-    const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (!bt) return null;
+  // ---------------------------------------------------------------------------
+  // Scan for unpaired + paired devices (in-app pairing)
+  // ---------------------------------------------------------------------------
 
-    // 1. Check bonded / paired devices first
-    let pairedDevices: BluetoothDevice[] = [];
+  /**
+   * Returns all visible AmmoniSense devices.
+   * scan() triggers Android 12+ permission dialog + pair dialog internally.
+   * Falls back to getPairedDevices() if scan times out or fails.
+   */
+  public async findAmmoniSenseDevices(): Promise<BluetoothDevice[]> {
+    if (!Capacitor.isNativePlatform()) return [];
+
+    const TARGET = BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase();
+
+    // 1. Try paired devices first (fast path)
+    let paired: BluetoothDevice[] = [];
     try {
-      pairedDevices = await new Promise<BluetoothDevice[]>((resolve) => {
-        if (typeof bt.list !== 'function') return resolve([]);
-        bt.list(
-          (devs) => resolve(devs || []),
-          () => resolve([])
-        );
-      });
+      const result = await BluetoothSerial.getPairedDevices();
+      paired = (result.devices || []).filter(
+        d => d?.name?.trim().toLowerCase() === TARGET
+      );
     } catch (e) {
-      console.warn('[BluetoothClassic] Error listing paired devices:', e);
+      console.warn('[BT] getPairedDevices failed:', e);
     }
 
-    const pairedAmmoniSense = pairedDevices.find(
-      (d) => d && d.name && d.name.trim().toLowerCase() === BluetoothClassicService.TARGET_DEVICE_NAME.toLowerCase()
-    );
-    if (pairedAmmoniSense) {
-      return pairedAmmoniSense;
+    if (paired.length > 0) return paired;
+
+    // 2. In-app scan (triggers pairing dialog for unpaired devices)
+    try {
+      this.setStatus('scanning', 'Scanning for AmmoniSense nearby...');
+      const scanResult = await BluetoothSerial.scan();
+      const scanned = (scanResult.devices || []).filter(
+        d => d?.name?.trim().toLowerCase() === TARGET
+      );
+      if (scanned.length > 0) return scanned;
+    } catch (e) {
+      console.warn('[BT] scan() failed:', e);
     }
 
-    return null;
+    return [];
   }
 
-  /**
-   * Connect to AmmoniSense ESP32 over Classic Bluetooth Serial (SPP).
-   */
-  public async connect(): Promise<AmmoniSenseReading | null> {
-    // 1. Prevent duplicate concurrent connection attempts
-    if (this.isConnecting) {
-      return null;
-    }
+  // ---------------------------------------------------------------------------
+  // Connect
+  // ---------------------------------------------------------------------------
 
-    // 2. Fully reset state prior to starting a fresh attempt
+  public async connect(): Promise<AmmoniSenseReading | null> {
+    if (this.isConnecting) return null;
+
     this.resetLocalState();
     this.isConnecting = true;
 
-    // 0. Ensure Android 12+ runtime permissions are granted BEFORE any Bluetooth calls
-    const perm = await ensureBluetoothPermissions();
-    if (!perm.granted) {
+    // 1. Check Bluetooth is on
+    const enabled = await this.checkLiveBluetoothEnabled();
+    if (!enabled) {
       this.isConnecting = false;
-      if (perm.permanentlyDenied) {
-        this.setStatus(
-          'failed',
-          'Bluetooth permission is permanently denied. Open Settings → Apps → AmmoniSense → Permissions → Nearby devices and enable it.'
-        );
-      } else {
-        this.setStatus(
-          'failed',
-          'Bluetooth permission denied. Please allow Nearby devices permission in Settings.'
-        );
-      }
-      return null;
-    }
-
-    // 1. Ensure plugin is ready
-    const isReady = await this.ensurePluginReady();
-    const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (!bt || !isReady) {
-      this.isConnecting = false;
-      this.setStatus('failed', 'Bluetooth Serial plugin not ready.');
-      return null;
-    }
-
-    // 3. Live check: Verify Bluetooth is actually turned ON right now
-    const isEnabled = await this.checkLiveBluetoothEnabled();
-    if (!isEnabled) {
-      this.isConnecting = false;
-      this.setStatus('bluetooth_off', 'Bluetooth is off. Please turn it on.');
+      this.setStatus('bluetooth_off', 'Bluetooth is off. Please turn it on and retry.');
       return null;
     }
 
     this.setStatus('scanning', 'Searching for AmmoniSense sensor...');
 
-    // 4. Find device by exact name "AmmoniSense"
-    let targetDevice: BluetoothDevice | null = null;
+    // 2. Find device (paired first, then in-app scan)
+    let devices: BluetoothDevice[] = [];
     try {
-      targetDevice = await this.findAmmoniSenseDevice();
-    } catch (err: any) {
-      console.warn('[BluetoothClassic] Error searching for devices:', err);
+      devices = await this.findAmmoniSenseDevices();
+    } catch (err) {
+      console.warn('[BT] Error finding devices:', err);
     }
 
-    if (!targetDevice) {
+    if (devices.length === 0) {
       this.isConnecting = false;
       this.setStatus(
         'device_not_found',
-        'AmmoniSense not found. Please pair "AmmoniSense" in phone Bluetooth settings first, then tap Retry.'
+        'AmmoniSense not found. Make sure the sensor is on and nearby, then tap Retry.'
       );
       return null;
     }
 
-    // 5. Initiate connection with 10–15s connect timeout (12s)
-    this.setStatus('connecting', `Connecting to ${targetDevice.name}...`);
-    const rawAddress = (targetDevice.address || targetDevice.id || '').trim();
-    const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
-    if (!rawAddress || !macRegex.test(rawAddress)) {
-      console.error('[BluetoothClassic] Target device does not have a valid MAC address:', rawAddress);
+    const target = devices[0];
+    const address = (target.address || target.id || '').trim();
+
+    if (!address) {
       this.isConnecting = false;
-      this.setStatus(
-        'device_not_found',
-        'Invalid Bluetooth MAC address. Please pair "AmmoniSense" in phone Bluetooth settings first, then tap Retry.'
-      );
+      this.setStatus('device_not_found', 'Device found but has no valid address. Tap Retry.');
       return null;
     }
-    const deviceAddress = rawAddress;
 
+    this.setStatus('connecting', `Connecting to ${target.name}...`);
+
+    // 3. Connect with timeout
     return new Promise<AmmoniSenseReading | null>((resolve) => {
-      let isSettled = false;
+      let settled = false;
 
-      // Timeout handler: Cancels attempt on timeout and resets to ready state
       this.connectTimeoutTimer = setTimeout(() => {
-        if (!isSettled) {
-          isSettled = true;
+        if (!settled) {
+          settled = true;
           this.resetLocalState();
           this.setStatus(
             'device_not_found',
@@ -420,79 +283,66 @@ class BluetoothClassicService {
         }
       }, BluetoothClassicService.CONNECT_TIMEOUT_MS);
 
-      const onConnectSuccess = () => {
-        if (isSettled) return;
-        isSettled = true;
+      const finish = (err?: any) => {
+        if (settled) return;
+        settled = true;
         if (this.connectTimeoutTimer) {
           clearTimeout(this.connectTimeoutTimer);
           this.connectTimeoutTimer = null;
         }
 
-        this.isConnecting = false;
-        this.connectedDevice = targetDevice;
-        this.setStatus('connected', `Connected to ${targetDevice?.name}`);
+        if (err) {
+          this.resetLocalState();
+          const errStr = typeof err === 'string' ? err : err?.message || 'Connection failed';
+          console.warn('[BT] Connect failure:', errStr);
+          this.setStatus('failed', 'Device not ready. Make sure the AmmoniSense sensor is powered on.');
+          resolve(null);
+          return;
+        }
 
-        // Subscribe to newline-delimited stream
-        this.startDataSubscription();
+        // Connected successfully
+        this.isConnecting = false;
+        this.connectedAddress = address;
+        this.connectedDevice = target;
+        this.setStatus('connected', `Connected to ${target.name}`);
+        this.startDataSubscription(address);
+        this.startConnectionChangeListener(address);
         resolve(this.latestReading);
       };
 
-      const onConnectFailure = (err: any) => {
-        if (isSettled) return;
-        isSettled = true;
-        if (this.connectTimeoutTimer) {
-          clearTimeout(this.connectTimeoutTimer);
-          this.connectTimeoutTimer = null;
-        }
-
-        this.resetLocalState();
-        const errStr = typeof err === 'string' ? err : err?.message || 'Connection failed';
-        console.warn('[BluetoothClassic] Connect failure:', errStr);
-        this.setStatus('failed', 'Device not ready. Make sure the AmmoniSense sensor is powered on.');
-        resolve(null);
-      };
-
-      // Call connect (or connectInsecure if regular fails)
-      try {
-        bt.connect(deviceAddress, onConnectSuccess, (err) => {
-          if (typeof bt.connectInsecure === 'function') {
-            try {
-              bt.connectInsecure(deviceAddress, onConnectSuccess, onConnectFailure);
-            } catch (insecErr) {
-              onConnectFailure(insecErr);
-            }
-          } else {
-            onConnectFailure(err);
-          }
+      // Try connect, fall back to connectInsecure on failure
+      BluetoothSerial.connect({ address })
+        .then(() => finish())
+        .catch(() => {
+          BluetoothSerial.connectInsecure({ address })
+            .then(() => finish())
+            .catch(err => finish(err));
         });
-      } catch (connErr) {
-        onConnectFailure(connErr);
-      }
     });
   }
 
-  /**
-   * Subscribes to the raw incoming stream, buffers chunks, and parses lines.
-   */
-  private startDataSubscription() {
-    const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (!bt || typeof bt.subscribe !== 'function') return;
+  // ---------------------------------------------------------------------------
+  // Notification stream subscription
+  // ---------------------------------------------------------------------------
 
-    // Remove any previous listener before subscribing to prevent duplicates
-    if (typeof bt.unsubscribe === 'function') {
-      try {
-        bt.unsubscribe(() => {}, () => {});
-      } catch {
-        // ignore
-      }
-    }
-
+  private async startDataSubscription(address: string): Promise<void> {
     try {
-      bt.subscribe(
-        '\n',
-        (data: string) => {
-          if (!data) return;
-          const lines = this.streamBuffer.append(data);
+      // Disable any stale notifications first
+      await BluetoothSerial.disableNotifications({ address }).catch(() => {});
+
+      const result = await BluetoothSerial.enableNotifications({
+        address,
+        delimiter: '\n',
+      });
+
+      this.notificationEventName = result.eventName;
+
+      this.notificationListenerHandle = await BluetoothSerial.addListener(
+        result.eventName,
+        (event: any) => {
+          const raw: string = event?.value ?? event?.data ?? '';
+          if (!raw) return;
+          const lines = this.streamBuffer.append(raw);
           for (const line of lines) {
             const reading = parseAmmoniSenseLine(line);
             if (reading) {
@@ -501,37 +351,55 @@ class BluetoothClassicService {
               this.broadcastReading(reading);
             }
           }
-        },
-        (err) => {
-          console.warn('[BluetoothClassic] Stream error or disconnected:', err);
-          this.resetLocalState();
-          this.setStatus('disconnected', 'Device disconnected.');
         }
       );
     } catch (subErr) {
-      console.warn('[BluetoothClassic] Subscription error:', subErr);
+      console.warn('[BT] Notification subscription error:', subErr);
     }
   }
 
-  /**
-   * Broadcast reading across tabs / windows
-   */
+  // ---------------------------------------------------------------------------
+  // Connection-change event listener
+  // ---------------------------------------------------------------------------
+
+  private async startConnectionChangeListener(address: string): Promise<void> {
+    try {
+      this.connectionChangeHandle = await BluetoothSerial.addListener(
+        'onConnectionChange',
+        (event: { device?: BluetoothDevice; state: BluetoothConnectionState }) => {
+          const deviceAddress = (event.device?.address || event.device?.id || '').trim();
+          // Only react to events for our device
+          if (deviceAddress && deviceAddress !== address) return;
+
+          if (event.state === 'DISCONNECTED' || event.state === 'CONNECTION_FAILED') {
+            if (this.status === 'connected') {
+              this.resetLocalState();
+              this.setStatus('disconnected', 'Device disconnected.');
+            }
+          }
+        }
+      );
+    } catch (e) {
+      console.warn('[BT] onConnectionChange listener error:', e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Broadcast
+  // ---------------------------------------------------------------------------
+
   private broadcastReading(reading: AmmoniSenseReading) {
     if (this.broadcastChannel) {
       try {
-        this.broadcastChannel.postMessage({
-          type: 'CLASSIC_SPP_READING',
-          payload: reading,
-        });
-      } catch {
-        // ignore broadcast serialization issues
-      }
+        this.broadcastChannel.postMessage({ type: 'CLASSIC_SPP_READING', payload: reading });
+      } catch { /* ignore */ }
     }
   }
 
-  /**
-   * Explicitly disconnects and cleans up connection state.
-   */
+  // ---------------------------------------------------------------------------
+  // Disconnect
+  // ---------------------------------------------------------------------------
+
   public disconnect(): void {
     this.resetLocalState();
     this.setStatus('disconnected', 'Disconnected from device.');
