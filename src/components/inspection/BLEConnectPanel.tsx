@@ -27,9 +27,6 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
   const { status: ppmConfirmationStatus, badgeLabel, badgeColor } = usePpmConfirmation(ppmVal, isConnected);
 
   useEffect(() => {
-    // Re-check live Bluetooth state immediately on mount
-    bluetoothClassicService.checkLiveStateAndNotify();
-
     const unsubStatus = bluetoothClassicService.onStatusChange((st, msg) => {
       setStatus(st);
       if (msg) setStatusMsg(msg);
