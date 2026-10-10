@@ -415,28 +415,41 @@ class BluetoothClassicService {
    */
   private startDataSubscription() {
     const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (!bt) return;
+    if (!bt || typeof bt.subscribe !== 'function') return;
 
-    bt.subscribe(
-      '\n',
-      (data: string) => {
-        if (!data) return;
-        const lines = this.streamBuffer.append(data);
-        for (const line of lines) {
-          const reading = parseAmmoniSenseLine(line);
-          if (reading) {
-            this.latestReading = reading;
-            this.notifyReadingListeners(reading);
-            this.broadcastReading(reading);
-          }
-        }
-      },
-      (err) => {
-        console.warn('[BluetoothClassic] Stream error or disconnected:', err);
-        this.resetLocalState();
-        this.setStatus('disconnected', 'Device disconnected.');
+    // Remove any previous listener before subscribing to prevent duplicates
+    if (typeof bt.unsubscribe === 'function') {
+      try {
+        bt.unsubscribe(() => {}, () => {});
+      } catch {
+        // ignore
       }
-    );
+    }
+
+    try {
+      bt.subscribe(
+        '\n',
+        (data: string) => {
+          if (!data) return;
+          const lines = this.streamBuffer.append(data);
+          for (const line of lines) {
+            const reading = parseAmmoniSenseLine(line);
+            if (reading) {
+              this.latestReading = reading;
+              this.notifyReadingListeners(reading);
+              this.broadcastReading(reading);
+            }
+          }
+        },
+        (err) => {
+          console.warn('[BluetoothClassic] Stream error or disconnected:', err);
+          this.resetLocalState();
+          this.setStatus('disconnected', 'Device disconnected.');
+        }
+      );
+    } catch (subErr) {
+      console.warn('[BluetoothClassic] Subscription error:', subErr);
+    }
   }
 
   /**
