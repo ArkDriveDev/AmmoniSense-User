@@ -1,5 +1,6 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../types/schema';
 import { parseAmmoniSenseLine, SerialStreamBuffer } from '../utils/serialParser';
 
@@ -12,6 +13,48 @@ export interface BluetoothDevice {
 
 export type ReadingListener = (reading: AmmoniSenseReading) => void;
 export type StatusListener = (status: BluetoothConnectionStatus, message?: string) => void;
+
+export interface BluetoothPermissionResult {
+  granted: boolean;
+  permanentlyDenied?: boolean;
+}
+
+export async function ensureBluetoothPermissions(): Promise<BluetoothPermissionResult> {
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
+    return { granted: true };
+  }
+
+  try {
+    const current = await BluetoothLowEnergy.checkPermissions();
+    if (current.bluetooth === 'granted') {
+      return { granted: true };
+    }
+
+    const requested = await BluetoothLowEnergy.requestPermissions();
+    if (requested.bluetooth === 'granted') {
+      return { granted: true };
+    }
+
+    const after = await BluetoothLowEnergy.checkPermissions();
+    return {
+      granted: false,
+      permanentlyDenied: after.bluetooth === 'denied',
+    };
+  } catch (err) {
+    console.warn('[BluetoothClassic] Error checking/requesting permissions:', err);
+    return { granted: false };
+  }
+}
+
+export async function openBluetoothAppSettings(): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await BluetoothLowEnergy.openAppSettings();
+    } catch (e) {
+      console.warn('Failed to open app settings:', e);
+    }
+  }
+}
 
 declare global {
   interface Window {
@@ -292,7 +335,25 @@ class BluetoothClassicService {
     this.resetLocalState();
     this.isConnecting = true;
 
-    // 0. Ensure plugin is ready
+    // 0. Ensure Android 12+ runtime permissions are granted BEFORE any Bluetooth calls
+    const perm = await ensureBluetoothPermissions();
+    if (!perm.granted) {
+      this.isConnecting = false;
+      if (perm.permanentlyDenied) {
+        this.setStatus(
+          'failed',
+          'Bluetooth permission is permanently denied. Open Settings → Apps → AmmoniSense → Permissions → Nearby devices and enable it.'
+        );
+      } else {
+        this.setStatus(
+          'failed',
+          'Bluetooth permission denied. Please allow Nearby devices permission in Settings.'
+        );
+      }
+      return null;
+    }
+
+    // 1. Ensure plugin is ready
     const isReady = await this.ensurePluginReady();
     const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
     if (!bt || !isReady) {
