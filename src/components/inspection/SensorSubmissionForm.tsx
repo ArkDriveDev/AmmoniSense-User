@@ -113,10 +113,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
   useEffect(() => {
     fetchSites();
-
-    // Check live state on mount
-    bluetoothClassicService.checkLiveStateAndNotify();
-
     // Subscribe to Classic Bluetooth SPP Status
     const unsubClassicStatus = bluetoothClassicService.onStatusChange((st, msg) => {
       setBtStatus(st);
