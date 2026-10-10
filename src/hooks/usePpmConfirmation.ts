@@ -41,15 +41,17 @@ export function usePpmConfirmation(
       return;
     }
 
-    // If ppm is zero, negative, or missing, reset immediately
-    if (ppm === null || ppm === undefined || ppm <= 0) {
+    // If ppm is zero, negative, NaN, or missing, reset immediately
+    if (ppm === null || ppm === undefined || isNaN(ppm) || ppm <= 0) {
       reset();
       return;
     }
 
+    const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
     // Non-zero ppm: start timer if not already started
     if (startTimeRef.current === null) {
-      startTimeRef.current = performance.now();
+      startTimeRef.current = now();
       setStatus('confirming');
       setElapsedSeconds(0);
     }
@@ -57,7 +59,7 @@ export function usePpmConfirmation(
     const interval = setInterval(() => {
       if (startTimeRef.current === null) return;
 
-      const elapsed = (performance.now() - startTimeRef.current) / 1000;
+      const elapsed = (now() - startTimeRef.current) / 1000;
       setElapsedSeconds(Math.min(10, Math.floor(elapsed)));
 
       if (elapsed >= 10) {
