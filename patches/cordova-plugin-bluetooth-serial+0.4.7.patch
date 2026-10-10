@@ -83,3 +83,88 @@ index 8be5575..03d756c 100644
      private void listBondedDevices(CallbackContext callbackContext) throws JSONException {
 -        JSONArray deviceList = new JSONArray();
 -        Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
+-
+-        for (BluetoothDevice device : bondedDevices) {
+-            deviceList.put(deviceToJSON(device));
++        if (bluetoothAdapter == null) {
++            callbackContext.error("Bluetooth is not available on this device.");
++            return;
++        }
++        try {
++            JSONArray deviceList = new JSONArray();
++            Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
++            if (bondedDevices != null) {
++                for (BluetoothDevice device : bondedDevices) {
++                    if (device != null) {
++                        deviceList.put(deviceToJSON(device));
++                    }
++                }
++            }
++            callbackContext.success(deviceList);
++        } catch (Exception e) {
++            callbackContext.error(e.getMessage() != null ? e.getMessage() : "Error reading bonded devices");
+         }
+-        callbackContext.success(deviceList);
+     }
+ 
+     private void discoverUnpairedDevices(final CallbackContext callbackContext) throws JSONException {
++        if (bluetoothAdapter == null) {
++            callbackContext.error("Bluetooth is not available on this device.");
++            return;
++        }
+ 
+         final CallbackContext ddc = deviceDiscoveredCallback;
+ 
+@@ -300,57 +341,88 @@ public class BluetoothSerial extends CordovaPlugin {
+                 String action = intent.getAction();
+                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+-                    try {
+-                    	JSONObject o = deviceToJSON(device);
+-                        unpairedDevices.put(o);
+-                        if (ddc != null) {
+-                            PluginResult res = new PluginResult(PluginResult.Status.OK, o);
+-                            res.setKeepCallback(true);
+-                            ddc.sendPluginResult(res);
++                    if (device != null) {
++                        try {
++                            JSONObject o = deviceToJSON(device);
++                            unpairedDevices.put(o);
++                            if (ddc != null) {
++                                PluginResult res = new PluginResult(PluginResult.Status.OK, o);
++                                res.setKeepCallback(true);
++                                ddc.sendPluginResult(res);
++                            }
++                        } catch (JSONException e) {
++                            Log.e(TAG, "Problem converting device to JSON", e);
+                         }
+-                    } catch (JSONException e) {
+-                        // This shouldn't happen, log and ignore
+-                        Log.e(TAG, "Problem converting device to JSON", e);
+                     }
+                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                     callbackContext.success(unpairedDevices);
+-                    cordova.getActivity().unregisterReceiver(this);
++                    try {
++                        cordova.getActivity().unregisterReceiver(this);
++                    } catch (Exception ignored) {}
+                 }
+             }
+         };
+ 
+-        Activity activity = cordova.getActivity();
+-        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+-        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
+-        bluetoothAdapter.startDiscovery();
++        try {
++            Activity activity = cordova.getActivity();
++            activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
++            activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
++            bluetoothAdapter.startDiscovery();
++        } catch (Exception e) {
++            callbackContext.error("Discovery error: " + e.getMessage());
++        }
+     }
+ 
+     private JSONObject deviceToJSON(BluetoothDevice device) throws JSONException {
+         JSONObject json = new JSONObject();
