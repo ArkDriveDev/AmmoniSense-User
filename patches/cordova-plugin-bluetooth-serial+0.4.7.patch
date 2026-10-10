@@ -1,5 +1,5 @@
 diff --git a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java b/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java
-index 8be5575..03d756c 100644
+index 8be5575..7c2a7cd 100644
 --- a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java
 +++ b/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java
 @@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
@@ -10,8 +10,14 @@ index 8be5575..03d756c 100644
  import android.content.BroadcastReceiver;
  import android.content.Context;
  import android.content.Intent;
-@@ -95,7 +96,20 @@ public class BluetoothSerial extends CordovaPlugin {
-         LOG.d(TAG, "action = " + action);
+@@ -91,11 +92,24 @@ public class BluetoothSerial extends CordovaPlugin {
+ 
+     @Override
+     public boolean execute(String action, CordovaArgs args, CallbackContext callbackContext) throws JSONException {
+-
+-        LOG.d(TAG, "action = " + action);
++        try {
++            LOG.d(TAG, "action = " + action);
  
          if (bluetoothAdapter == null) {
 -            bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -77,7 +83,28 @@ index 8be5575..03d756c 100644
  
          } else if (action.equals(DISCOVER_UNPAIRED)) {
  
-@@ -279,16 +305,31 @@ public class BluetoothSerial extends CordovaPlugin {
+@@ -243,11 +269,19 @@ public class BluetoothSerial extends CordovaPlugin {
+ 
+         } else {
+             validAction = false;
+-
+         }
+ 
+         return validAction;
++    } catch (SecurityException se) {
++        Log.e(TAG, "Bluetooth security exception", se);
++        callbackContext.error("Bluetooth permission required: " + se.getMessage());
++        return true;
++    } catch (Throwable t) {
++        Log.e(TAG, "Bluetooth exception", t);
++        callbackContext.error("Bluetooth error: " + t.getMessage());
++        return true;
+     }
++}
+ 
+     @Override
+     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+@@ -279,16 +313,31 @@ public class BluetoothSerial extends CordovaPlugin {
      }
  
      private void listBondedDevices(CallbackContext callbackContext) throws JSONException {
@@ -115,7 +142,7 @@ index 8be5575..03d756c 100644
  
          final CallbackContext ddc = deviceDiscoveredCallback;
  
-@@ -300,57 +341,88 @@ public class BluetoothSerial extends CordovaPlugin {
+@@ -300,57 +349,88 @@ public class BluetoothSerial extends CordovaPlugin {
                  String action = intent.getAction();
                  if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                      BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -237,6 +264,54 @@ index 8be5575..03d756c 100644
          }
      }
  
+@@ -468,23 +548,32 @@ public class BluetoothSerial extends CordovaPlugin {
+     @Override
+     public void onRequestPermissionResult(int requestCode, String[] permissions,
+                                           int[] grantResults) throws JSONException {
+-
+-        for(int result:grantResults) {
+-            if(result == PackageManager.PERMISSION_DENIED) {
+-                LOG.d(TAG, "User *rejected* location permission");
+-                this.permissionCallback.sendPluginResult(new PluginResult(
+-                        PluginResult.Status.ERROR,
+-                        "Location permission is required to discover unpaired devices.")
+-                    );
+-                return;
++        try {
++            if (grantResults != null) {
++                for (int result : grantResults) {
++                    if (result == PackageManager.PERMISSION_DENIED) {
++                        LOG.d(TAG, "User *rejected* location permission");
++                        if (this.permissionCallback != null) {
++                            this.permissionCallback.sendPluginResult(new PluginResult(
++                                    PluginResult.Status.ERROR,
++                                    "Location permission is required to discover unpaired devices.")
++                            );
++                        }
++                        return;
++                    }
++                }
+             }
+-        }
+ 
+-        switch(requestCode) {
+-            case CHECK_PERMISSIONS_REQ_CODE:
+-                LOG.d(TAG, "User granted location permission");
+-                discoverUnpairedDevices(permissionCallback);
+-                break;
++            switch (requestCode) {
++                case CHECK_PERMISSIONS_REQ_CODE:
++                    LOG.d(TAG, "User granted location permission");
++                    if (this.permissionCallback != null) {
++                        discoverUnpairedDevices(permissionCallback);
++                    }
++                    break;
++            }
++        } catch (Throwable t) {
++            Log.e(TAG, "Error in onRequestPermissionResult", t);
+         }
+     }
+ }
 diff --git a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerialService.java b/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerialService.java
 index 63ce6c5..5fe7b7d 100644
 --- a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerialService.java
