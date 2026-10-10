@@ -1,0 +1,85 @@
+diff --git a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java b/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java
+index 8be5575..03d756c 100644
+--- a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java
++++ b/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerial.java
+@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
+ import android.app.Activity;
+ import android.bluetooth.BluetoothAdapter;
+ import android.bluetooth.BluetoothDevice;
++import android.bluetooth.BluetoothManager;
+ import android.content.BroadcastReceiver;
+ import android.content.Context;
+ import android.content.Intent;
+@@ -95,7 +96,20 @@ public class BluetoothSerial extends CordovaPlugin {
+         LOG.d(TAG, "action = " + action);
+ 
+         if (bluetoothAdapter == null) {
+-            bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
++            try {
++                Activity activity = cordova.getActivity();
++                if (activity != null) {
++                    BluetoothManager bm = (BluetoothManager) activity.getSystemService(Context.BLUETOOTH_SERVICE);
++                    if (bm != null) {
++                        bluetoothAdapter = bm.getAdapter();
++                    }
++                }
++            } catch (Exception ignored) {}
++            if (bluetoothAdapter == null) {
++                try {
++                    bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
++                } catch (Exception ignored) {}
++            }
+         }
+ 
+         if (bluetoothSerialService == null) {
+@@ -180,15 +194,23 @@ public class BluetoothSerial extends CordovaPlugin {
+ 
+         } else if (action.equals(IS_ENABLED)) {
+ 
+-            if (bluetoothAdapter.isEnabled()) {
+-                callbackContext.success();
++            if (bluetoothAdapter == null) {
++                callbackContext.error("Bluetooth is not available on this device.");
+             } else {
+-                callbackContext.error("Bluetooth is disabled.");
++                try {
++                    if (bluetoothAdapter.isEnabled()) {
++                        callbackContext.success();
++                    } else {
++                        callbackContext.error("Bluetooth is disabled.");
++                    }
++                } catch (Exception e) {
++                    callbackContext.error(e.getMessage() != null ? e.getMessage() : "Bluetooth error");
++                }
+             }
+ 
+         } else if (action.equals(IS_CONNECTED)) {
+ 
+-            if (bluetoothSerialService.getState() == BluetoothSerialService.STATE_CONNECTED) {
++            if (bluetoothSerialService != null && bluetoothSerialService.getState() == BluetoothSerialService.STATE_CONNECTED) {
+                 callbackContext.success();
+             } else {
+                 callbackContext.error("Not connected.");
+@@ -207,9 +229,13 @@ public class BluetoothSerial extends CordovaPlugin {
+ 
+         } else if (action.equals(ENABLE)) {
+ 
+-            enableBluetoothCallback = callbackContext;
+-            Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+-            cordova.startActivityForResult(this, intent, REQUEST_ENABLE_BLUETOOTH);
++            if (bluetoothAdapter == null) {
++                callbackContext.error("Bluetooth is not available on this device.");
++            } else {
++                enableBluetoothCallback = callbackContext;
++                Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
++                cordova.startActivityForResult(this, intent, REQUEST_ENABLE_BLUETOOTH);
++            }
+ 
+         } else if (action.equals(DISCOVER_UNPAIRED)) {
+ 
+@@ -279,16 +305,31 @@ public class BluetoothSerial extends CordovaPlugin {
+     }
+ 
+     private void listBondedDevices(CallbackContext callbackContext) throws JSONException {
+-        JSONArray deviceList = new JSONArray();
+-        Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
