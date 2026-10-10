@@ -135,6 +135,32 @@ class BluetoothClassicService {
   }
 
   /**
+   * Ensures the Classic SPP Cordova plugin is fully initialized and attached to window.
+   */
+  public async ensurePluginReady(): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    if (window.bluetoothSerial) return true;
+    if (!Capacitor.isNativePlatform()) return true;
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      const onReady = () => {
+        if (!settled) {
+          settled = true;
+          resolve(!!window.bluetoothSerial);
+        }
+      };
+      document.addEventListener('deviceready', onReady, { once: true });
+      setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          resolve(!!window.bluetoothSerial);
+        }
+      }, 1500);
+    });
+  }
+
+  /**
    * Check LIVE Bluetooth state (never cached).
    * Uses bluetoothSerial.isEnabled() directly.
    */
@@ -278,18 +304,20 @@ class BluetoothClassicService {
     this.resetLocalState();
     this.isConnecting = true;
 
+    // 0. Ensure plugin is ready
+    const isReady = await this.ensurePluginReady();
+    const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
+    if (!bt || !isReady) {
+      this.isConnecting = false;
+      this.setStatus('failed', 'Bluetooth Serial plugin not ready.');
+      return null;
+    }
+
     // 3. Live check: Verify Bluetooth is actually turned ON right now
     const isEnabled = await this.checkLiveBluetoothEnabled();
     if (!isEnabled) {
       this.isConnecting = false;
       this.setStatus('bluetooth_off', 'Bluetooth is off. Please turn it on.');
-      return null;
-    }
-
-    const bt = typeof window !== 'undefined' ? window.bluetoothSerial : undefined;
-    if (!bt) {
-      this.isConnecting = false;
-      this.setStatus('failed', 'Bluetooth Serial plugin not available in this environment.');
       return null;
     }
 
