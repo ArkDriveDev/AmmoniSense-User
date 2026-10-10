@@ -168,3 +168,87 @@ index 8be5575..03d756c 100644
  
      private JSONObject deviceToJSON(BluetoothDevice device) throws JSONException {
          JSONObject json = new JSONObject();
+-        json.put("name", device.getName());
+-        json.put("address", device.getAddress());
+-        json.put("id", device.getAddress());
+-        if (device.getBluetoothClass() != null) {
+-            json.put("class", device.getBluetoothClass().getDeviceClass());
+-        }
++        if (device == null) return json;
++        String name = null;
++        try {
++            name = device.getName();
++        } catch (Exception ignored) {}
++        json.put("name", name != null ? name : "Unknown Device");
++
++        String address = null;
++        try {
++            address = device.getAddress();
++        } catch (Exception ignored) {}
++        json.put("address", address != null ? address : "");
++        json.put("id", address != null ? address : "");
++
++        try {
++            if (device.getBluetoothClass() != null) {
++                json.put("class", device.getBluetoothClass().getDeviceClass());
++            }
++        } catch (Exception ignored) {}
+         return json;
+     }
+ 
+     private void connect(CordovaArgs args, boolean secure, CallbackContext callbackContext) throws JSONException {
+-        String macAddress = args.getString(0);
+-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
+-
+-        if (device != null) {
+-            connectCallback = callbackContext;
+-            bluetoothSerialService.connect(device, secure);
+-            buffer.setLength(0);
++        if (bluetoothAdapter == null) {
++            callbackContext.error("Bluetooth is not available on this device.");
++            return;
++        }
++        try {
++            String macAddress = args.getString(0);
++            BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
++
++            if (device != null) {
++                connectCallback = callbackContext;
++                if (bluetoothSerialService == null) {
++                    bluetoothSerialService = new BluetoothSerialService(mHandler);
++                }
++                bluetoothSerialService.connect(device, secure);
++                buffer.setLength(0);
+ 
+-            PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+-            result.setKeepCallback(true);
+-            callbackContext.sendPluginResult(result);
++                PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
++                result.setKeepCallback(true);
++                callbackContext.sendPluginResult(result);
+ 
+-        } else {
+-            callbackContext.error("Could not connect to " + macAddress);
++            } else {
++                callbackContext.error("Could not connect to " + macAddress);
++            }
++        } catch (Exception e) {
++            callbackContext.error(e.getMessage() != null ? e.getMessage() : "Connect failed");
+         }
+     }
+ 
+diff --git a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerialService.java b/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerialService.java
+index 63ce6c5..5fe7b7d 100644
+--- a/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerialService.java
++++ b/node_modules/cordova-plugin-bluetooth-serial/src/android/com/megster/cordova/BluetoothSerialService.java
+@@ -364,7 +364,9 @@ public class BluetoothSerialService {
+             setName("ConnectThread" + mSocketType);
+ 
+             // Always cancel discovery because it will slow down a connection
+-            mAdapter.cancelDiscovery();
++            if (mAdapter != null) {
++                mAdapter.cancelDiscovery();
++            }
+ 
+             // Make a connection to the BluetoothSocket
+             try {
