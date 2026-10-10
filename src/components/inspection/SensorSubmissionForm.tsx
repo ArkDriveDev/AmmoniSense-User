@@ -26,7 +26,9 @@ import {
   cloudUploadOutline,
   checkmarkDoneCircleOutline,
   addOutline,
-  shapesOutline
+  shapesOutline,
+  alertCircleOutline,
+  refreshOutline
 } from 'ionicons/icons';
 import { supabase } from '../../services/supabase';
 import CreateSiteModal from '../sites/CreateSiteModal';
@@ -39,6 +41,9 @@ import {
 } from '../../utils/photoUtils';
 import bleService, { BLEReading } from '../../services/bleService';
 import bleCentralService, { BLECentralReading } from '../../services/bleCentralService';
+import bluetoothClassicService from '../../services/bluetoothClassicService';
+import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
+import { usePpmConfirmation } from '../../hooks/usePpmConfirmation';
 import { autoRegisterDevice } from '../../services/deviceService';
 
 interface MonitoringSite {
@@ -85,8 +90,16 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [battery, setBattery] = useState<string>('');
   const [btConnecting, setBtConnecting] = useState<boolean>(false);
   const [btConnected, setBtConnected] = useState<boolean>(false);
+  const [btStatus, setBtStatus] = useState<BluetoothConnectionStatus>(bluetoothClassicService.getStatus());
+  const [btStatusMsg, setBtStatusMsg] = useState<string>(bluetoothClassicService.getStatusMessage());
   const [bleRssi, setBleRssi] = useState<number | null>(null);
   const [showBLESimulatorModal, setShowBLESimulatorModal] = useState<boolean>(false);
+
+  // 10-Second confirmation rule hook for non-zero PPM
+  const { status: ppmConfirmationStatus, badgeLabel: ppmBadgeLabel, badgeColor: ppmBadgeColor } = usePpmConfirmation(
+    ammonia !== '' && !isNaN(parseFloat(ammonia)) ? parseFloat(ammonia) : null,
+    btConnected
+  );
 
   // STEP 3 State: Submission Loading
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
@@ -100,6 +113,38 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
   useEffect(() => {
     fetchSites();
+
+    // Check live state on mount
+    bluetoothClassicService.checkLiveStateAndNotify();
+
+    // Subscribe to Classic Bluetooth SPP Status
+    const unsubClassicStatus = bluetoothClassicService.onStatusChange((st, msg) => {
+      setBtStatus(st);
+      if (msg) setBtStatusMsg(msg);
+      setBtConnecting(st === 'connecting');
+      setBtConnected(st === 'connected');
+    });
+
+    // Subscribe to Classic Bluetooth SPP Readings
+    const unsubClassicReading = bluetoothClassicService.onReading((reading: AmmoniSenseReading) => {
+      if (reading.nh3_ppm !== null && reading.nh3_ppm !== undefined) {
+        setAmmonia(reading.nh3_ppm.toFixed(2));
+      }
+      if (reading.temperature !== null && reading.temperature !== undefined) {
+        setTemperature(reading.temperature.toFixed(1));
+      }
+      if (reading.humidity !== null && reading.humidity !== undefined) {
+        setHumidity(reading.humidity.toFixed(1));
+      }
+      if (reading.battery_percent !== null && reading.battery_percent !== undefined) {
+        setBattery(reading.battery_percent.toString());
+      }
+      setSelectedDeviceUid('AmmoniSense');
+      setBtConnected(true);
+      setToastMsg(`📡 AmmoniSense SPP Reading: NH₃ ${reading.nh3_ppm !== null ? reading.nh3_ppm.toFixed(2) : '—'} ppm`);
+      setToastColor('success');
+      setShowToast(true);
+    });
 
     // Check for draft BLE Central reading from UserBLESensor page
     const draftBLE = offlineStorage.getDraft<BLECentralReading>('draft_ble_central_reading');
@@ -115,7 +160,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       offlineStorage.clearDraft('draft_ble_central_reading');
     }
 
-    // Subscribe to BLE Central 12-byte Float32 telemetry
+    // Subscribe to BLE Central 12-byte Float32 telemetry fallback
     const unsubCentral = bleCentralService.onTelemetry((telemetry: BLECentralReading) => {
       if (telemetry.ammonia_ppm !== undefined) setAmmonia(telemetry.ammonia_ppm.toString());
       if (telemetry.temperature_c !== undefined) setTemperature(telemetry.temperature_c.toString());
@@ -126,10 +171,6 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       }
       if (telemetry.rssi) setBleRssi(telemetry.rssi);
       setBtConnected(true);
-
-      setToastMsg(`📡 BLE Central GATT Notification: NH₃ ${telemetry.ammonia_ppm} PPM`);
-      setToastColor('success');
-      setShowToast(true);
     });
 
     // Subscribe to real-time BLE telemetry fallback
@@ -145,13 +186,11 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       if (reading.rssi !== undefined) {
         setBleRssi(reading.rssi);
       }
-
-      setToastMsg(`📡 BLE Telemetry Auto-Populated from ${reading.device_uid} (${reading.ammonia} ppm NH₃)`);
-      setToastColor('success');
-      setShowToast(true);
     });
 
     return () => {
+      unsubClassicStatus();
+      unsubClassicReading();
       unsubCentral();
       unsubscribe();
     };
@@ -266,23 +305,19 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   // STEP 2: CONNECT ESP32 BLUETOOTH / READ SENSOR
   // =========================================================
   const handleStep2_ConnectBluetooth = async () => {
+    if (btConnecting) return; // Ignore duplicate taps while connecting
     setBtConnecting(true);
     try {
-      const devices = await bleCentralService.scanForDevices();
-      if (devices.length > 0) {
-        await bleCentralService.connectAndSubscribe(devices[0]);
+      const reading = await bluetoothClassicService.connect();
+      if (reading) {
         setBtConnected(true);
-        setSelectedDeviceUid(devices[0].name || devices[0].id);
-        setToastMsg(`Step 2 Complete! Connected to BLE Central device ${devices[0].name}.`);
+        setSelectedDeviceUid('AmmoniSense');
+        setToastMsg('Step 2 Complete! Connected to AmmoniSense sensor.');
         setToastColor('success');
-        setShowToast(true);
-      } else {
-        setToastMsg('No BLE Central hardware devices found. Ensure device is advertising Service 0000ffd0...');
-        setToastColor('warning');
         setShowToast(true);
       }
     } catch (err: any) {
-      setToastMsg('BLE Bluetooth connection failed: ' + (err.message || 'Error'));
+      setToastMsg('Bluetooth connection failed: ' + (err.message || 'Error'));
       setToastColor('warning');
       setShowToast(true);
     } finally {
@@ -335,7 +370,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         ammonia: ammoniaNum,
         temperature: isNaN(tempNum) ? null : tempNum,
         humidity: isNaN(humNum) ? null : humNum,
-        battery: isNaN(battNum) ? 100 : battNum,
+        battery: isNaN(battNum) ? null : battNum,
         status,
         latitude: cellLat,
         longitude: cellLng,
@@ -403,9 +438,9 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
       await offlineStorage.enqueueItem('sensor_data', {
         device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
         ammonia: parseFloat(ammonia) || 0,
-        temperature: parseFloat(temperature) || 0,
-        humidity: parseFloat(humidity) || 0,
-        battery: parseFloat(battery) || 100,
+        temperature: !isNaN(parseFloat(temperature)) ? parseFloat(temperature) : null,
+        humidity: !isNaN(parseFloat(humidity)) ? parseFloat(humidity) : null,
+        battery: !isNaN(parseFloat(battery)) ? parseFloat(battery) : null,
         status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
         latitude: cellLat,
         longitude: cellLng,
@@ -599,30 +634,28 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
           <IonCardHeader>
             <IonCardTitle style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IonIcon icon={bluetoothOutline} color="tertiary" />
-              STEP 2: Read Sensor via Bluetooth (ESP32)
+              STEP 2: Read Sensor via Bluetooth (AmmoniSense)
             </IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <IonItem lines="full" style={{ marginBottom: '12px' }}>
-              <IonLabel position="stacked">Target Device</IonLabel>
-              <IonSelect
-                value={selectedDeviceUid}
-                placeholder="Select Device"
-                onIonChange={e => setSelectedDeviceUid(e.detail.value)}
-              >
-                {devices.length > 0 ? (
-                  devices.map(d => (
-                    <IonSelectOption key={d.device_uid} value={d.device_uid}>
-                      {d.device_uid}
-                    </IonSelectOption>
-                  ))
-                ) : (
-                  <IonSelectOption value="ESP32-AMMONIA-NODE-01">
-                    ESP32-AMMONIA-NODE-01
-                  </IonSelectOption>
-                )}
-              </IonSelect>
-            </IonItem>
+            {/* Honest Bluetooth Status Message Banner */}
+            {btStatus !== 'connected' && btStatusMsg && (
+              <div style={{
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '13px',
+                backgroundColor: btStatus === 'bluetooth_off' ? '#FEF2F2' : '#FFFBEB',
+                color: btStatus === 'bluetooth_off' ? '#991B1B' : '#92400E',
+                border: `1px solid ${btStatus === 'bluetooth_off' ? '#FCA5A5' : '#FCD34D'}`
+              }}>
+                <IonIcon icon={alertCircleOutline} style={{ fontSize: '20px', flexShrink: 0 }} />
+                <span>{btStatusMsg}</span>
+              </div>
+            )}
 
             <div style={{
               backgroundColor: btConnected ? '#f0fdf4' : '#f8fafc',
@@ -633,16 +666,30 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
               marginBottom: '16px'
             }}>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <IonButton color="tertiary" onClick={handleStep2_ConnectBluetooth} disabled={btConnecting}>
+                <IonButton
+                  color={btStatus === 'failed' || btStatus === 'device_not_found' || btStatus === 'bluetooth_off' ? 'warning' : 'tertiary'}
+                  onClick={handleStep2_ConnectBluetooth}
+                  disabled={btConnecting}
+                >
                   {btConnecting ? (
                     <>
-                      <IonSpinner name="crescent" />
-                      &nbsp;Connecting BLE...
+                      <IonSpinner name="dots" />
+                      &nbsp;Connecting…
+                    </>
+                  ) : btConnected ? (
+                    <>
+                      <IonIcon icon={refreshOutline} slot="start" />
+                      Re-connect AmmoniSense
+                    </>
+                  ) : btStatus === 'failed' || btStatus === 'device_not_found' || btStatus === 'bluetooth_off' ? (
+                    <>
+                      <IonIcon icon={refreshOutline} slot="start" />
+                      Retry Connection
                     </>
                   ) : (
                     <>
                       <IonIcon icon={bluetoothOutline} slot="start" />
-                      {btConnected ? 'Re-scan ESP32 BLE' : 'Connect ESP32 BLE'}
+                      Connect AmmoniSense
                     </>
                   )}
                 </IonButton>
@@ -652,22 +699,30 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 <div style={{ marginTop: '10px', fontSize: '12px', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span>
                     <IonIcon icon={checkmarkCircleOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                    BLE Connected ({selectedDeviceUid})
+                    Connected to AmmoniSense (Classic SPP)
                   </span>
-                  {bleRssi && (
-                    <IonBadge color="success" style={{ fontSize: '10px' }}>
-                      RSSI: {bleRssi} dBm
-                    </IonBadge>
-                  )}
                 </div>
               )}
             </div>
 
             <IonItem lines="full" style={{ marginBottom: '12px' }}>
-              <IonLabel position="stacked">Ammonia (NH₃) Reading (ppm)</IonLabel>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
+                <IonLabel position="stacked" style={{ margin: 0 }}>Ammonia (NH₃) Reading (ppm)</IonLabel>
+                {/* 10-Second Confirmation Window Badge */}
+                {ppmBadgeLabel && (
+                  <IonBadge color={ppmBadgeColor} style={{ fontSize: '10px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {ppmConfirmationStatus === 'confirming' ? (
+                      <IonSpinner name="dots" style={{ width: '12px', height: '12px' }} />
+                    ) : (
+                      <IonIcon icon={checkmarkCircleOutline} />
+                    )}
+                    {ppmBadgeLabel}
+                  </IonBadge>
+                )}
+              </div>
               <IonInput
                 type="number"
-                placeholder="e.g. 0.00 (waiting for BLE...)"
+                placeholder="— (waiting for AmmoniSense…)"
                 value={ammonia}
                 onIonChange={e => setAmmonia(e.detail.value || '')}
               />
@@ -679,7 +734,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   <IonLabel position="stacked">Temp (°C)</IonLabel>
                   <IonInput
                     type="number"
-                    placeholder="-- °C"
+                    placeholder="— °C"
                     value={temperature}
                     onIonChange={e => setTemperature(e.detail.value || '')}
                   />
@@ -690,7 +745,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   <IonLabel position="stacked">Humidity (%)</IonLabel>
                   <IonInput
                     type="number"
-                    placeholder="-- %"
+                    placeholder="— %"
                     value={humidity}
                     onIonChange={e => setHumidity(e.detail.value || '')}
                   />
@@ -701,7 +756,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                   <IonLabel position="stacked">Battery (%)</IonLabel>
                   <IonInput
                     type="number"
-                    placeholder="-- %"
+                    placeholder="— %"
                     value={battery}
                     onIonChange={e => setBattery(e.detail.value || '')}
                   />
