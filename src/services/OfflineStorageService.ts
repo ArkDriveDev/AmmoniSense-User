@@ -450,6 +450,7 @@ class OfflineStorageService {
           localStorage.setItem('offline_sites', JSON.stringify(filtered));
         }
       }
+      this.removeCachedSite(id);
     } catch (lsErr) {
       console.warn('Error removing site from localStorage offline_sites:', lsErr);
     }
@@ -526,6 +527,47 @@ class OfflineStorageService {
     } catch (e) {
       console.warn('[OfflineStorage] Could not purge queue for deleted site:', e);
     }
+  }
+
+  /** Retrieve all cached existing monitoring sites from localStorage. */
+  public getCachedSites(): any[] {
+    try {
+      const data = localStorage.getItem('cached_monitoring_sites');
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /** Cache existing monitoring sites locally for offline access. */
+  public saveCachedSites(sites: any[]): void {
+    try {
+      if (!Array.isArray(sites) || sites.length === 0) return;
+      const existing = this.getCachedSites();
+      const map = new Map<string, any>();
+      existing.forEach((s) => map.set(String(s.id), s));
+      sites.forEach((s) => {
+        const id = String(s.id);
+        map.set(id, { ...map.get(id), ...s });
+      });
+      localStorage.setItem('cached_monitoring_sites', JSON.stringify(Array.from(map.values())));
+    } catch (e) {
+      console.warn('[OfflineStorage] Error saving cached sites:', e);
+    }
+  }
+
+  /** Get a single cached monitoring site by id. */
+  public getCachedSiteById(id: string | number): any | null {
+    const strId = String(id);
+    const sites = this.getCachedSites();
+    return sites.find((s) => String(s.id) === strId) || null;
+  }
+
+  /** Remove a cached site by id. */
+  public removeCachedSite(id: string | number): void {
+    const strId = String(id);
+    const kept = this.getCachedSites().filter((s) => String(s.id) !== strId);
+    localStorage.setItem('cached_monitoring_sites', JSON.stringify(kept));
   }
 }
 
