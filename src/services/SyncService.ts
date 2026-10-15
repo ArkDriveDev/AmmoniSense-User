@@ -26,8 +26,6 @@ class SyncService {
       console.log('📶 Network status: ONLINE');
       this.onlineStatus = true;
       this.notifyListeners('status_change');
-      // Auto-trigger sync when returning online
-      this.syncAll();
     });
 
     window.addEventListener('offline', () => {
