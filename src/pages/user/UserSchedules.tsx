@@ -6,7 +6,7 @@ import {
 import { calendarOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 import { fetchSchedules } from '../../services/scheduleService';
-import { supabase } from '../../services/supabase';
+import { fetchSites as loadAllSites } from '../../services/siteService';
 import ScheduleCard from '../../components/inspection/ScheduleCard';
 import { InspectionSchedule } from '../../types/inspection';
 
@@ -20,12 +20,12 @@ export default function UserSchedules() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [sched, siteRes] = await Promise.all([
+      const [sched, siteList] = await Promise.all([
         fetchSchedules(filterSite || undefined),
-        supabase.from('inspection_sites').select('id, site_name'),
+        loadAllSites(),
       ]);
       setSchedules(sched);
-      if (siteRes.data) setSites(siteRes.data);
+      if (siteList && siteList.length > 0) setSites(siteList);
     } catch (err) {
       console.warn('[UserSchedules] load error:', err);
     } finally {
