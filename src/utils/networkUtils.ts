@@ -11,7 +11,7 @@ export function isOnline(): boolean {
  * the given milliseconds, it rejects with a TimeoutError.
  */
 export function withTimeout<T>(
-  promise: Promise<T>,
+  promiseOrThenable: PromiseLike<T> | Promise<T>,
   ms: number = 3500,
   errorMsg = 'Network timeout / slow connection'
 ): Promise<T> {
@@ -20,7 +20,7 @@ export function withTimeout<T>(
       reject(new Error(errorMsg));
     }, ms);
 
-    promise
+    Promise.resolve(promiseOrThenable)
       .then((res) => {
         clearTimeout(timer);
         resolve(res);
