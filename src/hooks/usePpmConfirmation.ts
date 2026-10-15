@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-export type PpmConfirmationStatus = 'none' | 'confirming' | 'confirmed';
+export type PpmConfirmationStatus = 'none' | 'unconfirmed' | 'confirming' | 'confirmed';
 
 export interface PpmConfirmationResult {
   status: PpmConfirmationStatus;
@@ -8,81 +8,58 @@ export interface PpmConfirmationResult {
   badgeColor: 'warning' | 'success' | 'medium';
   elapsedSeconds: number;
   isConfirmed: boolean;
+  confirm: () => void;
   reset: () => void;
 }
 
 /**
- * 10-second confirmation rule for Ammonia (PPM):
- * - 0 ppm or null -> no badge ('none')
- * - Non-zero but < 10 s continuous -> "Confirming…" ('confirming')
- * - Non-zero and >= 10 s continuous -> "Confirmed" ('confirmed')
- * - Drops to 0 / null mid-window -> timer resets immediately
- * - Reset on disconnect/reconnect
+ * Manual confirmation rule for Ammonia (PPM):
+ * - 0 ppm, negative, NaN or null / not connected -> no badge ('none')
+ * - Non-zero reading pending manual confirmation -> 'unconfirmed'
+ * - Manually confirmed by user -> 'confirmed'
+ * - Drops to 0 / null or disconnected -> resets immediately
  */
 export function usePpmConfirmation(
   ppm: number | null | undefined,
   isConnected: boolean
 ): PpmConfirmationResult {
-  const [status, setStatus] = useState<PpmConfirmationStatus>('none');
-  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
 
-  const startTimeRef = useRef<number | null>(null);
+  const reset = useCallback(() => {
+    setIsConfirmed(false);
+  }, []);
 
-  const reset = () => {
-    startTimeRef.current = null;
-    setStatus('none');
-    setElapsedSeconds(0);
-  };
+  const confirm = useCallback(() => {
+    if (isConnected && ppm !== null && ppm !== undefined && !isNaN(ppm) && ppm > 0) {
+      setIsConfirmed(true);
+    }
+  }, [isConnected, ppm]);
 
   useEffect(() => {
-    // If not connected, reset immediately
-    if (!isConnected) {
-      reset();
-      return;
+    // If disconnected or invalid/zero ppm, automatically reset confirmation
+    if (!isConnected || ppm === null || ppm === undefined || isNaN(ppm) || ppm <= 0) {
+      setIsConfirmed(false);
     }
-
-    // If ppm is zero, negative, NaN, or missing, reset immediately
-    if (ppm === null || ppm === undefined || isNaN(ppm) || ppm <= 0) {
-      reset();
-      return;
-    }
-
-    const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
-
-    // Non-zero ppm: start timer if not already started
-    if (startTimeRef.current === null) {
-      startTimeRef.current = now();
-      setStatus('confirming');
-      setElapsedSeconds(0);
-    }
-
-    const interval = setInterval(() => {
-      if (startTimeRef.current === null) return;
-
-      const elapsed = (now() - startTimeRef.current) / 1000;
-      setElapsedSeconds(Math.min(10, Math.floor(elapsed)));
-
-      if (elapsed >= 10) {
-        setStatus('confirmed');
-      } else {
-        setStatus('confirming');
-      }
-    }, 200);
-
-    return () => clearInterval(interval);
   }, [ppm, isConnected]);
+
+  const isValidReading = isConnected && ppm !== null && ppm !== undefined && !isNaN(ppm) && ppm > 0;
+
+  let status: PpmConfirmationStatus = 'none';
+  if (isValidReading) {
+    status = isConfirmed ? 'confirmed' : 'unconfirmed';
+  }
 
   const badgeLabel =
     status === 'confirmed'
       ? 'Confirmed'
-      : status === 'confirming'
-      ? `Confirming… (${elapsedSeconds}s)`
+      : status === 'unconfirmed'
+      ? 'Unconfirmed'
       : null;
 
-  const badgeColor =
+  const badgeColor: 'warning' | 'success' | 'medium' =
     status === 'confirmed'
       ? 'success'
-      : status === 'confirming'
+      : status === 'unconfirmed'
       ? 'warning'
       : 'medium';
 
@@ -90,8 +67,9 @@ export function usePpmConfirmation(
     status,
     badgeLabel,
     badgeColor,
-    elapsedSeconds,
-    isConfirmed: status === 'confirmed',
+    elapsedSeconds: 0,
+    isConfirmed,
+    confirm,
     reset,
   };
 }
