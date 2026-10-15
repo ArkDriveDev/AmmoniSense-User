@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
 import { InspectionSchedule, CreateSchedulePayload, toUpperClean } from '../types/inspection';
+import { isOnline, withTimeout } from '../utils/networkUtils';
 
 const formatSched = (d: any, isOffline = false): InspectionSchedule => ({
   id: d.id,
@@ -26,7 +27,7 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
   try {
     let q = supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').order('scheduled_date', { ascending: false });
     if (siteId) q = q.eq('inspection_site_id', siteId);
-    const { data } = await q;
+    const { data } = isOnline() ? await withTimeout<any>(q, 3500) : { data: null };
     if (data) {
       online = data.map((d: any) => formatSched(d, false));
 
@@ -91,19 +92,34 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
     status: payload.status || 'SCHEDULED',
   };
 
-  try {
-    const user = (await supabase.auth.getUser()).data.user;
-    const { data, error } = await supabase.from('inspection_schedules').insert([{ ...clean, created_by: user?.id }]).select().single();
-    if (!error && data) {
-      window.dispatchEvent(new CustomEvent('schedules_updated'));
-      return formatSched(data, false);
+  const siteIdStr = String(clean.inspection_site_id);
+  const isTempSite = siteIdStr.startsWith('temp_') || siteIdStr.startsWith('queue_');
+
+  if (isOnline() && !isTempSite) {
+    try {
+      const user = offlineStorage.getSession()?.session?.user || (await withTimeout<any>(supabase.auth.getUser(), 3000)).data?.user;
+      const { data, error } = await withTimeout<any>(
+        supabase.from('inspection_schedules').insert([{ ...clean, created_by: user?.id }]).select('*, inspection_sites(site_name)').single(),
+        3500
+      );
+      if (!error && data) {
+        window.dispatchEvent(new CustomEvent('schedules_updated'));
+        return formatSched(data, false);
+      }
+    } catch (err) {
+      console.warn('[scheduleService] Network offline/slow, saving to offline queue:', err);
     }
-  } catch (err) {
-    console.warn('[scheduleService] Network offline, saving queue:', err);
   }
 
   const tempId = `temp_sched_${Date.now()}`;
-  const offlineRec = formatSched({ ...clean, id: tempId, created_at: new Date().toISOString() }, true);
+  const cachedSite = offlineStorage.getCachedSiteById(clean.inspection_site_id);
+  const offlineRec = formatSched({
+    ...clean,
+    id: tempId,
+    site_name: cachedSite?.site_name,
+    created_at: new Date().toISOString()
+  }, true);
+
   offlineStorage.saveOfflineSchedule(offlineRec);
   await offlineStorage.enqueueItem('inspection_schedule', { ...clean, temp_id: tempId }, {
     action: 'insert',
