@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IonBadge, IonButton, IonIcon, IonSpinner } from '@ionic/react';
 import { cloudOfflineOutline, cloudDoneOutline, syncOutline, wifiOutline } from 'ionicons/icons';
 import syncService from '../../services/SyncService';
+import sitesCacheService from '../../services/sitesCacheService';
 import { showToast } from '../../utils/toast';
 
 export const SyncStatusBanner: React.FC = () => {
@@ -9,8 +10,12 @@ export const SyncStatusBanner: React.FC = () => {
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [syncing, setSyncing] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<string>('');
+  const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(null);
 
   useEffect(() => {
+    sitesCacheService.getLastSyncedAt().then((ts) => {
+      if (ts) setLastSyncedTime(new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    });
     const unsubscribe = syncService.subscribe((evt) => {
       setIsOnline(evt.isOnline);
       setPendingCount(evt.pendingCount);
@@ -34,9 +39,20 @@ export const SyncStatusBanner: React.FC = () => {
     }
     if (syncing) return;
     setSyncing(true);
-    showToast({ message: '🔄 Initiating re-sync with server...', color: 'primary', duration: 2000 });
-    await syncService.resync();
-    setSyncing(false);
+    try {
+      const res = await syncService.resync();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setLastSyncedTime(timeStr);
+      if (res.failed > 0) {
+        showToast({ message: `⚠️ Sync completed with ${res.failed} error(s). Press Sync Now to retry.`, color: 'warning', duration: 4000 });
+      } else {
+        showToast({ message: `🎉 Synced successfully! Last synced at ${timeStr}.`, color: 'success', duration: 3500 });
+      }
+    } catch (err: any) {
+      showToast({ message: `Sync failed: ${err.message || 'Error'}. Press Sync Now to retry.`, color: 'danger', duration: 4000 });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   return (
@@ -95,28 +111,36 @@ export const SyncStatusBanner: React.FC = () => {
           : 'Online'}
       </span>
 
-      {isOnline && !syncing && (
-        <IonButton
-          fill="clear"
-          size="small"
-          onClick={handleResync}
-          style={{
-            height: '22px',
-            fontSize: '11px',
-            margin: '0 0 0 2px',
-            padding: '0 4px',
-            '--color': pendingCount > 0 ? '#854d0e' : '#15803d',
-            fontWeight: 700,
-            textTransform: 'none',
-          }}
-          title="Trigger re-sync"
-        >
-          <IonIcon icon={syncOutline} slot="start" style={{ fontSize: '13px', marginRight: '3px' }} />
-          {pendingCount > 0 ? `Sync (${pendingCount})` : 'Re-sync'}
-        </IonButton>
-      )}
-
-      {syncing && <IonSpinner name="crescent" style={{ width: '14px', height: '14px' }} />}
+      <IonButton
+        fill="solid"
+        size="small"
+        onClick={handleResync}
+        disabled={syncing || !isOnline}
+        style={{
+          height: '24px',
+          fontSize: '11px',
+          margin: '0 0 0 4px',
+          padding: '0 8px',
+          '--background': '#ffffff',
+          '--color': '#0F3C5C',
+          fontWeight: 700,
+          textTransform: 'none',
+          borderRadius: '12px',
+        }}
+        title="Sync offline records to server"
+      >
+        {syncing ? (
+          <>
+            <IonSpinner name="crescent" style={{ width: '12px', height: '12px', marginRight: '4px' }} />
+            Syncing...
+          </>
+        ) : (
+          <>
+            <IonIcon icon={syncOutline} slot="start" style={{ fontSize: '13px', marginRight: '3px' }} />
+            {pendingCount > 0 ? `Sync Now (${pendingCount})` : 'Sync Now'}
+          </>
+        )}
+      </IonButton>
     </div>
   );
 };
