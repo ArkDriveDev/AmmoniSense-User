@@ -7,7 +7,8 @@ import {
   IonRow,
   IonCol,
   IonIcon,
-  IonSpinner
+  IonSpinner,
+  IonButton
 } from '@ionic/react';
 import {
   thermometerOutline,
@@ -25,14 +26,21 @@ import { usePpmConfirmation } from '../hooks/usePpmConfirmation';
 interface BLEReadingDisplayProps {
   reading: AmmoniSenseReading | null;
   isConnected?: boolean;
+  onConfirm?: () => void;
 }
 
 export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
   reading,
   isConnected = true,
+  onConfirm,
 }) => {
   const ppmVal = reading ? reading.nh3_ppm : null;
-  const { status: ppmStatus, badgeLabel, badgeColor } = usePpmConfirmation(ppmVal, isConnected);
+  const { status: ppmStatus, confirm } = usePpmConfirmation(ppmVal, isConnected);
+
+  const handleConfirm = () => {
+    confirm();
+    if (onConfirm) onConfirm();
+  };
 
   if (!reading) {
     return (
@@ -94,10 +102,28 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
                 {severity.label}
               </IonBadge>
 
-              {/* 10-Second Confirmation Window Badge */}
-              {badgeLabel && (
+              {/* Manual Confirmation Button & Badge */}
+              {ppmStatus === 'unconfirmed' && (
+                <IonButton
+                  size="small"
+                  fill="solid"
+                  color="warning"
+                  onClick={handleConfirm}
+                  style={{
+                    '--padding-start': '10px',
+                    '--padding-end': '10px',
+                    height: '28px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                  }}
+                >
+                  <IonIcon icon={checkmarkCircleOutline} slot="start" style={{ fontSize: '14px', marginRight: '4px' }} />
+                  Confirm PPM
+                </IonButton>
+              )}
+              {ppmStatus === 'confirmed' && (
                 <IonBadge
-                  color={badgeColor}
+                  color="success"
                   style={{
                     padding: '6px 12px',
                     borderRadius: '16px',
@@ -108,12 +134,8 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
                     gap: '4px',
                   }}
                 >
-                  {ppmStatus === 'confirming' ? (
-                    <IonSpinner name="dots" style={{ width: '14px', height: '14px' }} />
-                  ) : (
-                    <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '14px' }} />
-                  )}
-                  {badgeLabel}
+                  <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '14px' }} />
+                  Confirmed
                 </IonBadge>
               )}
             </div>
