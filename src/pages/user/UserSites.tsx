@@ -151,9 +151,11 @@ export default function UserSites() {
                 }}>
                   <IonIcon icon={businessOutline} style={{ fontSize: '32px', color: '#1D5D9B' }} />
                 </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>No Sites Registered</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>
+                  {!navigator.onLine ? 'No sites available offline. Connect to sync.' : 'No Sites Registered'}
+                </h3>
                 <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 20px 0' }}>
-                  Register your first inspection site to start tracking ammonia levels.
+                  {!navigator.onLine ? 'Inspection sites will appear here once synchronized.' : 'Register your first inspection site to start tracking ammonia levels.'}
                 </p>
                 <IonButton className="btn-ammoni btn-primary" expand="block" onClick={() => setShowCreateModal(true)}>
                   <IonIcon icon={addOutline} slot="start" />

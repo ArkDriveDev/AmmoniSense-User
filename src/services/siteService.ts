@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
 import offlineStorage from './OfflineStorageService';
+import sitesCacheService from './sitesCacheService';
 import { deleteStorageFiles, uploadSitePhoto } from './photoStorageService';
 import { dataUrlToBlob, createThumbnail } from '../utils/thumbnailUtils';
 import { isOnline, withTimeout } from '../utils/networkUtils';
@@ -217,32 +218,33 @@ export const deleteReading = async (readingId: string | number): Promise<void> =
 };
 
 /**
- * Fetch all monitoring sites with offline and slow-network resilience:
- * - Attempts online Supabase fetch with 3500ms timeout
- * - Automatically caches online results for future offline sessions
- * - If offline or slow connection, falls back to locally cached existing sites
+ * Fetch all monitoring sites with offline resilience:
+ * - Reads locally cached sites immediately from IndexedDB (sitesCacheService)
+ * - Fetches from Supabase if online and updates local cache
  * - Combines with any pending offline-registered sites
  */
 export const fetchSites = async (userId?: string): Promise<any[]> => {
-  let onlineSites: any[] = [];
+  let cachedSites = await sitesCacheService.getCachedSites(userId);
+  if (cachedSites.length === 0) {
+    const fallbackLs = offlineStorage.getCachedSites();
+    cachedSites = userId ? fallbackLs.filter((s: any) => !s.created_by || s.created_by === userId) : fallbackLs;
+  }
+
+  let onlineSites: any[] = cachedSites;
 
   if (isOnline()) {
     try {
       let q = supabase.from('inspection_sites').select('*');
       if (userId) q = q.eq('created_by', userId);
       const { data, error } = await withTimeout<any>(q, 3500);
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
+        await sitesCacheService.saveSitesCache(userId, data);
         offlineStorage.saveCachedSites(data);
         onlineSites = data;
       }
     } catch (err) {
-      console.warn('[siteService] Network offline/slow during fetchSites, using local cache:', err);
+      console.warn('[siteService] Network offline/slow during fetchSites, serving cached:', err);
     }
-  }
-
-  if (onlineSites.length === 0) {
-    const cached = offlineStorage.getCachedSites();
-    onlineSites = userId ? cached.filter((s: any) => !s.created_by || s.created_by === userId) : cached;
   }
 
   let offlineSites: any[] = [];
@@ -250,6 +252,7 @@ export const fetchSites = async (userId?: string): Promise<any[]> => {
     const offlineRecords = await offlineStorage.getOfflineSites();
     offlineSites = offlineRecords.map((os) => ({
       id: os.id,
+      offline_temp_id: os.id,
       site_name: os.site_name,
       location: os.address,
       address: os.address,
@@ -296,6 +299,11 @@ export const fetchSiteById = async (siteId: string | number): Promise<any | null
     }
   }
 
+  const cached = await sitesCacheService.getCachedSites();
+  const matchCached = cached.find((s: any) => String(s.id) === strId);
+  if (matchCached) return matchCached;
+
   return offlineStorage.getCachedSiteById(siteId);
 };
+
 

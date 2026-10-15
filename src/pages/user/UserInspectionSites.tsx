@@ -11,6 +11,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
+import { fetchSites as loadAllSites } from '../../services/siteService';
 import CreateSiteModal from '../../components/sites/CreateSiteModal';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
@@ -24,31 +25,38 @@ export default function UserInspectionSites() {
 
   const fetchSites = useCallback(async () => {
     setLoading(true);
-    let online: any[] = [];
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
-      if (userId) {
-        const { data } = await supabase.from('inspection_sites').select('*').eq('created_by', userId);
-        if (data) online = data;
+      const allSites = await loadAllSites(userId);
+      setSites(allSites);
+
+      const countsMap: Record<string, { schedules: number; tags: number }> = {};
+      const offlineSchedules = offlineStorage.getOfflineSchedules();
+      const offlineTags = offlineStorage.getOfflineTags();
+
+      for (const s of allSites) {
+        let schedCount = offlineSchedules.filter((os: any) => String(os.inspection_site_id) === String(s.id)).length;
+        let tagCount = offlineTags.filter((ot: any) => String(ot.inspection_site_id) === String(s.id)).length;
+        if (!s.isOffline && navigator.onLine) {
+          try {
+            const [schedRes, tagRes] = await Promise.all([
+              supabase.from('inspection_schedules').select('id', { count: 'exact', head: true }).eq('inspection_site_id', s.id),
+              supabase.from('inspection_tags').select('id', { count: 'exact', head: true }).eq('inspection_site_id', s.id),
+            ]);
+            schedCount += schedRes.count ?? 0;
+            tagCount += tagRes.count ?? 0;
+          } catch {}
+        }
+        countsMap[s.id] = { schedules: schedCount, tags: tagCount };
       }
-    } catch { /* offline */ }
-
-    const offline = await offlineStorage.getOfflineSites().catch(() => []);
-    const onlineIds = new Set(online.map((s) => String(s.id)));
-    const uniqueOffline = offline.filter((s: any) => !onlineIds.has(String(s.id)));
-    setSites([...uniqueOffline.map((s: any) => ({ ...s, isOffline: true })), ...online]);
-
-    const countsMap: Record<string, { schedules: number; tags: number }> = {};
-    for (const s of online) {
-      const [schedRes, tagRes] = await Promise.all([
-        supabase.from('inspection_schedules').select('id', { count: 'exact', head: true }).eq('inspection_site_id', s.id),
-        supabase.from('inspection_tags').select('id', { count: 'exact', head: true }).eq('inspection_site_id', s.id),
-      ]);
-      countsMap[s.id] = { schedules: schedRes.count ?? 0, tags: tagRes.count ?? 0 };
+      setCounts(countsMap);
+    } catch {
+      const fallback = await loadAllSites();
+      setSites(fallback);
+    } finally {
+      setLoading(false);
     }
-    setCounts(countsMap);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -86,8 +94,12 @@ export default function UserInspectionSites() {
         ) : sites.length === 0 ? (
           <div style={{ textAlign: 'center', marginTop: '60px' }}>
             <IonIcon icon={businessOutline} style={{ fontSize: '64px', color: '#CBD5E1' }} />
-            <h3 style={{ color: '#64748B', margin: '16px 0 8px' }}>No Inspection Sites Yet</h3>
-            <p style={{ color: '#94A3B8', marginBottom: '20px', fontSize: '14px' }}>Register your first site to begin scheduling inspections.</p>
+            <h3 style={{ color: '#64748B', margin: '16px 0 8px' }}>
+              {!navigator.onLine ? 'No sites available offline. Connect to sync.' : 'No Inspection Sites Yet'}
+            </h3>
+            <p style={{ color: '#94A3B8', marginBottom: '20px', fontSize: '14px' }}>
+              {!navigator.onLine ? 'Inspection sites will appear here once synchronized.' : 'Register your first site to begin scheduling inspections.'}
+            </p>
             <IonButton expand="block" onClick={() => setShowCreate(true)}>
               <IonIcon icon={addOutline} slot="start" /> Create Inspection Site
             </IonButton>
@@ -95,7 +107,7 @@ export default function UserInspectionSites() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {sites.map((s) => (
-              <IonCard key={s.id} button onClick={() => !s.isOffline && navigate(`/inspection-sites/${s.id}`)} style={{ margin: 0, borderRadius: '14px' }}>
+              <IonCard key={s.id} button onClick={() => navigate(`/inspection-sites/${s.id}`)} style={{ margin: 0, borderRadius: '14px' }}>
                 <IonCardContent style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
