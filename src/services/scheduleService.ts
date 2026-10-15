@@ -16,8 +16,8 @@ const formatSched = (d: any, isOffline = false): InspectionSchedule => ({
   created_at: d.created_at,
   updated_at: d.updated_at,
   notes: d.notes ?? null,
-  offline_temp_id: d.offline_temp_id ?? null,
-  site_name: d.inspection_sites?.site_name,
+  offline_temp_id: d.offline_temp_id ?? (String(d.id).startsWith('temp_') ? String(d.id) : null),
+  site_name: d.site_name || d.inspection_sites?.site_name,
   tags_count: d.tags_count ?? (Array.isArray(d.inspection_tags) ? d.inspection_tags.length : 0),
   isOffline,
 });
@@ -56,7 +56,11 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
     console.warn('[scheduleService] Online fetch notice:', err);
   }
 
-  const offline = offlineStorage.getOfflineSchedules().filter((s: any) => !siteId || String(s.inspection_site_id) === String(siteId));
+  const offline = offlineStorage.getOfflineSchedules().filter((s: any) => {
+    if (!siteId) return true;
+    const target = String(siteId);
+    return String(s.inspection_site_id) === target || String(s.offline_temp_id) === target;
+  });
   const offlineTags = offlineStorage.getOfflineTags?.() || [];
   offline.forEach((os: any) => {
     os.tags_count = offlineTags.filter((ot: any) => String(ot.inspection_schedule_id) === String(os.id)).length;
@@ -112,16 +116,32 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
   }
 
   const tempId = `temp_sched_${Date.now()}`;
-  const cachedSite = offlineStorage.getCachedSiteById(clean.inspection_site_id);
+  let siteName: string | undefined;
+  if (isTempSite) {
+    const offlineSites = await offlineStorage.getOfflineSites().catch(() => []);
+    const matchingOfflineSite = offlineSites.find((s) => String(s.id) === siteIdStr || s.site_code === siteIdStr);
+    siteName = matchingOfflineSite?.site_name;
+  }
+  if (!siteName) {
+    const cachedSite = offlineStorage.getCachedSiteById(clean.inspection_site_id);
+    siteName = cachedSite?.site_name;
+  }
+
   const offlineRec = formatSched({
     ...clean,
     id: tempId,
-    site_name: cachedSite?.site_name,
+    offline_temp_id: tempId,
+    site_name: siteName,
     created_at: new Date().toISOString()
   }, true);
 
   offlineStorage.saveOfflineSchedule(offlineRec);
-  await offlineStorage.enqueueItem('inspection_schedule', { ...clean, temp_id: tempId }, {
+  await offlineStorage.enqueueItem('inspection_schedule', {
+    ...clean,
+    temp_id: tempId,
+    offline_temp_id: tempId,
+    site_name: siteName,
+  }, {
     action: 'insert',
     tempId,
   });

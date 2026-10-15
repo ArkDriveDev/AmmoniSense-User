@@ -348,13 +348,29 @@ class SyncService {
       try {
         const allItems = await offlineStorage.getQueue();
         for (const qi of allItems) {
-          if (qi.payload?.inspection_site_id === tempId) {
+          if (String(qi.payload?.inspection_site_id) === String(tempId)) {
             qi.payload.inspection_site_id = realSiteId;
             await offlineStorage.updateQueueItemPayload(qi.id, qi.payload);
           }
         }
       } catch (e) {
         console.warn('[SyncService] Could not patch queued items with real site ID:', e);
+      }
+
+      try {
+        const offlineScheds = offlineStorage.getOfflineSchedules();
+        let changed = false;
+        offlineScheds.forEach((sched: any) => {
+          if (String(sched.inspection_site_id) === String(tempId)) {
+            sched.inspection_site_id = realSiteId;
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem('offline_inspection_schedules', JSON.stringify(offlineScheds));
+        }
+      } catch (e) {
+        console.warn('[SyncService] Could not patch offline schedules with real site ID:', e);
       }
     }
     // Delete local OfflineSite record from IndexedDB & localStorage once synced to Supabase
@@ -428,6 +444,10 @@ class SyncService {
           } catch { /* ignore */ }
         }
       }
+    }
+
+    if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
+      throw new Error(`Cannot sync schedule: inspection site ${payload.inspection_site_id} is not yet synced to Supabase.`);
     }
 
     const { data: user } = await supabase.auth.getUser();
