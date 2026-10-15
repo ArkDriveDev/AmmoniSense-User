@@ -34,6 +34,8 @@ import { supabase } from '../../services/supabase';
 import CreateSiteModal from '../sites/CreateSiteModal';
 import offlineStorage, { SENSOR_DRAFT_KEY } from '../../services/OfflineStorageService';
 import syncService from '../../services/SyncService';
+import { fetchSites as loadAllSites } from '../../services/siteService';
+import { isOnline, withTimeout } from '../../utils/networkUtils';
 
 import {
   InspectionPhotoRecord,
@@ -209,35 +211,23 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const fetchSites = async () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId) return;
-
-      let onlineSites: any[] = [];
-      const { data, error } = await supabase.from('inspection_sites').select('*').eq('created_by', userId);
-      if (!error && data) {
-        onlineSites = data;
-      }
-
-      let offlineSitesList: any[] = [];
-      try {
-        const offlineRecords = await offlineStorage.getOfflineSites();
-        offlineSitesList = offlineRecords.map(os => ({
-          id: os.id,
-          site_name: `${os.site_name} (🔴 Offline)`,
-          address: os.address,
-          current_latitude: os.current_latitude,
-          current_longitude: os.current_longitude,
-          isOffline: true,
-        }));
-      } catch (e) {}
-
-      const allSites = [...offlineSitesList, ...onlineSites];
+      const userId = userData.user?.id || offlineStorage.getSession()?.session?.user?.id;
+      const allSites = await loadAllSites(userId);
       if (allSites.length > 0) {
         setSites(allSites);
-        setSelectedSiteId(allSites[0].id);
+        if (!selectedSiteId) {
+          setSelectedSiteId(allSites[0].id);
+        }
       }
     } catch (err) {
-      console.error('Error fetching sites:', err);
+      console.warn('Error fetching sites, loading offline cache:', err);
+      const fallback = await loadAllSites();
+      if (fallback.length > 0) {
+        setSites(fallback);
+        if (!selectedSiteId) {
+          setSelectedSiteId(fallback[0].id);
+        }
+      }
     }
   };
 
@@ -338,9 +328,20 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
     }
 
     setSubmitLoading(true);
+    let userId: string | null = offlineStorage.getSession()?.session?.user?.id || null;
+    const numericSiteId = (
+      selectedSiteId &&
+      typeof selectedSiteId !== 'string' ||
+      (typeof selectedSiteId === 'string' && !selectedSiteId.startsWith('temp_') && !isNaN(Number(selectedSiteId)))
+    ) ? Number(selectedSiteId) : null;
+
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id || null;
+      if (isOnline()) {
+        try {
+          const { data: userData } = await withTimeout<any>(supabase.auth.getUser(), 2500);
+          if (userData?.user?.id) userId = userData.user.id;
+        } catch {}
+      }
 
       const ammoniaNum = parseFloat(ammonia);
       const tempNum = parseFloat(temperature);
@@ -355,16 +356,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       // Ensure device is registered in Supabase devices table
       try {
-        await autoRegisterDevice(targetDevice);
+        await withTimeout(autoRegisterDevice(targetDevice), 2500);
       } catch (devErr) {
         console.warn('Notice registering device:', devErr);
       }
-
-      const numericSiteId = (
-        selectedSiteId &&
-        typeof selectedSiteId !== 'string' ||
-        (typeof selectedSiteId === 'string' && !selectedSiteId.startsWith('temp_') && !isNaN(Number(selectedSiteId)))
-      ) ? Number(selectedSiteId) : null;
 
       const sensorPayload: any = {
         device_uid: targetDevice,
@@ -380,16 +375,15 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         inspection_site_id: numericSiteId,
       };
 
-      if (!syncService.isOnline()) {
-        throw new Error('OFFLINE_MODE');
+      if (!isOnline() || !syncService.isOnline()) {
+        throw new Error('OFFLINE_OR_SLOW');
       }
 
       let insertedSensorData: any = null;
-      let { data: firstInsert, error: sensorError } = await supabase
-        .from('sensor_data')
-        .insert([sensorPayload])
-        .select('id')
-        .maybeSingle();
+      let { data: firstInsert, error: sensorError } = await withTimeout<any>(
+        supabase.from('sensor_data').insert([sensorPayload]).select('id').maybeSingle(),
+        3500
+      );
 
       // Retry without inspection_site_id if column not yet in schema cache (migration pending)
       if (sensorError && (
@@ -398,11 +392,10 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         sensorError.code === 'PGRST204'
       )) {
         const { inspection_site_id: _dropped, ...minimalPayload } = sensorPayload;
-        const { data: fallbackInsert, error: fallbackErr } = await supabase
-          .from('sensor_data')
-          .insert([minimalPayload])
-          .select('id')
-          .maybeSingle();
+        const { data: fallbackInsert, error: fallbackErr } = await withTimeout<any>(
+          supabase.from('sensor_data').insert([minimalPayload]).select('id').maybeSingle(),
+          3500
+        );
 
         if (!fallbackErr && fallbackInsert) {
           firstInsert = fallbackInsert;
@@ -428,13 +421,12 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      console.warn('Network error or offline mode during inspection submit, queueing item:', err);
+      console.warn('Network error or slow connection during inspection submit, queueing item:', err);
 
       let photoStoreId: string | undefined = undefined;
       if (photoRecord?.dataUrl) {
         photoStoreId = await offlineStorage.savePhoto(photoRecord.dataUrl);
       }
-
 
       await offlineStorage.enqueueItem('sensor_data', {
         device_uid: selectedDeviceUid || 'ESP32-AMMONIA-NODE-01',
@@ -445,6 +437,8 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         status: parseFloat(ammonia) > 70 ? 'HIGH' : parseFloat(ammonia) > 40 ? 'MODERATE' : 'LOW',
         latitude: cellLat,
         longitude: cellLng,
+        submitted_by: userId,
+        inspection_site_id: numericSiteId,
         photo_url: photoRecord?.photo_url || null,
       }, {
         action: 'insert',
@@ -453,7 +447,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
       offlineStorage.clearDraft(SENSOR_DRAFT_KEY);
 
-      setToastMsg(`📶 Offline Mode: Reading saved locally and queued for auto-sync!`);
+      setToastMsg(`⚡ Saved locally (Offline / Slow network)! Will sync when connection stabilizes.`);
       setToastColor('warning');
       setShowToast(true);
 
