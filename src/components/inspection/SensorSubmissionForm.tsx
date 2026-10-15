@@ -95,8 +95,8 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
   const [bleRssi, setBleRssi] = useState<number | null>(null);
   const [showBLESimulatorModal, setShowBLESimulatorModal] = useState<boolean>(false);
 
-  // 10-Second confirmation rule hook for non-zero PPM
-  const { status: ppmConfirmationStatus, badgeLabel: ppmBadgeLabel, badgeColor: ppmBadgeColor } = usePpmConfirmation(
+  // Manual confirmation rule hook for non-zero PPM
+  const { status: ppmConfirmationStatus, confirm: confirmPpm } = usePpmConfirmation(
     ammonia !== '' && !isNaN(parseFloat(ammonia)) ? parseFloat(ammonia) : null,
     btConnected
   );
@@ -709,14 +709,29 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
             <div style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', padding: '0 4px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Ammonia (NH₃) Reading (ppm)</span>
-                {ppmBadgeLabel && (
-                  <IonBadge color={ppmBadgeColor} style={{ fontSize: '10px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {ppmConfirmationStatus === 'confirming' ? (
-                      <IonSpinner name="dots" style={{ width: '12px', height: '12px' }} />
-                    ) : (
-                      <IonIcon icon={checkmarkCircleOutline} />
-                    )}
-                    {ppmBadgeLabel}
+                {ppmConfirmationStatus === 'unconfirmed' && (
+                  <IonButton
+                    size="small"
+                    fill="solid"
+                    color="warning"
+                    onClick={confirmPpm}
+                    style={{
+                      '--padding-start': '10px',
+                      '--padding-end': '10px',
+                      height: '26px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      margin: 0,
+                    }}
+                  >
+                    <IonIcon icon={checkmarkCircleOutline} slot="start" style={{ fontSize: '14px', marginRight: '4px' }} />
+                    Confirm PPM
+                  </IonButton>
+                )}
+                {ppmConfirmationStatus === 'confirmed' && (
+                  <IonBadge color="success" style={{ fontSize: '11px', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <IonIcon icon={checkmarkCircleOutline} />
+                    Confirmed
                   </IonBadge>
                 )}
               </div>
