@@ -3,6 +3,7 @@ import { CreateSitePayload, SiteRegistrationResult } from '../types/site';
 import offlineStorage from './OfflineStorageService';
 import { deleteStorageFiles, uploadSitePhoto } from './photoStorageService';
 import { dataUrlToBlob, createThumbnail } from '../utils/thumbnailUtils';
+import { isOnline, withTimeout } from '../utils/networkUtils';
 
 /**
  * Register Monitoring Site with photo & GPS without grid cells.
@@ -214,3 +215,87 @@ export const deleteReading = async (readingId: string | number): Promise<void> =
     window.dispatchEvent(new CustomEvent('sensor_synced'));
   }
 };
+
+/**
+ * Fetch all monitoring sites with offline and slow-network resilience:
+ * - Attempts online Supabase fetch with 3500ms timeout
+ * - Automatically caches online results for future offline sessions
+ * - If offline or slow connection, falls back to locally cached existing sites
+ * - Combines with any pending offline-registered sites
+ */
+export const fetchSites = async (userId?: string): Promise<any[]> => {
+  let onlineSites: any[] = [];
+
+  if (isOnline()) {
+    try {
+      let q = supabase.from('inspection_sites').select('*');
+      if (userId) q = q.eq('created_by', userId);
+      const { data, error } = await withTimeout<any>(q, 3500);
+      if (!error && data && data.length > 0) {
+        offlineStorage.saveCachedSites(data);
+        onlineSites = data;
+      }
+    } catch (err) {
+      console.warn('[siteService] Network offline/slow during fetchSites, using local cache:', err);
+    }
+  }
+
+  if (onlineSites.length === 0) {
+    const cached = offlineStorage.getCachedSites();
+    onlineSites = userId ? cached.filter((s: any) => !s.created_by || s.created_by === userId) : cached;
+  }
+
+  let offlineSites: any[] = [];
+  try {
+    const offlineRecords = await offlineStorage.getOfflineSites();
+    offlineSites = offlineRecords.map((os) => ({
+      id: os.id,
+      site_name: os.site_name,
+      location: os.address,
+      address: os.address,
+      site_code: os.site_code,
+      site_type: os.site_type || 'Agricultural',
+      current_latitude: os.current_latitude,
+      current_longitude: os.current_longitude,
+      isOffline: true,
+      is_pending_sync: true,
+      offlineRecord: os,
+    }));
+  } catch (e) {
+    console.warn('[siteService] Error reading offline sites:', e);
+  }
+
+  const onlineIds = new Set(onlineSites.map((s) => String(s.id)));
+  return [...offlineSites.filter((os) => !onlineIds.has(String(os.id))), ...onlineSites];
+};
+
+/**
+ * Fetch a single site by ID with offline fallback
+ */
+export const fetchSiteById = async (siteId: string | number): Promise<any | null> => {
+  const strId = String(siteId);
+
+  if (strId.startsWith('temp_') || strId.startsWith('queue_')) {
+    const offlineRecords = await offlineStorage.getOfflineSites();
+    const match = offlineRecords.find((os) => String(os.id) === strId || os.site_code === strId);
+    if (match) return { ...match, isOffline: true };
+  }
+
+  if (isOnline()) {
+    try {
+      const { data, error } = await withTimeout<any>(
+        supabase.from('inspection_sites').select('*').eq('id', siteId).maybeSingle(),
+        3500
+      );
+      if (!error && data) {
+        offlineStorage.saveCachedSites([data]);
+        return data;
+      }
+    } catch (err) {
+      console.warn('[siteService] fetchSiteById offline fallback:', err);
+    }
+  }
+
+  return offlineStorage.getCachedSiteById(siteId);
+};
+
