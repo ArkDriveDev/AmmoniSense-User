@@ -20,8 +20,7 @@ import {
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import offlineStorage from '../../services/OfflineStorageService';
-import { deleteSite } from '../../services/siteService';
+import { deleteSite, fetchSites as loadAllSites } from '../../services/siteService';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 import { OfflineSite } from '../../types/site';
 import {
@@ -63,59 +62,15 @@ export default function UserSites() {
 
   const fetchSites = async () => {
     setLoading(true);
-    let onlineSitesList: any[] = [];
-
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
-
-      if (userId) {
-          const { data, error } = await supabase
-            .from('inspection_sites')
-            .select('*')
-            .eq('created_by', userId);
-
-          if (!error && data) {
-            onlineSitesList = data.map(l => ({
-              id: l.id,
-              site_name: l.site_name,
-              location: l.address,
-              address: l.address,
-              site_code: l.site_code,
-              site_type: l.site_type || 'Agricultural',
-              area_size_hectares: l.area_size_hectares,
-              current_latitude: l.current_latitude || l.latitude,
-              current_longitude: l.current_longitude || l.longitude,
-              notes: l.notes,
-              site_photo_url: l.site_photo_url,
-              site_photo_thumbnail: l.site_photo_thumbnail,
-              isOffline: false,
-            }));
-          }
-        }
-    } catch (err) {
-      console.warn('Network error or offline during fetchSites:', err);
-    }
-
-    // Load offline sites from IndexedDB
-    try {
-      const offlineRecords = await offlineStorage.getOfflineSites();
-      const offlineSitesList = offlineRecords.map((os) => ({
-        id: os.id,
-        site_name: os.site_name,
-        location: os.address,
-        site_code: os.site_code,
-        site_type: os.site_type || 'Agricultural',
-        isOffline: true,
-        is_pending_sync: true,
-        offlineRecord: os,
-      }));
-
-      const combinedSites = [...offlineSitesList, ...onlineSitesList];
+      const combinedSites = await loadAllSites(userId);
       setSites(combinedSites);
     } catch (err) {
-      console.error('Unexpected error loading offline sites:', err);
-      setSites(onlineSitesList);
+      console.warn('Network error or offline during fetchSites:', err);
+      const fallback = await loadAllSites();
+      setSites(fallback);
     } finally {
       setLoading(false);
     }
