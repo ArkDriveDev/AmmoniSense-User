@@ -7,6 +7,8 @@ import { addOutline, calendarOutline, pricetagOutline, locationOutline, createOu
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { fetchSchedules } from '../../services/scheduleService';
+import { fetchSiteById } from '../../services/siteService';
+import offlineStorage from '../../services/OfflineStorageService';
 import { getSignedPhotoUrl } from '../../services/photoStorageService';
 import ScheduleCard from '../../components/inspection/ScheduleCard';
 import CreateScheduleModal from '../../components/inspection/CreateScheduleModal';
@@ -27,20 +29,26 @@ export default function InspectionSiteDetail() {
     if (!id) return;
     setLoading(true);
     try {
-      const { data: siteData } = await supabase.from('inspection_sites').select('*').eq('id', id).maybeSingle();
+      const siteData = await fetchSiteById(id);
       let displayPhoto = siteData?.site_photo_thumbnail || siteData?.site_photo_url;
       if (displayPhoto && !displayPhoto.startsWith('data:') && !displayPhoto.startsWith('blob:') && !displayPhoto.includes('token=')) {
-        const signed = await getSignedPhotoUrl('site-photos', displayPhoto);
-        if (signed) displayPhoto = signed;
+        try {
+          const signed = await getSignedPhotoUrl('site-photos', displayPhoto);
+          if (signed) displayPhoto = signed;
+        } catch {}
       }
       setSite(siteData ? { ...siteData, display_photo: displayPhoto } : null);
 
-      const [sched, tagRes] = await Promise.all([
-        fetchSchedules(id),
-        supabase.from('inspection_tags').select('id', { count: 'exact', head: true }).eq('inspection_site_id', id),
-      ]);
+      const sched = await fetchSchedules(id);
       setSchedules(sched);
-      setTagCount(tagRes.count ?? 0);
+
+      let count = 0;
+      try {
+        const tagRes = await supabase.from('inspection_tags').select('id', { count: 'exact', head: true }).eq('inspection_site_id', id);
+        count = tagRes.count ?? 0;
+      } catch {}
+      const offlineCount = offlineStorage.getOfflineTags().filter(t => String(t.inspection_site_id) === String(id)).length;
+      setTagCount(count + offlineCount);
     } catch (err) {
       console.warn('[InspectionSiteDetail] fetch error:', err);
     } finally {
