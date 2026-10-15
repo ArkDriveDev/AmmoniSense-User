@@ -32,7 +32,7 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
   const isConnected = status === 'connected';
   const isScanning = status === 'scanning';
   const ppmVal = latest ? latest.nh3_ppm : null;
-  const { badgeLabel, badgeColor } = usePpmConfirmation(ppmVal, isConnected);
+  const { status: ppmStatus, confirm: confirmPpm } = usePpmConfirmation(ppmVal, isConnected);
 
   useEffect(() => {
     const unsubStatus = bluetoothClassicService.onStatusChange((st, msg) => {
@@ -159,10 +159,24 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
                 <div style={{ fontSize: '16px', fontWeight: 800, color: sev === 'NORMAL' ? '#10B981' : '#EF4444' }}>
                   {typeof latest?.nh3_ppm === 'number' && !isNaN(latest.nh3_ppm) ? `${latest.nh3_ppm.toFixed(2)} PPM` : '—'}
                 </div>
-                {badgeLabel && (
+                {ppmStatus === 'unconfirmed' && (
                   <div style={{ marginTop: '3px' }}>
-                    <IonBadge color={badgeColor} style={{ fontSize: '9px', padding: '2px 6px' }}>
-                      {badgeLabel}
+                    <IonButton
+                      size="small"
+                      fill="outline"
+                      color="warning"
+                      onClick={confirmPpm}
+                      style={{ height: '22px', fontSize: '9px', fontWeight: 700, '--padding-start': '6px', '--padding-end': '6px' }}
+                    >
+                      Confirm
+                    </IonButton>
+                  </div>
+                )}
+                {ppmStatus === 'confirmed' && (
+                  <div style={{ marginTop: '3px' }}>
+                    <IonBadge color="success" style={{ fontSize: '9px', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                      <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '11px' }} />
+                      Confirmed
                     </IonBadge>
                   </div>
                 )}
