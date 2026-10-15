@@ -60,7 +60,7 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
         });
         showToast({ message: 'Inspection schedule updated successfully!', color: 'success' });
       } else {
-        await createSchedule({
+        const created = await createSchedule({
           inspection_site_id: siteId,
           schedule_name: toUpperClean(name),
           scheduled_date: date,
@@ -68,7 +68,12 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           notes: toUpperClean(notes),
           status: 'SCHEDULED',
         });
-        showToast({ message: 'Inspection schedule created successfully!', color: 'success' });
+        showToast({
+          message: created.isOffline
+            ? 'Schedule saved locally (offline - will sync when online)!'
+            : 'Inspection schedule created successfully!',
+          color: 'success',
+        });
       }
       onCreated?.();
       onClose();
