@@ -6,11 +6,16 @@ import {
 import { closeOutline, cameraOutline, arrowForwardOutline, arrowBackOutline } from 'ionicons/icons';
 import { Geolocation } from '@capacitor/geolocation';
 import BLEConnectPanel from './BLEConnectPanel';
+import SensorCaptureFlow from './SensorCaptureFlow';
+import CaptureSummaryView from './CaptureSummaryView';
 import TagLocationStep from './TagLocationStep';
 import TagFormReview from './TagFormReview';
 import { captureInspectionPhoto, uploadTagPhoto } from '../../services/photoStorageService';
 import { createTag, updateTag } from '../../services/tagService';
 import { ViolationCategory, toUpperClean } from '../../types/inspection';
+import { CapturedSessionReading, CaptureSummary } from '../../types/capture';
+import { computeCaptureSummary } from '../../utils/captureSummary';
+import bluetoothClassicService from '../../services/bluetoothClassicService';
 import { dataUrlToBlob } from '../../utils/thumbnailUtils';
 import { showToast } from '../../utils/toast';
 
@@ -37,16 +42,33 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [notes, setNotes] = useState<string>('');
   const [violationCategory, setViolationCategory] = useState<ViolationCategory | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
+  const [captureSummary, setCaptureSummary] = useState<CaptureSummary | null>(null);
+  const [tagTempId, setTagTempId] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
       setStep(1);
       setViolationCategory(null);
+      setCaptureSummary(null);
+      setTagTempId('');
       Geolocation.getCurrentPosition({ enableHighAccuracy: true })
         .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
         .catch(() => {});
     }
   }, [isOpen]);
+
+  const handleCaptureComplete = (readings: CapturedSessionReading[], sessionId: string, tempId: string) => {
+    const sum = computeCaptureSummary(readings, sessionId, tempId);
+    setCaptureSummary(sum);
+    setTagTempId(tempId);
+    setAmmonia(sum.avg_ppm);
+    if (readings.length > 0) {
+      const last = readings[readings.length - 1];
+      if (last.temperature !== null) setTemp(last.temperature);
+      if (last.humidity !== null) setHum(last.humidity);
+      if (last.battery_percent !== null) setBattery(last.battery_percent);
+    }
+  };
 
   const handleCapturePhoto = async () => {
     const res = await captureInspectionPhoto();
@@ -79,6 +101,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         inspection_site_id: siteId || undefined,
         violation_category: violationCategory || null,
         notes: toUpperClean(notes),
+        offline_temp_id: tagTempId || undefined,
       });
 
       // 2. If photo was captured and tag has numeric ID, upload and update with storage paths
@@ -125,10 +148,17 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         {step === 2 && (
           <div>
             <h4 style={{ margin: '0 0 12px 0' }}>Step 2: AmmoniSense Sensor Reading</h4>
-            <BLEConnectPanel onReadingCaptured={(r) => { setAmmonia(r.ammonia); setTemp(r.temperature); setHum(r.humidity); setBattery(r.battery); if (r.device_uid) setDeviceUid(r.device_uid); }} />
+            <BLEConnectPanel onReadingCaptured={(r) => { if (!captureSummary) { setAmmonia(r.ammonia); setTemp(r.temperature); setHum(r.humidity); setBattery(r.battery); } if (r.device_uid) setDeviceUid(r.device_uid); }} />
+            {!captureSummary ? (
+              <SensorCaptureFlow isConnected={bluetoothClassicService.getStatus() === 'connected'} onComplete={handleCaptureComplete} />
+            ) : (
+              <CaptureSummaryView summary={captureSummary} onContinue={() => setStep(3)} />
+            )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
               <IonButton fill="outline" onClick={() => setStep(1)}><IonIcon icon={arrowBackOutline} /></IonButton>
-              <IonButton expand="block" style={{ flex: 1 }} onClick={() => setStep(3)}>Next: Photo <IonIcon icon={arrowForwardOutline} slot="end" /></IonButton>
+              {captureSummary && (
+                <IonButton expand="block" style={{ flex: 1 }} onClick={() => setStep(3)}>Next: Photo <IonIcon icon={arrowForwardOutline} slot="end" /></IonButton>
+              )}
             </div>
           </div>
         )}
