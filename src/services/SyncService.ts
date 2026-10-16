@@ -256,6 +256,16 @@ class SyncService {
     const deviceUid = payload.device_uid || 'ESP32-AMMONIA-NODE-01';
     await this.ensureDeviceExists(deviceUid);
 
+    // Resolve inspection_tag_id if inspection_tag_temp_id is present
+    if (!payload.inspection_tag_id && payload.inspection_tag_temp_id) {
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        if (map[payload.inspection_tag_temp_id]) {
+          payload.inspection_tag_id = Number(map[payload.inspection_tag_temp_id]);
+        }
+      } catch { /* ignore */ }
+    }
+
     // 3. Insert into sensor_data table (with cascading schema-resilient retries)
     let { data: inserted, error } = await supabase
       .from('sensor_data')
@@ -738,6 +748,24 @@ class SyncService {
     }
 
     console.log('[SYNC] ✅ Tag saved');
+
+    // Backfill inspection_tag_id on sensor_data rows matching inspection_tag_temp_id
+    const effectiveTempId = temp_id || tagRecord.offline_temp_id;
+    if (newTagData?.id && effectiveTempId) {
+      try {
+        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+        map[effectiveTempId] = newTagData.id;
+        localStorage.setItem('tempIdMap', JSON.stringify(map));
+        await supabase
+          .from('sensor_data')
+          .update({ inspection_tag_id: newTagData.id })
+          .eq('inspection_tag_temp_id', effectiveTempId);
+        console.log(`[SYNC] Backfilled inspection_tag_id ${newTagData.id} for temp_id ${effectiveTempId}`);
+      } catch (bfErr) {
+        console.warn('[SYNC] Backfill inspection_tag_id error:', bfErr);
+      }
+    }
+
     if (temp_id) offlineStorage.removeOfflineTag(temp_id);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
   }
