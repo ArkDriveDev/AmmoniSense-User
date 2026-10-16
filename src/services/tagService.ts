@@ -119,99 +119,24 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     offline_temp_id: payload.offline_temp_id || null,
   };
 
-  try {
-    const user = (await supabase.auth.getUser()).data.user;
+  const tempId = payload.offline_temp_id || `temp_tag_${Date.now()}`;
 
-    // Readings are persisted to IndexedDB only during 5-minute capture
-    let sensorDataId: number | null = clean.sensor_data_id;
-
-    // Step 2: Save tag WITHOUT reading values
-    const tagPayload: any = {
-      tag_name: clean.tag_name || 'TAG',
-      inspection_schedule_id: clean.inspection_schedule_id || null,
-      inspection_site_id: clean.inspection_site_id || null,
-      sensor_data_id: sensorDataId,
-      latitude: clean.latitude ?? null,
-      longitude: clean.longitude ?? null,
-      photo_url: clean.photo_url ?? null,
-      photo_thumbnail_url: clean.photo_thumbnail_url ?? null,
-      photo_storage_path: clean.photo_storage_path ?? null,
-      photo_thumbnail_storage_path: clean.photo_thumbnail_storage_path ?? null,
-      notes: clean.notes || null,
-      violation_category: clean.violation_category || null,
-      offline_temp_id: clean.offline_temp_id || null,
-      created_by: user?.id,
-    };
-
-    let { data, error } = await supabase
-      .from('inspection_tags')
-      .insert([tagPayload])
-      .select()
-      .single();
-
-    // Resilient FK retry handling:
-    if (error && (error.code === '23503' || error.code === '22P02')) {
-      console.warn('[tagService] FK constraint error on tag insert — retrying with safe fallbacks:', error.message);
-      for (const fk of ['sensor_data_id', 'inspection_site_id'] as const) {
-        if (error && tagPayload[fk]) {
-          tagPayload[fk] = null;
-          const res = await supabase.from('inspection_tags').insert([tagPayload]).select().single();
-          data = res.data; error = res.error;
-        }
-      }
-      if (error) {
-        const res = await supabase.from('inspection_tags').insert([{
-          ...tagPayload,
-          inspection_schedule_id: null,
-          inspection_site_id: null,
-          sensor_data_id: null,
-        }]).select().single();
-        data = res.data; error = res.error;
-      }
+  // Save photo to IndexedDB photo store if provided as dataUrl
+  let photoStoreId: string | undefined = undefined;
+  if (clean.photo_url && clean.photo_url.startsWith('data:')) {
+    try {
+      photoStoreId = await offlineStorage.savePhoto(clean.photo_url);
+    } catch (e) {
+      console.warn('[tagService] Failed to save photo to IndexedDB:', e);
     }
-
-    if (error && error.code === '23505') {
-      console.warn('[tagService] Duplicate tag detected, treating as saved.');
-      window.dispatchEvent(new CustomEvent('tags_updated'));
-      return formatTag({ ...clean, id: Date.now() }, false);
-    }
-
-    if (!error && data) {
-      // Support two-step create-then-upload: if raw base64 dataUrl was passed, upload using the generated numeric tag ID
-      if (clean.photo_url && clean.photo_url.startsWith('data:') && clean.inspection_site_id && data.id) {
-        try {
-          const photoBlob = dataUrlToBlob(clean.photo_url);
-          const thumbBlob = clean.photo_thumbnail_url && clean.photo_thumbnail_url.startsWith('data:')
-            ? dataUrlToBlob(clean.photo_thumbnail_url)
-            : null;
-          const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, data.id, clean.inspection_site_id);
-          await supabase.from('inspection_tags').update({
-            photo_url: uploaded.photo_url,
-            photo_thumbnail_url: uploaded.photo_thumbnail_url,
-            photo_storage_path: uploaded.photo_storage_path,
-            photo_thumbnail_storage_path: uploaded.photo_thumbnail_storage_path,
-          }).eq('id', data.id);
-          data.photo_url = uploaded.photo_url;
-          data.photo_thumbnail_url = uploaded.photo_thumbnail_url;
-          data.photo_storage_path = uploaded.photo_storage_path;
-          data.photo_thumbnail_storage_path = uploaded.photo_thumbnail_storage_path;
-        } catch (photoErr) {
-          console.warn('[tagService] Post-insert tag photo upload notice:', photoErr);
-        }
-      }
-      window.dispatchEvent(new CustomEvent('tags_updated'));
-      return formatTag({ ...clean, ...data }, false);
-    }
-  } catch (err) {
-    console.warn('[tagService] Network offline, saving tag to queue:', err);
   }
 
-  const tempId = `temp_tag_${Date.now()}`;
   const offlineRec = formatTag({ ...clean, id: tempId, offline_temp_id: tempId, created_at: new Date().toISOString() }, true);
   offlineStorage.saveOfflineTag(offlineRec);
   await offlineStorage.enqueueItem('inspection_tag', { ...clean, temp_id: tempId, offline_temp_id: tempId }, {
     action: 'insert',
     tempId,
+    photoStoreId,
   });
   window.dispatchEvent(new CustomEvent('tags_updated'));
   return offlineRec;
