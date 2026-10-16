@@ -1,14 +1,14 @@
 import React from 'react';
-import { IonCard, IonCardContent, IonBadge, IonButton, IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline, arrowForwardOutline } from 'ionicons/icons';
+import { IonCard, IonCardContent, IonBadge, IonIcon } from '@ionic/react';
+import { checkmarkCircleOutline } from 'ionicons/icons';
 import { CaptureSummary } from '../../types/capture';
 
 interface Props {
   summary: CaptureSummary;
-  onContinue: () => void;
+  onContinue?: () => void;
 }
 
-export const CaptureSummaryView: React.FC<Props> = ({ summary, onContinue }) => {
+export const CaptureSummaryView: React.FC<Props> = ({ summary }) => {
   return (
     <IonCard style={{ margin: '14px 0', borderRadius: '12px', border: '1px solid #10B981' }}>
       <IonCardContent style={{ padding: '16px' }}>
@@ -33,9 +33,6 @@ export const CaptureSummaryView: React.FC<Props> = ({ summary, onContinue }) => 
             <div style={{ fontSize: '16px', fontWeight: 800, color: '#10B981' }}>{summary.min_ppm}</div>
           </div>
         </div>
-        <IonButton expand="block" color="primary" onClick={onContinue} style={{ marginTop: '12px' }}>
-          Continue to Photo <IonIcon icon={arrowForwardOutline} slot="end" />
-        </IonButton>
       </IonCardContent>
     </IonCard>
   );
