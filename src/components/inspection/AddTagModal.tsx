@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonIcon
 } from '@ionic/react';
-import { closeOutline, cameraOutline, arrowForwardOutline, arrowBackOutline } from 'ionicons/icons';
+import { closeOutline, arrowForwardOutline, arrowBackOutline } from 'ionicons/icons';
 import { Geolocation } from '@capacitor/geolocation';
 import BLEConnectPanel from './BLEConnectPanel';
 import SensorCaptureFlow from './SensorCaptureFlow';
 import CaptureSummaryView from './CaptureSummaryView';
 import TagLocationStep from './TagLocationStep';
+import TagPhotoStep from './TagPhotoStep';
 import TagFormReview from './TagFormReview';
-import { captureInspectionPhoto, uploadTagPhoto } from '../../services/photoStorageService';
-import { createTag, updateTag } from '../../services/tagService';
+import { captureInspectionPhoto } from '../../services/photoStorageService';
+import { createTag } from '../../services/tagService';
 import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { CapturedSessionReading, CaptureSummary } from '../../types/capture';
 import { computeCaptureSummary } from '../../utils/captureSummary';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
-import { dataUrlToBlob } from '../../utils/thumbnailUtils';
 import { showToast } from '../../utils/toast';
 
 interface Props {
@@ -57,7 +57,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     }
   }, [isOpen]);
 
-  const handleCaptureComplete = (readings: CapturedSessionReading[], sessionId: string, tempId: string) => {
+  const handleCaptureComplete = useCallback((readings: CapturedSessionReading[], sessionId: string, tempId: string) => {
     const sum = computeCaptureSummary(readings, sessionId, tempId);
     setCaptureSummary(sum);
     setTagTempId(tempId);
@@ -68,7 +68,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       if (last.humidity !== null) setHum(last.humidity);
       if (last.battery_percent !== null) setBattery(last.battery_percent);
     }
-  };
+  }, []);
 
   const handleCapturePhoto = async () => {
     const res = await captureInspectionPhoto();
@@ -104,25 +104,6 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         offline_temp_id: tagTempId || undefined,
       });
 
-      // 2. If photo was captured and tag has numeric ID, upload and update with storage paths
-      if (photoDataUrl && createdTag?.id && typeof createdTag.id === 'number') {
-        const targetSiteId = siteId || createdTag.inspection_site_id;
-        if (targetSiteId) {
-          try {
-            const photoBlob = dataUrlToBlob(photoDataUrl);
-            const thumbBlob = thumbDataUrl ? dataUrlToBlob(thumbDataUrl) : null;
-            const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, createdTag.id, targetSiteId);
-            await updateTag(createdTag.id, {
-              photo_url: uploaded.photo_url,
-              photo_thumbnail_url: uploaded.photo_thumbnail_url,
-              photo_storage_path: uploaded.photo_storage_path,
-              photo_thumbnail_storage_path: uploaded.photo_thumbnail_storage_path,
-            });
-          } catch (photoErr) {
-            console.warn('[AddTagModal] Photo upload after tag creation failed:', photoErr);
-          }
-        }
-      }
       onCreated?.();
       showToast({ message: 'Inspection tag saved successfully!', color: 'success' });
       onClose();
@@ -152,7 +133,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             {!captureSummary ? (
               <SensorCaptureFlow isConnected={bluetoothClassicService.getStatus() === 'connected'} onComplete={handleCaptureComplete} />
             ) : (
-              <CaptureSummaryView summary={captureSummary} onContinue={() => setStep(3)} />
+              <CaptureSummaryView summary={captureSummary} />
             )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
               <IonButton fill="outline" onClick={() => setStep(1)}><IonIcon icon={arrowBackOutline} /></IonButton>
@@ -163,21 +144,12 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           </div>
         )}
         {step === 3 && (
-          <div>
-            <h4 style={{ margin: '0 0 12px 0' }}>Step 3: Tag Photo</h4>
-            {photoDataUrl ? (
-              <div style={{ textAlign: 'center' }}>
-                <img src={photoDataUrl} alt="Preview" style={{ maxHeight: '200px', borderRadius: '10px' }} />
-                <IonButton expand="block" fill="outline" style={{ marginTop: '10px' }} onClick={handleCapturePhoto}><IonIcon icon={cameraOutline} slot="start" /> Retake Photo</IonButton>
-              </div>
-            ) : (
-              <IonButton expand="block" style={{ height: '56px' }} onClick={handleCapturePhoto}><IonIcon icon={cameraOutline} slot="start" /> Take Tag Photo</IonButton>
-            )}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-              <IonButton fill="outline" onClick={() => setStep(2)}><IonIcon icon={arrowBackOutline} /></IonButton>
-              <IonButton expand="block" style={{ flex: 1 }} onClick={() => setStep(4)}>Next: Details <IonIcon icon={arrowForwardOutline} slot="end" /></IonButton>
-            </div>
-          </div>
+          <TagPhotoStep
+            photoDataUrl={photoDataUrl}
+            onCapture={handleCapturePhoto}
+            onBack={() => setStep(2)}
+            onNext={() => setStep(4)}
+          />
         )}
         {step === 4 && (
           <TagFormReview
