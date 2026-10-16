@@ -36,6 +36,7 @@ import offlineStorage, { SENSOR_DRAFT_KEY } from '../../services/OfflineStorageS
 import syncService from '../../services/SyncService';
 import { fetchSites as loadAllSites } from '../../services/siteService';
 import { isOnline, withTimeout } from '../../utils/networkUtils';
+import { getPoultryTypeLabel, getChickenTypeLabel } from '../../constants/siteTypes';
 
 import {
   InspectionPhotoRecord,
@@ -60,6 +61,8 @@ interface MonitoringSite {
   address?: string | null;
   area_size_hectares?: number | null;
   site_type?: string | null;
+  poultry_type?: string | null;
+  chicken_type?: string | null;
   latitude?: number;
   longitude?: number;
 }
@@ -475,11 +478,18 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
                 placeholder="Select Site"
                 onIonChange={e => setSelectedSiteId(e.detail.value)}
               >
-                {sites.map(site => (
-                  <IonSelectOption key={site.id} value={site.id}>
-                    {site.site_name} ({site.site_code})
-                  </IonSelectOption>
-                ))}
+                {sites.map(site => {
+                  const extra = [
+                    site.poultry_type ? getPoultryTypeLabel(site.poultry_type) : null,
+                    site.chicken_type ? getChickenTypeLabel(site.chicken_type) : null
+                  ].filter(Boolean).join(' • ');
+
+                  return (
+                    <IonSelectOption key={site.id} value={site.id}>
+                      {site.site_name} ({site.site_code}){extra ? ` — ${extra}` : ''}
+                    </IonSelectOption>
+                  );
+                })}
               </IonSelect>
             </IonItem>
 

@@ -8,6 +8,8 @@ export interface SiteMarkerData {
   site_code?: string;
   site_name: string;
   site_type?: string;
+  poultry_type?: string | null;
+  chicken_type?: string | null;
   address?: string;
   latitude: number;
   longitude: number;

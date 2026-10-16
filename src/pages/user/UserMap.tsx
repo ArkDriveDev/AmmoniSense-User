@@ -33,6 +33,7 @@ import offlineStorage from '../../services/OfflineStorageService';
 import { deleteSite, deleteReading } from '../../services/siteService';
 import { fetchTags } from '../../services/tagService';
 import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
+import { getSiteTypeLabel, getPoultryTypeLabel, getChickenTypeLabel } from '../../constants/siteTypes';
 import FullMapView, {
   SiteMarkerData,
   ReadingMarkerData,
@@ -155,6 +156,8 @@ export default function UserMap() {
             site_code: s.site_code,
             site_name: s.site_name,
             site_type: s.site_type || 'Agricultural',
+            poultry_type: s.poultry_type,
+            chicken_type: s.chicken_type,
             address: s.address,
             latitude: coords.latitude,
             longitude: coords.longitude,
@@ -190,6 +193,8 @@ export default function UserMap() {
             site_code: os.site_code || 'OFFLINE',
             site_name: os.site_name || 'Offline Site',
             site_type: os.site_type || 'Agricultural',
+            poultry_type: os.poultry_type,
+            chicken_type: os.chicken_type,
             address: os.address || os.site_name,
             latitude: coords.latitude,
             longitude: coords.longitude,
@@ -218,6 +223,8 @@ export default function UserMap() {
               site_code: p.site_code || 'QUEUED',
               site_name: p.site_name || 'Unsubmitted Site',
               site_type: p.site_type || 'Agricultural',
+              poultry_type: p.poultry_type,
+              chicken_type: p.chicken_type,
               address: p.address || p.site_name,
               latitude: coords.latitude,
               longitude: coords.longitude,
@@ -253,6 +260,8 @@ export default function UserMap() {
                 site_code: os.site_code || 'LS_OFFLINE',
                 site_name: os.site_name || 'Offline Site',
                 site_type: os.site_type || 'Agricultural',
+                poultry_type: os.poultry_type,
+                chicken_type: os.chicken_type,
                 address: os.address || os.site_name,
                 latitude: coords.latitude,
                 longitude: coords.longitude,
@@ -665,6 +674,16 @@ export default function UserMap() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                   <SiteTypeBadge siteType={selectedSite.site_type} />
+                  {selectedSite.poultry_type && (
+                    <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                      {getPoultryTypeLabel(selectedSite.poultry_type)}
+                    </span>
+                  )}
+                  {selectedSite.chicken_type && (
+                    <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                      {getChickenTypeLabel(selectedSite.chicken_type)}
+                    </span>
+                  )}
                   <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
                     {selectedSite.site_code}
                   </span>
@@ -689,7 +708,7 @@ export default function UserMap() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px' }}>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Site Type</span>
-                    <strong style={{ color: '#0f172a' }}>{selectedSite.site_type || 'Agricultural'}</strong>
+                    <strong style={{ color: '#0f172a' }}>{getSiteTypeLabel(selectedSite.site_type)}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Coverage Area</span>

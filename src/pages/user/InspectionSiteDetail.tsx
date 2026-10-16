@@ -14,6 +14,7 @@ import ScheduleCard from '../../components/inspection/ScheduleCard';
 import CreateScheduleModal from '../../components/inspection/CreateScheduleModal';
 import CreateSiteModal from '../../components/sites/CreateSiteModal';
 import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
+import { getPoultryTypeLabel, getChickenTypeLabel } from '../../constants/siteTypes';
 
 export default function InspectionSiteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -112,7 +113,19 @@ export default function InspectionSiteDetail() {
                       <IonIcon icon={createOutline} slot="start" /> Update
                     </IonButton>
                   </div>
-                  <SiteTypeBadge siteType={site.site_type} />
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <SiteTypeBadge siteType={site.site_type} />
+                    {site.poultry_type && (
+                      <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                        {getPoultryTypeLabel(site.poultry_type)}
+                      </span>
+                    )}
+                    {site.chicken_type && (
+                      <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                        {getChickenTypeLabel(site.chicken_type)}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '13px', color: '#475569' }}>
                     <span><IonIcon icon={calendarOutline} color="primary" /> {schedules.length} Schedule{schedules.length !== 1 ? 's' : ''}</span>
                     <span><IonIcon icon={pricetagOutline} color="success" /> {tagCount} Tag{tagCount !== 1 ? 's' : ''}</span>

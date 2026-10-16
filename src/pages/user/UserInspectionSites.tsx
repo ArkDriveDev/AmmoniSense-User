@@ -15,6 +15,7 @@ import { fetchSites as loadAllSites } from '../../services/siteService';
 import CreateSiteModal from '../../components/sites/CreateSiteModal';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
+import { getPoultryTypeLabel, getChickenTypeLabel } from '../../constants/siteTypes';
 
 export default function UserInspectionSites() {
   const navigate = useNavigate();
@@ -115,6 +116,16 @@ export default function UserInspectionSites() {
                         <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>{s.site_name}</h2>
                         {s.isOffline && <PendingSyncBadge />}
                         <SiteTypeBadge siteType={s.site_type} />
+                        {s.poultry_type && (
+                          <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                            {getPoultryTypeLabel(s.poultry_type)}
+                          </span>
+                        )}
+                        {s.chicken_type && (
+                          <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                            {getChickenTypeLabel(s.chicken_type)}
+                          </span>
+                        )}
                       </div>
                       <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <IonIcon icon={locationOutline} color="primary" />
