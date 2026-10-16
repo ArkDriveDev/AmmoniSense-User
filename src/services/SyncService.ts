@@ -150,8 +150,25 @@ class SyncService {
 
       this.notifyListeners('sync_start');
 
+      const failedTempIds = new Set<string>();
+
       for (const item of pendingItems) {
         if (!this.onlineStatus) break; // Network lost mid-sync
+
+        // If parent item failed in this sync run, keep child local without pushing
+        const p = item.payload || item.data || {};
+        const siteParent = String(p.inspection_site_id || '');
+        const schedParent = String(p.inspection_schedule_id || '');
+        const tagParent = String(p.inspection_tag_temp_id || '');
+
+        if (
+          (siteParent && failedTempIds.has(siteParent)) ||
+          (schedParent && failedTempIds.has(schedParent)) ||
+          (tagParent && failedTempIds.has(tagParent))
+        ) {
+          console.warn(`[SYNC] Parent failed for ${item.type} (${item.id}), keeping child local.`);
+          continue;
+        }
 
         // Exponential backoff delay for items that failed previous attempts
         if (item.retryCount > 0) {
@@ -177,6 +194,9 @@ class SyncService {
           console.error(`Error syncing queue item ${item.id}:`, err);
           failedCount++;
           const errorMsg = err.message || 'Sync failed';
+          if (item.tempId) failedTempIds.add(String(item.tempId));
+          if (p.temp_id) failedTempIds.add(String(p.temp_id));
+          if (p.offline_temp_id) failedTempIds.add(String(p.offline_temp_id));
           await offlineStorage.updateQueueItemStatus(item.id, 'failed', errorMsg);
           this.notifyListeners('sync_error', item, errorMsg);
         }
@@ -264,6 +284,10 @@ class SyncService {
           payload.inspection_tag_id = Number(map[payload.inspection_tag_temp_id]);
         }
       } catch { /* ignore */ }
+    }
+
+    if (!payload.inspection_tag_id && payload.inspection_tag_temp_id) {
+      throw new Error(`Cannot sync sensor reading: parent tag "${payload.inspection_tag_temp_id}" is not yet synced to Supabase.`);
     }
 
     // 3. Insert into sensor_data table (with cascading schema-resilient retries)
@@ -606,9 +630,10 @@ class SyncService {
         .eq('id', scheduleId)
         .maybeSingle();
       if (!schedule) {
-        console.warn('[SYNC] Schedule missing, nulling schedule_id:', scheduleId);
-        scheduleId = null;
+        throw new Error(`Cannot sync tag: schedule ID ${scheduleId} not found in Supabase.`);
       }
+    } else if (payload.inspection_schedule_id) {
+      throw new Error(`Cannot sync tag: parent schedule "${payload.inspection_schedule_id}" is not yet synced to Supabase.`);
     }
     payload.inspection_schedule_id = scheduleId;
 
@@ -628,9 +653,10 @@ class SyncService {
         .eq('id', siteId)
         .maybeSingle();
       if (!site) {
-        console.warn('[SYNC] Site missing, nulling site_id:', siteId);
-        siteId = null;
+        throw new Error(`Cannot sync tag: site ID ${siteId} not found in Supabase.`);
       }
+    } else if (payload.inspection_site_id && typeof payload.inspection_site_id === 'string' && payload.inspection_site_id.startsWith('temp_')) {
+      throw new Error(`Cannot sync tag: parent site "${payload.inspection_site_id}" is not yet synced to Supabase.`);
     }
     payload.inspection_site_id = siteId;
 
@@ -708,19 +734,6 @@ class SyncService {
       .select('id')
       .maybeSingle();
 
-    // Resilient FK retry fallback if any unexpected constraint fires
-    if (error && (error.code === '23503' || error.code === '22P02')) {
-      console.warn('[SYNC] FK constraint notice on tag sync — retrying with null parent FKs:', error.message);
-      const res = await supabase.from('inspection_tags').insert([{
-        ...tagRecord,
-        inspection_schedule_id: null,
-        inspection_site_id: null,
-        sensor_data_id: null,
-      }]).select('id').maybeSingle();
-      error = res.error;
-      newTagData = res.data;
-    }
-
     if (error && error.code === '23505') {
       console.warn('[SYNC] Duplicate tag detected during sync, treating as success.');
       error = null;
@@ -757,6 +770,16 @@ class SyncService {
         const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
         map[effectiveTempId] = newTagData.id;
         localStorage.setItem('tempIdMap', JSON.stringify(map));
+
+        // Patch pending sensor_data queue items in IndexedDB with the real tag ID
+        const allItems = await offlineStorage.getQueue();
+        for (const qi of allItems) {
+          if (qi.type === 'sensor_data' && (qi.payload?.inspection_tag_temp_id === effectiveTempId || qi.tempId === effectiveTempId)) {
+            qi.payload.inspection_tag_id = newTagData.id;
+            await offlineStorage.updateQueueItemPayload(qi.id, qi.payload);
+          }
+        }
+
         await supabase
           .from('sensor_data')
           .update({ inspection_tag_id: newTagData.id })
