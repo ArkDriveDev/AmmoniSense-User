@@ -122,35 +122,8 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
   try {
     const user = (await supabase.auth.getUser()).data.user;
 
-    // Step 1: Always create a sensor_data row
+    // Readings are persisted to IndexedDB only during 5-minute capture
     let sensorDataId: number | null = clean.sensor_data_id;
-    try {
-      const devUid = clean.device_uid || 'MANUAL-ENTRY';
-      await autoRegisterDevice(devUid);
-
-      const { data: sRec, error: sErr } = await supabase
-        .from('sensor_data')
-        .insert([{
-          device_uid: devUid,
-          ammonia: clean.ammonia,
-          temperature: clean.temperature,
-          humidity: clean.humidity,
-          battery: clean.battery,
-          latitude: clean.latitude,
-          longitude: clean.longitude,
-          status: clean.status || calculateAmmoniaStatus(clean.ammonia ?? 0),
-          submitted_by: user?.id || null,
-        }])
-        .select('id')
-        .single();
-
-      if (!sErr && sRec?.id) {
-        sensorDataId = sRec.id;
-        clean.sensor_data_id = sRec.id;
-      }
-    } catch (e: any) {
-      console.warn('[tagService] sensor_data insert failed, tag will have no reading link:', e?.message);
-    }
 
     // Step 2: Save tag WITHOUT reading values
     const tagPayload: any = {
