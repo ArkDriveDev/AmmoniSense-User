@@ -43,6 +43,7 @@ import { GpsSource, OfflineSite } from '../../types/site';
 import PolygonPreview from '../map/PolygonPreview';
 import { uploadSitePhoto } from '../../services/photoStorageService';
 import { createThumbnail } from '../../utils/thumbnailUtils';
+import { SITE_TYPES, POULTRY_TYPES, CHICKEN_TYPES } from '../../constants/siteTypes';
 import { showToast as emitAppToast } from '../../utils/toast';
 
 export interface CreateSiteModalProps {
@@ -64,7 +65,9 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
   const [form, setForm] = useState({
     site_code: `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
     site_name: '',
-    site_type: 'Poultry',
+    site_type: 'POULTRY',
+    poultry_type: 'CONVENTIONAL',
+    chicken_type: 'BROILER',
     address: '',
     area_size_hectares: '1.0',
     current_latitude: 8.3683,
@@ -86,7 +89,9 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         setForm({
           site_code: editSite.site_code || `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
           site_name: editSite.site_name || '',
-          site_type: editSite.site_type || 'Poultry',
+          site_type: editSite.site_type || 'POULTRY',
+          poultry_type: editSite.poultry_type || 'CONVENTIONAL',
+          chicken_type: editSite.chicken_type || 'BROILER',
           address: editSite.address || '',
           area_size_hectares: (!isNaN(areaNum) && areaNum > 0 ? areaNum : 1.0).toString(),
           current_latitude: !isNaN(latNum) && latNum !== 0 ? latNum : 8.3683,
@@ -184,6 +189,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       site_code: form.site_code.trim().toUpperCase(),
       site_name: form.site_name.trim().toUpperCase(),
       site_type: form.site_type,
+      poultry_type: form.poultry_type,
+      chicken_type: form.chicken_type,
       address: (form.address || form.site_name).trim().toUpperCase(),
       area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
       latitude: form.current_latitude,
@@ -222,6 +229,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           site_code: form.site_code.trim().toUpperCase(),
           site_name: form.site_name.trim().toUpperCase(),
           site_type: form.site_type,
+          poultry_type: form.poultry_type,
+          chicken_type: form.chicken_type,
           address: (form.address || form.site_name).trim().toUpperCase(),
           area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
           current_latitude: form.current_latitude,
@@ -332,6 +341,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         site_code: form.site_code,
         site_name: form.site_name,
         site_type: form.site_type,
+        poultry_type: form.poultry_type,
+        chicken_type: form.chicken_type,
         current_latitude: form.current_latitude,
         current_longitude: form.current_longitude,
         address: form.address || form.site_name,
@@ -489,16 +500,38 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           </IonItem>
 
           <IonItem className="premium-input-item" lines="none">
-            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Category / Type</IonLabel>
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Site Category / Type *</IonLabel>
             <IonSelect
               value={form.site_type}
               onIonChange={e => updateForm({ site_type: e.detail.value! })}
             >
-              <IonSelectOption value="Poultry">Poultry Farm</IonSelectOption>
-              <IonSelectOption value="Piggery">Piggery Farm</IonSelectOption>
-              <IonSelectOption value="Agricultural">Agricultural Zone</IonSelectOption>
-              <IonSelectOption value="Industrial">Industrial Facility</IonSelectOption>
-              <IonSelectOption value="River/Waterway">River / Waterway</IonSelectOption>
+              {SITE_TYPES.map(st => (
+                <IonSelectOption key={st.value} value={st.value}>{st.label}</IonSelectOption>
+              ))}
+            </IonSelect>
+          </IonItem>
+
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Poultry Type *</IonLabel>
+            <IonSelect
+              value={form.poultry_type}
+              onIonChange={e => updateForm({ poultry_type: e.detail.value! })}
+            >
+              {POULTRY_TYPES.map(pt => (
+                <IonSelectOption key={pt.value} value={pt.value}>{pt.label}</IonSelectOption>
+              ))}
+            </IonSelect>
+          </IonItem>
+
+          <IonItem className="premium-input-item" lines="none">
+            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Chicken Type *</IonLabel>
+            <IonSelect
+              value={form.chicken_type}
+              onIonChange={e => updateForm({ chicken_type: e.detail.value! })}
+            >
+              {CHICKEN_TYPES.map(ct => (
+                <IonSelectOption key={ct.value} value={ct.value}>{ct.label}</IonSelectOption>
+              ))}
             </IonSelect>
           </IonItem>
 
