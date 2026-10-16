@@ -72,7 +72,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     area_size_hectares: '1.0',
     current_latitude: 8.3683,
     current_longitude: 124.8637,
-    notes: '',
   });
 
   const [toastMsg, setToastMsg] = useState('');
@@ -96,7 +95,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           area_size_hectares: (!isNaN(areaNum) && areaNum > 0 ? areaNum : 1.0).toString(),
           current_latitude: !isNaN(latNum) && latNum !== 0 ? latNum : 8.3683,
           current_longitude: !isNaN(lngNum) && lngNum !== 0 ? lngNum : 124.8637,
-          notes: editSite.notes || '',
         });
         if (editSite.site_photo_url || editSite.site_photo_thumbnail) {
           setPhotoPreview(editSite.site_photo_url || editSite.site_photo_thumbnail);
@@ -195,7 +193,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
       latitude: form.current_latitude,
       longitude: form.current_longitude,
-      notes: form.notes ? form.notes.trim().toUpperCase() : '',
       photo_url: photoRecord?.photo_url || photoPreview || undefined,
       site_photo_url: photoRecord?.photo_url || photoPreview || undefined,
       site_photo_thumbnail: photoRecord?.photo_thumbnail_url || photoPreview || undefined,
@@ -235,7 +232,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
           current_latitude: form.current_latitude,
           current_longitude: form.current_longitude,
-          notes: form.notes ? form.notes.trim().toUpperCase() : '',
           ...(Object.keys(updatedPhotoFields).length > 0
             ? updatedPhotoFields
             : photoPreview
@@ -351,7 +347,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
         site_photo_thumbnail: photoPreview || photoRecord?.photo_url || '',
         created_at: new Date().toISOString(),
         created_by: userId,
-        notes: form.notes,
         syncStatus: 'pending',
         retryCount: 0,
         lastModified: new Date().toISOString(),
@@ -624,18 +619,6 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
               </IonItem>
             </IonCol>
           </IonRow>
-
-          <IonItem className="premium-input-item" lines="none" style={{ marginTop: '8px' }}>
-            <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Inspector Notes</IonLabel>
-            <IonTextarea
-              rows={3}
-              value={form.notes}
-              onIonInput={e => updateForm({ notes: (e.detail.value || '').toUpperCase() })}
-              placeholder="FACILITY ACCESS DETAILS OR ENVIRONMENTAL OBSERVATIONS..."
-              style={{ textTransform: 'uppercase' }}
-              autocapitalize="characters"
-            />
-          </IonItem>
 
           <IonButton
             className="btn-ammoni btn-primary"

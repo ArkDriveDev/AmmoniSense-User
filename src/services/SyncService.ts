@@ -310,9 +310,10 @@ class SyncService {
       if (payload.site_code !== undefined) siteUpdates.site_code = payload.site_code;
       if (payload.site_name !== undefined) siteUpdates.site_name = payload.site_name;
       if (payload.site_type !== undefined) siteUpdates.site_type = payload.site_type;
+      if (payload.poultry_type !== undefined) siteUpdates.poultry_type = payload.poultry_type;
+      if (payload.chicken_type !== undefined) siteUpdates.chicken_type = payload.chicken_type;
       if (payload.address !== undefined) siteUpdates.address = payload.address;
       if (payload.area_size_hectares !== undefined) siteUpdates.area_size_hectares = payload.area_size_hectares;
-      if (payload.notes !== undefined) siteUpdates.notes = payload.notes;
       if (payload.is_active !== undefined) siteUpdates.is_active = payload.is_active;
       if (payload.site_photo_url !== undefined) siteUpdates.site_photo_url = payload.site_photo_url;
       if (payload.site_photo_thumbnail !== undefined) siteUpdates.site_photo_thumbnail = payload.site_photo_thumbnail;

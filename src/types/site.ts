@@ -18,7 +18,6 @@ export interface OfflineSite {
   site_photo_thumbnail?: string;
   created_at: string;
   created_by?: string;           // user ID
-  notes?: string;
   syncStatus: 'pending' | 'syncing' | 'failed' | 'synced';
   retryCount: number;
   lastModified: string;
@@ -42,7 +41,6 @@ export interface InspectionSite {
   site_photo_thumbnail_storage_path?: string | null;
   offline_temp_id?: string | null;
   is_active?: boolean;
-  notes?: string | null;
   created_at?: string;
   created_by?: string | null;
 }
@@ -57,7 +55,6 @@ export interface CreateSitePayload {
   area_size_hectares: number;
   latitude: number;
   longitude: number;
-  notes?: string;
   photo_url?: string;
   site_photo_url?: string;
   site_photo_thumbnail?: string;
