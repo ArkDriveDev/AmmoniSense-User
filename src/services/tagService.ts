@@ -35,7 +35,7 @@ const formatTag = (d: any, isOffline = false): InspectionTag => {
   };
 };
 
-export async function fetchTags(filter?: { scheduleId?: number | string; siteId?: number | string }): Promise<InspectionTag[]> {
+export async function fetchTags(filter?: { scheduleId?: number | string; siteId?: number | string; scheduleTempId?: string }): Promise<InspectionTag[]> {
   let online: InspectionTag[] = [];
   try {
     let q = supabase.from('inspection_tags').select('*, sensor_data(*)').order('created_at', { ascending: false });
@@ -71,7 +71,11 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
   }
 
   const offline = offlineStorage.getOfflineTags().filter((t: any) => {
-    if (filter?.scheduleId && String(t.inspection_schedule_id) !== String(filter.scheduleId)) return false;
+    if (filter?.scheduleId) {
+      const matchScheduleId = String(t.inspection_schedule_id) === String(filter.scheduleId);
+      const matchTempId = filter.scheduleTempId && String(t.inspection_schedule_id) === String(filter.scheduleTempId);
+      if (!matchScheduleId && !matchTempId) return false;
+    }
     if (filter?.siteId && t.inspection_site_id && String(t.inspection_site_id) !== String(filter.siteId)) return false;
     return true;
   });

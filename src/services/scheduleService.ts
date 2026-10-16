@@ -76,7 +76,9 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
 }
 
 export async function fetchScheduleById(id: number | string): Promise<InspectionSchedule | null> {
-  const local = offlineStorage.getOfflineSchedules().find((s: any) => String(s.id) === String(id));
+  const local = offlineStorage.getOfflineSchedules().find(
+    (s: any) => String(s.id) === String(id) || (s.offline_temp_id && String(s.offline_temp_id) === String(id))
+  );
   if (local) return local;
   try {
     const { data } = await supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').eq('id', id).maybeSingle();

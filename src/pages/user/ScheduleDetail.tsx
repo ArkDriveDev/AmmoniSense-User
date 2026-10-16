@@ -43,11 +43,13 @@ export default function ScheduleDetail() {
     if (!id) return;
     setLoading(true);
     try {
-      const [sched, tagList] = await Promise.all([
-        fetchScheduleById(id),
-        fetchTags({ scheduleId: id }),
-      ]);
+      const sched = await fetchScheduleById(id);
       setSchedule(sched);
+      const schedTempId = sched?.offline_temp_id || (String(id).startsWith('temp_') ? String(id) : undefined);
+      const tagList = await fetchTags({
+        scheduleId: sched?.id || id,
+        scheduleTempId: schedTempId,
+      });
       setTags(tagList);
     } catch (err) {
       console.warn('[ScheduleDetail] load error:', err);
