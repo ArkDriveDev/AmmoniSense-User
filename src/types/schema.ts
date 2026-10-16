@@ -42,3 +42,25 @@ export type BluetoothConnectionStatus =
   | 'connected'
   | 'failed'
   | 'disconnected';
+
+export interface InspectionSite {
+  id: number | string;
+  site_code: string;
+  site_name: string;
+  site_type: string;
+  poultry_type?: string | null;
+  chicken_type?: string | null;
+  current_latitude: number;
+  current_longitude: number;
+  address: string;
+  area_size_hectares: number;
+  site_photo_url?: string | null;
+  site_photo_thumbnail?: string | null;
+  site_photo_storage_path?: string | null;
+  site_photo_thumbnail_storage_path?: string | null;
+  offline_temp_id?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  created_by?: string | null;
+}
+

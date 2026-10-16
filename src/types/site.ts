@@ -8,6 +8,8 @@ export interface OfflineSite {
   site_code: string;            // generated locally
   site_name: string;
   site_type: string;
+  poultry_type?: string | null;
+  chicken_type?: string | null;
   current_latitude: number;
   current_longitude: number;
   address: string;
@@ -28,6 +30,8 @@ export interface InspectionSite {
   site_code: string;
   site_name: string;
   site_type: string;
+  poultry_type?: string | null;
+  chicken_type?: string | null;
   current_latitude: number;
   current_longitude: number;
   address: string;
@@ -47,6 +51,8 @@ export interface CreateSitePayload {
   site_code: string;
   site_name: string;
   site_type: string;
+  poultry_type?: string | null;
+  chicken_type?: string | null;
   address?: string;
   area_size_hectares: number;
   latitude: number;
