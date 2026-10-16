@@ -21,7 +21,6 @@ import {
   timeOutline
 } from 'ionicons/icons';
 import { AmmoniSenseReading } from '../types/schema';
-import { usePpmConfirmation } from '../hooks/usePpmConfirmation';
 
 interface BLEReadingDisplayProps {
   reading: AmmoniSenseReading | null;
@@ -31,16 +30,7 @@ interface BLEReadingDisplayProps {
 
 export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
   reading,
-  isConnected = true,
-  onConfirm,
 }) => {
-  const ppmVal = reading ? reading.nh3_ppm : null;
-  const { status: ppmStatus, confirm } = usePpmConfirmation(ppmVal, isConnected);
-
-  const handleConfirm = () => {
-    confirm();
-    if (onConfirm) onConfirm();
-  };
 
   if (!reading) {
     return (
@@ -101,43 +91,6 @@ export const BLEReadingDisplay: React.FC<BLEReadingDisplayProps> = ({
                 <IonIcon icon={severity.icon} style={{ verticalAlign: 'middle', marginRight: '4px', fontSize: '14px' }} />
                 {severity.label}
               </IonBadge>
-
-              {/* Manual Confirmation Button & Badge */}
-              {ppmStatus === 'unconfirmed' && (
-                <IonButton
-                  size="small"
-                  fill="solid"
-                  color="warning"
-                  onClick={handleConfirm}
-                  style={{
-                    '--padding-start': '10px',
-                    '--padding-end': '10px',
-                    height: '28px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                  }}
-                >
-                  <IonIcon icon={checkmarkCircleOutline} slot="start" style={{ fontSize: '14px', marginRight: '4px' }} />
-                  Confirm PPM
-                </IonButton>
-              )}
-              {ppmStatus === 'confirmed' && (
-                <IonBadge
-                  color="success"
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '16px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '14px' }} />
-                  Confirmed
-                </IonBadge>
-              )}
             </div>
           </div>
 
