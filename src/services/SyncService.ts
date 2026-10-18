@@ -868,6 +868,11 @@ class SyncService {
    * - If it doesn't: auto-register it with minimal fields.
    */
   private async ensureDeviceExists(deviceUid: string): Promise<void> {
+    if (!deviceUid || ['ESP32-AMMONIA-NODE-01', 'MANUAL-ENTRY', 'AmmoniSense'].includes(deviceUid.trim())) {
+      console.warn(`[SyncService] Rejecting phantom device registration for: "${deviceUid}"`);
+      return;
+    }
+
     try {
       const { data: existing } = await supabase
         .from('devices')
