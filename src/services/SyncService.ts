@@ -31,6 +31,16 @@ export function resolveTempId(tempId: string | null | undefined): number | null 
   return null;
 }
 
+export function canonicalTempKey(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  let s = String(v).trim();
+  s = s.replace(/^temp_site_/, '')
+       .replace(/^temp_sched_/, '')
+       .replace(/^temp_tag_/, '')
+       .replace(/^temp_/, '');
+  return s.toLowerCase();
+}
+
 class SyncService {
   private onlineStatus: boolean = navigator.onLine;
   private isSyncing: boolean = false;
@@ -176,9 +186,9 @@ class SyncService {
 
         // If parent item failed in this sync run, keep child local without pushing
         const p = item.payload || item.data || {};
-        const siteParent = String(p.inspection_site_id || '');
-        const schedParent = String(p.inspection_schedule_id || '');
-        const tagParent = String(p.inspection_tag_temp_id || '');
+        const siteParent = canonicalTempKey(p.inspection_site_id);
+        const schedParent = canonicalTempKey(p.inspection_schedule_id);
+        const tagParent = canonicalTempKey(p.inspection_tag_temp_id);
 
         if (
           (siteParent && failedTempIds.has(siteParent)) ||
@@ -228,9 +238,12 @@ class SyncService {
           });
           failedCount++;
           const errorMsg = err?.message || (typeof err === 'string' ? err : 'Sync failed');
-          if (item.tempId) failedTempIds.add(String(item.tempId));
-          if (p.temp_id) failedTempIds.add(String(p.temp_id));
-          if (p.offline_temp_id) failedTempIds.add(String(p.offline_temp_id));
+          if (item.tempId) failedTempIds.add(canonicalTempKey(item.tempId));
+          if (p.temp_id) failedTempIds.add(canonicalTempKey(p.temp_id));
+          if (p.offline_temp_id) failedTempIds.add(canonicalTempKey(p.offline_temp_id));
+          if (p.inspection_tag_temp_id) failedTempIds.add(canonicalTempKey(p.inspection_tag_temp_id));
+          if (p.inspection_schedule_id) failedTempIds.add(canonicalTempKey(p.inspection_schedule_id));
+          if (p.inspection_site_id) failedTempIds.add(canonicalTempKey(p.inspection_site_id));
           await offlineStorage.updateQueueItemStatus(item.id, 'failed', errorMsg);
           this.notifyListeners('sync_error', item, errorMsg);
         }
