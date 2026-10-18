@@ -195,7 +195,9 @@ class SyncService {
           (schedParent && failedTempIds.has(schedParent)) ||
           (tagParent && failedTempIds.has(tagParent))
         ) {
-          console.warn(`[SYNC] Parent failed for ${item.type} (${item.id}), keeping child local.`);
+          console.warn(`[SYNC] Skipping ${item.type} (${item.id}) — parent failed this run.`);
+          // IMPORTANT: mark as pending (not failed) so it retries next Sync Now
+          await offlineStorage.updateQueueItemStatus(item.id, 'pending');
           continue;
         }
 
