@@ -497,6 +497,17 @@ class SyncService {
   private async syncInspectionSchedule(item: QueueItem): Promise<void> {
     const { temp_id, ...payload } = item.data || item.payload;
 
+    const allowedScheduleFields = [
+      'inspection_site_id',
+      'schedule_name',
+      'scheduled_date',
+      'scheduled_time',
+      'status',
+      'started_at',
+      'completed_at',
+      'notes',
+    ];
+
     if (item.action === 'update') {
       let targetId = item.targetId || payload.id;
       if (typeof targetId === 'string' && targetId.startsWith('temp_')) {
@@ -506,7 +517,10 @@ class SyncService {
       if (!targetId || (typeof targetId === 'string' && targetId.startsWith('temp_'))) {
         throw new Error(`Cannot update schedule: real DB id missing for target ${targetId}`);
       }
-      const { id: _id, tags_count: _tc, created_at: _ca, ...schedUpdates } = payload;
+      const schedUpdates: Record<string, any> = {};
+      for (const key of allowedScheduleFields) {
+        if (payload[key] !== undefined) schedUpdates[key] = payload[key];
+      }
       const { error: updErr } = await supabase
         .from('inspection_schedules')
         .update(schedUpdates)
@@ -545,9 +559,16 @@ class SyncService {
 
     const { data: user } = await supabase.auth.getUser();
 
+    const scheduleRecord: Record<string, any> = {};
+    for (const key of allowedScheduleFields) {
+      if (payload[key] !== undefined) scheduleRecord[key] = payload[key];
+    }
+    scheduleRecord.offline_temp_id = temp_id || null;
+    scheduleRecord.created_by = user.user?.id || null;
+
     const { data: inserted, error } = await supabase
       .from('inspection_schedules')
-      .insert([{ ...payload, offline_temp_id: temp_id || null, created_by: user.user?.id }])
+      .insert([scheduleRecord])
       .select('id')
       .single();
     if (error) throw new Error(`inspection_schedules insert error: ${error.message}`);
