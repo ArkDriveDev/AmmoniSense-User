@@ -119,22 +119,6 @@ class SyncService {
       console.warn('[SyncService] Could not reset failed items for resync:', e);
     }
     const result = await this.syncAll({ silent: true });
-    if (result.failed > 0) {
-      showToast({
-        message: `⚠️ Re-sync finished: ${result.failed} failed, ${result.success} succeeded.`,
-        color: 'warning',
-      });
-    } else if (result.success > 0) {
-      showToast({
-        message: `🎉 Re-sync complete! ${result.success} record(s) synchronized.`,
-        color: 'success',
-      });
-    } else {
-      showToast({
-        message: 'All offline records are already in sync with server.',
-        color: 'success',
-      });
-    }
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('schedules_updated'));

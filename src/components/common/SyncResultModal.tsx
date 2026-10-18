@@ -12,8 +12,12 @@ interface SyncResultModalProps {
 export const SyncResultModal: React.FC<SyncResultModalProps> = ({ isOpen, onClose, failedItems }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const getEffectiveTempId = (item: QueueItem): string => {
+    return item.tempId || item.payload?.temp_id || item.payload?.offline_temp_id || item.id;
+  };
+
   const copyToClipboard = (item: QueueItem) => {
-    const text = `Type: ${item.type}\nTemp ID: ${item.tempId || 'N/A'}\nError: ${item.errorMsg || 'Unknown error'}`;
+    const text = `Type: ${item.type}\nTemp ID: ${getEffectiveTempId(item)}\nError: ${item.errorMsg || 'Unknown error'}`;
     navigator.clipboard?.writeText(text);
     setCopiedId(item.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -39,7 +43,7 @@ export const SyncResultModal: React.FC<SyncResultModalProps> = ({ isOpen, onClos
             <div key={item.id} style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b', textTransform: 'uppercase' }}>{item.type}</span>
-                <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{item.tempId || item.id}</span>
+                <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{getEffectiveTempId(item)}</span>
               </div>
               <div style={{ fontSize: '12px', color: '#b91c1c', background: '#fef2f2', padding: '8px', borderRadius: '6px', wordBreak: 'break-word', fontFamily: 'monospace' }}>
                 {item.errorMsg || 'Unknown synchronization error'}
