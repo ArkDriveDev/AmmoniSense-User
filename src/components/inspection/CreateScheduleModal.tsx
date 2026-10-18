@@ -17,9 +17,16 @@ interface Props {
   editSchedule?: InspectionSchedule | null;
 }
 
+const getTodayLocalDate = (): string => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
 export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, onCreated, editSchedule }) => {
+  const todayStr = getTodayLocalDate();
   const [name, setName] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayStr);
   const [time, setTime] = useState('09:00');
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('PENDING');
@@ -27,15 +34,17 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
 
   useEffect(() => {
     if (isOpen) {
+      const currentToday = getTodayLocalDate();
       if (editSchedule) {
         setName(editSchedule.schedule_name || '');
-        setDate(editSchedule.scheduled_date || new Date().toISOString().split('T')[0]);
+        const schedDate = editSchedule.scheduled_date || currentToday;
+        setDate(schedDate < currentToday ? currentToday : schedDate);
         setTime(editSchedule.scheduled_time || '09:00');
         setNotes(editSchedule.notes || '');
         setStatus(editSchedule.status || 'PENDING');
       } else {
         setName('');
-        setDate(new Date().toISOString().split('T')[0]);
+        setDate(currentToday);
         setTime('09:00');
         setNotes('');
         setStatus('PENDING');
@@ -46,6 +55,11 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
   const handleSave = async () => {
     if (!name.trim()) {
       showToast({ message: 'Please enter a schedule name', color: 'danger' });
+      return;
+    }
+    const currentToday = getTodayLocalDate();
+    if (date < currentToday) {
+      showToast({ message: 'Scheduled date cannot be in the past', color: 'danger' });
       return;
     }
     setSaving(true);
@@ -99,7 +113,17 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
         </IonItem>
         <IonItem lines="inset" style={{ marginTop: '10px' }}>
           <IonLabel position="stacked">SCHEDULED DATE *</IonLabel>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: '100%', padding: '8px 0', border: 'none', background: 'transparent' }} />
+          <input
+            type="date"
+            value={date}
+            min={todayStr}
+            onChange={(e) => {
+              const val = e.target.value;
+              const currentToday = getTodayLocalDate();
+              setDate(val && val < currentToday ? currentToday : val);
+            }}
+            style={{ width: '100%', padding: '8px 0', border: 'none', background: 'transparent' }}
+          />
         </IonItem>
         <IonItem lines="inset" style={{ marginTop: '10px' }}>
           <IonLabel position="stacked">SCHEDULED TIME *</IonLabel>
