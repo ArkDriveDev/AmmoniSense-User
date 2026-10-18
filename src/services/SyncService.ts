@@ -638,6 +638,21 @@ class SyncService {
     const resolvedSchedId = resolveTempId(payload.inspection_schedule_id);
     if (resolvedSchedId) {
       scheduleId = resolvedSchedId;
+    } else if (typeof payload.inspection_schedule_id === 'string' && (payload.inspection_schedule_id.startsWith('temp_') || isNaN(Number(payload.inspection_schedule_id)))) {
+      const tempSchedId = payload.inspection_schedule_id;
+      const { data: sched } = await supabase
+        .from('inspection_schedules')
+        .select('id')
+        .eq('offline_temp_id', tempSchedId)
+        .maybeSingle();
+      if (sched?.id) {
+        scheduleId = sched.id;
+        try {
+          const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+          map[tempSchedId] = sched.id;
+          localStorage.setItem('tempIdMap', JSON.stringify(map));
+        } catch { /* ignore */ }
+      }
     } else if (payload.inspection_schedule_id && !isNaN(Number(payload.inspection_schedule_id))) {
       scheduleId = Number(payload.inspection_schedule_id);
     }
@@ -652,16 +667,32 @@ class SyncService {
         throw new Error(`Cannot sync tag: schedule ID ${scheduleId} not found in Supabase.`);
       }
     } else if (payload.inspection_schedule_id) {
-      throw new Error(`Cannot sync tag: parent schedule "${payload.inspection_schedule_id}" is not yet synced to Supabase.`);
+      throw new Error(`Cannot sync tag: parent schedule ${payload.inspection_schedule_id} has no offline_temp_id in Supabase — was the schedule synced?`);
     }
     payload.inspection_schedule_id = scheduleId;
 
-    // Validate inspection_site_id: check tempIdMap, verify existence in inspection_sites
+    // Validate inspection_site_id: check tempIdMap, fallback to offline_temp_id query, verify existence in inspection_sites
     let siteId: number | null = null;
     const resolvedSiteId = resolveTempId(payload.inspection_site_id);
     if (resolvedSiteId) {
       payload.inspection_site_id = resolvedSiteId;
       siteId = resolvedSiteId;
+    } else if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
+      const tempSiteId = payload.inspection_site_id;
+      const { data: site } = await supabase
+        .from('inspection_sites')
+        .select('id')
+        .eq('offline_temp_id', tempSiteId)
+        .maybeSingle();
+      if (site?.id) {
+        siteId = site.id;
+        payload.inspection_site_id = site.id;
+        try {
+          const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+          map[tempSiteId] = site.id;
+          localStorage.setItem('tempIdMap', JSON.stringify(map));
+        } catch { /* ignore */ }
+      }
     } else if (payload.inspection_site_id && !isNaN(Number(payload.inspection_site_id))) {
       siteId = Number(payload.inspection_site_id);
     }
@@ -674,8 +705,8 @@ class SyncService {
       if (!site) {
         throw new Error(`Cannot sync tag: site ID ${siteId} not found in Supabase.`);
       }
-    } else if (payload.inspection_site_id && typeof payload.inspection_site_id === 'string' && payload.inspection_site_id.startsWith('temp_')) {
-      throw new Error(`Cannot sync tag: parent site "${payload.inspection_site_id}" is not yet synced to Supabase.`);
+    } else if (payload.inspection_site_id) {
+      throw new Error(`Cannot sync tag: parent site ${payload.inspection_site_id} has no offline_temp_id in Supabase — was the site synced?`);
     }
     payload.inspection_site_id = siteId;
 
