@@ -18,6 +18,7 @@ import CreateScheduleModal from '../../components/inspection/CreateScheduleModal
 import ScheduleTagsMap from '../../components/inspection/ScheduleTagsMap';
 import syncService from '../../services/SyncService';
 import { InspectionSchedule, InspectionTag } from '../../types/inspection';
+import { formatTime12h } from '../../utils/timeUtils';
 
 const statusColor = (s: string) => {
   if (s === 'COMPLETED') return 'success';
@@ -128,7 +129,7 @@ export default function ScheduleDetail() {
                       <h2 style={{ margin: '0 0 6px 0', fontWeight: 800, fontSize: '18px', color: '#0F172A' }}>{schedule.schedule_name}</h2>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#64748B', flexWrap: 'wrap' }}>
                         <span><IonIcon icon={calendarOutline} /> {schedule.scheduled_date}</span>
-                        <span><IonIcon icon={timeOutline} /> {schedule.scheduled_time || '09:00'}</span>
+                        <span><IonIcon icon={timeOutline} /> {formatTime12h(schedule.scheduled_time) || '09:00 AM'}</span>
                       </div>
 
                       {schedule.site_name && (

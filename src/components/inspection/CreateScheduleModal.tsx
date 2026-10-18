@@ -8,6 +8,7 @@ import { closeOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { createSchedule, updateSchedule } from '../../services/scheduleService';
 import { toUpperClean, InspectionSchedule } from '../../types/inspection';
 import { showToast } from '../../utils/toast';
+import { formatTime12h, split24hTo12h, to24hString } from '../../utils/timeUtils';
 
 interface Props {
   isOpen: boolean;
@@ -23,6 +24,16 @@ const getTodayLocalDate = (): string => {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 };
 
+const selectStyle: React.CSSProperties = {
+  padding: '6px 10px',
+  borderRadius: '8px',
+  border: '1px solid #CBD5E1',
+  background: '#FFFFFF',
+  fontSize: '15px',
+  fontWeight: 600,
+  color: '#0F172A',
+};
+
 export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, onCreated, editSchedule }) => {
   const todayStr = getTodayLocalDate();
   const [name, setName] = useState('');
@@ -31,6 +42,13 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('PENDING');
   const [saving, setSaving] = useState(false);
+
+  const { hour12, minute, ampm } = split24hTo12h(time);
+  const minuteOptions = Array.from(new Set([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, minute])).sort((a, b) => a - b);
+
+  const handleTimePartChange = (newHour: number, newMin: number, newAmpm: 'AM' | 'PM') => {
+    setTime(to24hString(newHour, newMin, newAmpm));
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -126,8 +144,43 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           />
         </IonItem>
         <IonItem lines="inset" style={{ marginTop: '10px' }}>
-          <IonLabel position="stacked">SCHEDULED TIME *</IonLabel>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={{ width: '100%', padding: '8px 0', border: 'none', background: 'transparent' }} />
+          <IonLabel position="stacked">SCHEDULED TIME (12-HOUR FORMAT) *</IonLabel>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', width: '100%', flexWrap: 'wrap' }}>
+            <select value={hour12} onChange={(e) => handleTimePartChange(Number(e.target.value), minute, ampm)} style={selectStyle}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((h) => (
+                <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
+              ))}
+            </select>
+            <span style={{ fontWeight: 700, fontSize: '16px', color: '#64748B' }}>:</span>
+            <select value={minute} onChange={(e) => handleTimePartChange(hour12, Number(e.target.value), ampm)} style={selectStyle}>
+              {minuteOptions.map((m) => (
+                <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid #CBD5E1' }}>
+              {(['AM', 'PM'] as const).map((period) => (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => handleTimePartChange(hour12, minute, period)}
+                  style={{
+                    padding: '6px 12px',
+                    background: ampm === period ? '#0F3C5C' : '#FFFFFF',
+                    color: ampm === period ? '#FFFFFF' : '#475569',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginLeft: 'auto', background: '#E2E8F0', padding: '6px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+              {formatTime12h(time)}
+            </div>
+          </div>
         </IonItem>
         {editSchedule && (
           <IonItem lines="inset" style={{ marginTop: '10px' }}>

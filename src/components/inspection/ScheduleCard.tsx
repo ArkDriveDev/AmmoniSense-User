@@ -2,6 +2,7 @@ import React from 'react';
 import { IonCard, IonCardContent, IonBadge, IonIcon } from '@ionic/react';
 import { calendarOutline, timeOutline, chevronForwardOutline, cloudOfflineOutline, pricetagOutline } from 'ionicons/icons';
 import { InspectionSchedule } from '../../types/inspection';
+import { formatTime12h } from '../../utils/timeUtils';
 
 interface Props {
   schedule: InspectionSchedule;
@@ -31,7 +32,7 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
               <IonIcon icon={calendarOutline} /> {schedule.scheduled_date}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <IonIcon icon={timeOutline} /> {schedule.scheduled_time || '09:00'}
+              <IonIcon icon={timeOutline} /> {formatTime12h(schedule.scheduled_time) || '09:00 AM'}
             </span>
           </div>
         </div>
