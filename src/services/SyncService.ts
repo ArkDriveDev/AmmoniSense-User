@@ -497,7 +497,7 @@ class SyncService {
         const { data: site } = await supabase
           .from('inspection_sites')
           .select('id')
-          .or(`site_code.eq.${tempSiteId},site_name.eq.${tempSiteId}`)
+          .eq('offline_temp_id', tempSiteId)
           .maybeSingle();
         if (site?.id) {
           payload.inspection_site_id = site.id;
@@ -511,7 +511,7 @@ class SyncService {
     }
 
     if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
-      throw new Error(`Cannot sync schedule: inspection site ${payload.inspection_site_id} is not yet synced to Supabase.`);
+      throw new Error(`Cannot sync schedule: parent site "${payload.inspection_site_id}" has no offline_temp_id in Supabase — was the site synced?`);
     }
 
     const { data: user } = await supabase.auth.getUser();

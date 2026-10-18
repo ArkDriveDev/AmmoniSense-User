@@ -36,6 +36,7 @@ export const registerSiteWithPhoto = async (
       site_photo_thumbnail: (payload as any).site_photo_thumbnail || (payload as any).site_photo_url || payload.photo_url || null,
       site_photo_storage_path: payload.site_photo_storage_path || null,
       site_photo_thumbnail_storage_path: payload.site_photo_thumbnail_storage_path || null,
+      offline_temp_id: (payload as any).temp_id || (payload as any).offline_temp_id || null,
       created_by: user.id,
       updated_by: user.id,
       is_active: true,
