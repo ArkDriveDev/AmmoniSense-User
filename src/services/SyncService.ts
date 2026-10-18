@@ -295,7 +295,12 @@ class SyncService {
     }
 
     // 1. Ensure device exists in devices table before inserting sensor_data
-    const deviceUid = payload.device_uid || 'ESP32-AMMONIA-NODE-01';
+    const deviceUid = payload.device_uid;
+    if (!deviceUid || typeof deviceUid !== 'string' || deviceUid.trim() === '') {
+      throw new Error(
+        `Cannot sync reading: missing device_uid (temp_tag ${payload.inspection_tag_temp_id || 'unknown'})`
+      );
+    }
     await this.ensureDeviceExists(deviceUid);
 
     // Resolve inspection_tag_id if inspection_tag_temp_id is present
