@@ -12,6 +12,25 @@ import { showToast } from '../utils/toast';
 export type SyncEventType = 'status_change' | 'sync_start' | 'sync_progress' | 'sync_complete' | 'sync_error';
 export type SyncEventListener = (event: { type: SyncEventType; isOnline: boolean; pendingCount: number; activeItem?: QueueItem; message?: string }) => void;
 
+export function resolveTempId(tempId: string | null | undefined): number | null {
+  if (!tempId) return null;
+  const raw = String(tempId);
+  try {
+    const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+    const candidates = [
+      raw,
+      raw.replace(/^temp_site_/, 'temp_'),
+      raw.replace(/^temp_sched_/, 'temp_'),
+      raw.replace(/^temp_tag_/, 'temp_'),
+      raw.replace(/^temp_/, ''),
+    ];
+    for (const key of candidates) {
+      if (map[key]) return Number(map[key]);
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 class SyncService {
   private onlineStatus: boolean = navigator.onLine;
   private isSyncing: boolean = false;
@@ -278,12 +297,10 @@ class SyncService {
 
     // Resolve inspection_tag_id if inspection_tag_temp_id is present
     if (!payload.inspection_tag_id && payload.inspection_tag_temp_id) {
-      try {
-        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-        if (map[payload.inspection_tag_temp_id]) {
-          payload.inspection_tag_id = Number(map[payload.inspection_tag_temp_id]);
-        }
-      } catch { /* ignore */ }
+      const resolvedTagId = resolveTempId(payload.inspection_tag_temp_id);
+      if (resolvedTagId) {
+        payload.inspection_tag_id = resolvedTagId;
+      }
     }
 
     if (!payload.inspection_tag_id && payload.inspection_tag_temp_id) {
@@ -365,14 +382,30 @@ class SyncService {
       throw new Error(`inspection_sites insert error: ${error.message}`);
     }
 
-    const tempId = item.payload?.temp_id || item.payload?.id;
-    const realSiteId = regResult?.site?.id;
+    const tempId = item.payload?.temp_id || item.payload?.offline_temp_id || item.tempId || item.payload?.id;
+    let realSiteId = regResult?.site?.id;
 
-    if (tempId && realSiteId) {
+    if (!realSiteId && item.payload?.site_code) {
+      try {
+        const { data: foundSite } = await supabase
+          .from('inspection_sites')
+          .select('id')
+          .eq('site_code', item.payload.site_code)
+          .maybeSingle();
+        if (foundSite?.id) realSiteId = foundSite.id;
+      } catch (e) {
+        console.warn('[SyncService] Could not fetch real site ID by site_code:', e);
+      }
+    }
+
+    if (realSiteId) {
       try {
         const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-        map[tempId] = realSiteId;
-        if (item.payload.site_code) map[item.payload.site_code] = realSiteId;
+        if (tempId) map[tempId] = realSiteId;
+        if (item.tempId) map[item.tempId] = realSiteId;
+        if (item.payload?.temp_id) map[item.payload.temp_id] = realSiteId;
+        if (item.payload?.offline_temp_id) map[item.payload.offline_temp_id] = realSiteId;
+        if (item.payload?.site_code) map[item.payload.site_code] = realSiteId;
         localStorage.setItem('tempIdMap', JSON.stringify(map));
       } catch (e) {
         console.warn('[SyncService] Could not save site tempIdMap:', e);
@@ -457,10 +490,8 @@ class SyncService {
     // Resolve temp site ID → real BIGINT id before inserting
     if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
       const tempSiteId = payload.inspection_site_id;
-      try {
-        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-        if (map[tempSiteId]) payload.inspection_site_id = map[tempSiteId];
-      } catch { /* ignore */ }
+      const resolvedSiteId = resolveTempId(tempSiteId);
+      if (resolvedSiteId) payload.inspection_site_id = resolvedSiteId;
 
       if (typeof payload.inspection_site_id === 'string' && (payload.inspection_site_id.startsWith('temp_') || isNaN(Number(payload.inspection_site_id)))) {
         const { data: site } = await supabase
@@ -604,21 +635,9 @@ class SyncService {
 
     // Validate inspection_schedule_id: check tempIdMap, fallback to offline_temp_id query, verify existence
     let scheduleId: number | null = null;
-    if (typeof payload.inspection_schedule_id === 'string' && payload.inspection_schedule_id.startsWith('temp_sched_')) {
-      const tempSchedId = payload.inspection_schedule_id;
-      try {
-        const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-        if (map[tempSchedId]) scheduleId = Number(map[tempSchedId]) || null;
-      } catch { /* ignore parse errors */ }
-
-      if (!scheduleId) {
-        const { data: sched } = await supabase
-          .from('inspection_schedules')
-          .select('id')
-          .eq('offline_temp_id', tempSchedId)
-          .maybeSingle();
-        if (sched?.id) scheduleId = sched.id;
-      }
+    const resolvedSchedId = resolveTempId(payload.inspection_schedule_id);
+    if (resolvedSchedId) {
+      scheduleId = resolvedSchedId;
     } else if (payload.inspection_schedule_id && !isNaN(Number(payload.inspection_schedule_id))) {
       scheduleId = Number(payload.inspection_schedule_id);
     }
@@ -639,11 +658,11 @@ class SyncService {
 
     // Validate inspection_site_id: check tempIdMap, verify existence in inspection_sites
     let siteId: number | null = null;
-    if (typeof payload.inspection_site_id === 'string' && payload.inspection_site_id.startsWith('temp_')) {
-      const mappings = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-      payload.inspection_site_id = mappings[payload.inspection_site_id] || null;
-    }
-    if (payload.inspection_site_id && !isNaN(Number(payload.inspection_site_id))) {
+    const resolvedSiteId = resolveTempId(payload.inspection_site_id);
+    if (resolvedSiteId) {
+      payload.inspection_site_id = resolvedSiteId;
+      siteId = resolvedSiteId;
+    } else if (payload.inspection_site_id && !isNaN(Number(payload.inspection_site_id))) {
       siteId = Number(payload.inspection_site_id);
     }
     if (siteId) {
