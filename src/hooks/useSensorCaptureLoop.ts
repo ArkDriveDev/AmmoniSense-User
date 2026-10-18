@@ -33,9 +33,11 @@ export function useSensorCaptureLoop(onReading?: (r: CapturedSessionReading) => 
 
   const recordSample = useCallback(() => {
     const raw = bluetoothClassicService.getLatestReading();
+    const deviceUid = bluetoothClassicService.getDeviceUid();
     const reading: CapturedSessionReading = {
       session_id: sessionIdRef.current,
       inspection_tag_temp_id: tagTempIdRef.current,
+      device_uid: deviceUid || undefined,
       nh3_ppm: typeof raw?.nh3_ppm === 'number' ? raw.nh3_ppm : 0,
       temperature: raw?.temperature ?? null,
       humidity: raw?.humidity ?? null,
@@ -54,6 +56,11 @@ export function useSensorCaptureLoop(onReading?: (r: CapturedSessionReading) => 
   }, [onReading]);
 
   const start = useCallback(() => {
+    const deviceUid = bluetoothClassicService.getDeviceUid();
+    if (!deviceUid) {
+      console.warn('[Capture] Blocked: No Bluetooth device paired.');
+      return false;
+    }
     clearTimers();
     sessionIdRef.current = generateUUID();
     tagTempIdRef.current = `temp_tag_${generateUUID()}`;
@@ -67,6 +74,7 @@ export function useSensorCaptureLoop(onReading?: (r: CapturedSessionReading) => 
     elapsedTimerRef.current = setInterval(() => {
       setElapsedMs(accumulatedMsRef.current + (performance.now() - startPerfRef.current));
     }, 200);
+    return true;
   }, [recordSample]);
 
   const pause = useCallback(() => {

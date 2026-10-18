@@ -5,6 +5,7 @@ export async function persistCaptureReading(reading: CapturedSessionReading): Pr
   const payload = {
     session_id: reading.session_id,
     inspection_tag_temp_id: reading.inspection_tag_temp_id,
+    device_uid: reading.device_uid,
     nh3_ppm: reading.nh3_ppm,
     ammonia: reading.nh3_ppm,
     temperature: reading.temperature,
@@ -27,6 +28,7 @@ export async function getPersistedReadingsForTag(tagTempId: string): Promise<Cap
     .map((item) => ({
       session_id: item.payload.session_id,
       inspection_tag_temp_id: item.payload.inspection_tag_temp_id,
+      device_uid: item.payload.device_uid,
       nh3_ppm: item.payload.nh3_ppm ?? item.payload.ammonia ?? 0,
       temperature: item.payload.temperature ?? null,
       humidity: item.payload.humidity ?? null,

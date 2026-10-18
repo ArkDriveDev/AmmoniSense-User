@@ -7,6 +7,8 @@ import bluetoothClassicService from '../../services/bluetoothClassicService';
 import SensorStabilization from './SensorStabilization';
 import { CapturedSessionReading } from '../../types/capture';
 
+import { showToast } from '../../utils/toast';
+
 interface Props {
   isConnected: boolean;
   onComplete: (readings: CapturedSessionReading[], sessionId: string, tagTempId: string) => void;
@@ -15,6 +17,7 @@ interface Props {
 export const SensorCaptureFlow: React.FC<Props> = ({ isConnected, onComplete }) => {
   const [isStabilized, setIsStabilized] = useState(false);
   const [bleDrop, setBleDrop] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasReportedRef = useRef(false);
   const { status, readings, elapsedMs, sessionId, tagTempId, start, pause, resume, stop } =
     useSensorCaptureLoop(persistCaptureReading);
@@ -40,6 +43,14 @@ export const SensorCaptureFlow: React.FC<Props> = ({ isConnected, onComplete }) 
   const latestPpm = readings.length > 0 ? readings[readings.length - 1].nh3_ppm : (bluetoothClassicService.getLatestReading()?.nh3_ppm ?? 0);
 
   const handleStart = () => {
+    const deviceUid = bluetoothClassicService.getDeviceUid();
+    if (!deviceUid || !isConnected) {
+      const msg = 'No Bluetooth device paired. Connect to AmmoniSense first.';
+      setErrorMessage(msg);
+      showToast({ message: msg, color: 'warning', duration: 4000 });
+      return;
+    }
+    setErrorMessage(null);
     hasReportedRef.current = false;
     start();
   };
@@ -51,6 +62,11 @@ export const SensorCaptureFlow: React.FC<Props> = ({ isConnected, onComplete }) 
       )}
       {isStabilized && status === 'idle' && (
         <div style={{ textAlign: 'center', padding: '10px 0' }}>
+          {errorMessage && (
+            <div style={{ padding: '8px', background: '#FEF2F2', color: '#991B1B', borderRadius: '6px', fontSize: '12px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+              <IonIcon icon={alertCircleOutline} /> {errorMessage}
+            </div>
+          )}
           <IonBadge color="success" style={{ marginBottom: '10px' }}>SENSOR READY</IonBadge>
           <IonButton expand="block" color="primary" onClick={handleStart}>
             <IonIcon icon={playOutline} slot="start" /> Start 5-Minute Capture
