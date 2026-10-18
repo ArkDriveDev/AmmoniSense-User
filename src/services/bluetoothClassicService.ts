@@ -17,6 +17,7 @@ class BluetoothClassicService {
   public static readonly TARGET_DEVICE_NAME = 'AmmoniSense';
   public static readonly CONNECT_TIMEOUT_MS = 15000;
   public static readonly BROADCAST_CHANNEL = 'ammonisense_classic_spp_stream';
+  public static readonly STORAGE_KEY_DEVICE_UID = 'ammonisense_device_uid';
 
   private status: BluetoothConnectionStatus = 'idle';
   private statusMessage = '';
@@ -38,6 +39,14 @@ class BluetoothClassicService {
   constructor() {
     this.initBroadcastChannel();
     this.initAppResumeListener();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(BluetoothClassicService.STORAGE_KEY_DEVICE_UID);
+        if (saved && saved.trim()) {
+          this.connectedAddress = saved.trim();
+        }
+      } catch { /* ignore */ }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -83,6 +92,18 @@ class BluetoothClassicService {
   public getStatusMessage(): string { return this.statusMessage; }
   public getConnectedDevice(): BluetoothDevice | null { return this.connectedDevice; }
   public getLatestReading(): AmmoniSenseReading | null { return this.latestReading; }
+  public getDeviceUid(): string | null {
+    if (this.connectedAddress && this.connectedAddress.trim()) {
+      return this.connectedAddress.trim();
+    }
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(BluetoothClassicService.STORAGE_KEY_DEVICE_UID);
+        if (saved && saved.trim()) return saved.trim();
+      } catch { /* ignore */ }
+    }
+    return null;
+  }
 
   // ---------------------------------------------------------------------------
   // Listener registration
@@ -304,6 +325,11 @@ class BluetoothClassicService {
         this.isConnecting = false;
         this.connectedAddress = address;
         this.connectedDevice = target;
+        try {
+          if (typeof localStorage !== 'undefined' && address) {
+            localStorage.setItem(BluetoothClassicService.STORAGE_KEY_DEVICE_UID, address);
+          }
+        } catch { /* ignore */ }
         this.setStatus('connected', `Connected to ${target.name}`);
         this.startDataSubscription(address);
         this.startConnectionChangeListener(address);

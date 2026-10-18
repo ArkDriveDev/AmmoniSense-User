@@ -81,7 +81,7 @@ export default function UserBLESensor() {
 
     // Save reading to offline draft / localStorage so inspection tags can load it
     offlineStorage.saveDraft('draft_ble_central_reading', {
-      device_id: 'AmmoniSense',
+      device_id: bluetoothClassicService.getDeviceUid() || '',
       device_name: 'AmmoniSense',
       ammonia_ppm: reading.nh3_ppm ?? 0,
       temperature_c: reading.temperature ?? 0,

@@ -40,12 +40,13 @@ export const BLEConnectPanel: React.FC<Props> = ({ onReadingCaptured }) => {
 
     const unsubReading = bluetoothClassicService.onReading((reading) => {
       setLatest(reading);
+      const macUid = bluetoothClassicService.getDeviceUid();
       onReadingCaptured({
         ammonia: reading.nh3_ppm,
         temperature: reading.temperature,
         humidity: reading.humidity,
         battery: reading.battery_percent,
-        device_uid: 'AmmoniSense',
+        device_uid: macUid || undefined,
       });
     });
 
