@@ -3,6 +3,8 @@ import { IonBadge, IonButton, IonIcon, IonSpinner } from '@ionic/react';
 import { cloudOfflineOutline, cloudDoneOutline, syncOutline, wifiOutline } from 'ionicons/icons';
 import syncService from '../../services/SyncService';
 import sitesCacheService from '../../services/sitesCacheService';
+import offlineStorage, { QueueItem } from '../../services/OfflineStorageService';
+import { SyncResultModal } from './SyncResultModal';
 import { showToast } from '../../utils/toast';
 
 export const SyncStatusBanner: React.FC = () => {
@@ -11,6 +13,8 @@ export const SyncStatusBanner: React.FC = () => {
   const [syncing, setSyncing] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<string>('');
   const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(null);
+  const [showResultModal, setShowResultModal] = useState<boolean>(false);
+  const [failedItems, setFailedItems] = useState<QueueItem[]>([]);
 
   useEffect(() => {
     sitesCacheService.getLastSyncedAt().then((ts) => {
@@ -44,7 +48,11 @@ export const SyncStatusBanner: React.FC = () => {
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setLastSyncedTime(timeStr);
       if (res.failed > 0) {
-        showToast({ message: `⚠️ Sync completed with ${res.failed} error(s). Press Sync Now to retry.`, color: 'warning', duration: 4000 });
+        const queue = await offlineStorage.getQueue();
+        const failed = queue.filter((i) => i.status === 'failed');
+        setFailedItems(failed);
+        setShowResultModal(true);
+        showToast({ message: `⚠️ Sync completed with ${res.failed} error(s). Review details in the popup.`, color: 'warning', duration: 4000 });
       } else {
         showToast({ message: `🎉 Synced successfully! Last synced at ${timeStr}.`, color: 'success', duration: 3500 });
       }
@@ -56,6 +64,7 @@ export const SyncStatusBanner: React.FC = () => {
   };
 
   return (
+    <>
     <div
       style={{
         display: 'inline-flex',
@@ -142,6 +151,12 @@ export const SyncStatusBanner: React.FC = () => {
         )}
       </IonButton>
     </div>
+    <SyncResultModal
+      isOpen={showResultModal}
+      onClose={() => setShowResultModal(false)}
+      failedItems={failedItems}
+    />
+    </>
   );
 };
 
