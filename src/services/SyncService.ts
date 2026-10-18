@@ -320,16 +320,29 @@ class SyncService {
       if (resolvedTagId) {
         payload.inspection_tag_id = resolvedTagId;
       } else {
-        const { data: tag } = await supabase
+        const { data: tagRow } = await supabase
           .from('inspection_tags')
           .select('id')
           .eq('offline_temp_id', payload.inspection_tag_temp_id)
           .maybeSingle();
-        if (tag?.id) {
-          payload.inspection_tag_id = tag.id;
+        if (tagRow?.id) {
+          payload.inspection_tag_id = tagRow.id;
+        } else {
+          const altId = payload.inspection_tag_temp_id.startsWith('temp_tag_')
+            ? payload.inspection_tag_temp_id.replace(/^temp_tag_/, '')
+            : `temp_tag_${payload.inspection_tag_temp_id}`;
+          const { data: altTag } = await supabase
+            .from('inspection_tags')
+            .select('id')
+            .eq('offline_temp_id', altId)
+            .maybeSingle();
+          if (altTag?.id) payload.inspection_tag_id = altTag.id;
+        }
+
+        if (payload.inspection_tag_id) {
           try {
             const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
-            map[payload.inspection_tag_temp_id] = tag.id;
+            map[payload.inspection_tag_temp_id] = payload.inspection_tag_id;
             localStorage.setItem('tempIdMap', JSON.stringify(map));
           } catch { /* ignore */ }
         }
@@ -337,7 +350,7 @@ class SyncService {
     }
 
     if (!payload.inspection_tag_id && payload.inspection_tag_temp_id) {
-      throw new Error(`Cannot sync reading: parent tag ${payload.inspection_tag_temp_id} has no offline_temp_id in Supabase — was the tag synced?`);
+      throw new Error(`Cannot sync reading: parent tag "${payload.inspection_tag_temp_id}" has no offline_temp_id in Supabase — was the tag synced?`);
     }
 
     const { data: userData } = await supabase.auth.getUser();
