@@ -210,9 +210,24 @@ class SyncService {
 
           successCount++;
         } catch (err: any) {
-          console.error(`Error syncing queue item ${item.id}:`, err);
+          const sanitizedPayload = { ...p };
+          for (const key of Object.keys(sanitizedPayload)) {
+            if (
+              (key.includes('photo') || key.includes('thumbnail')) &&
+              typeof sanitizedPayload[key] === 'string' &&
+              sanitizedPayload[key].length > 100
+            ) {
+              sanitizedPayload[key] = '[REDACTED_IMAGE_DATA]';
+            }
+          }
+          console.error(`[SYNC FAILURE] Item ${item.id} (${item.type}) failed:`, {
+            error: err?.message || err,
+            tempId: item.tempId || p.temp_id || p.offline_temp_id,
+            targetId: item.targetId,
+            payload: sanitizedPayload,
+          });
           failedCount++;
-          const errorMsg = err.message || 'Sync failed';
+          const errorMsg = err?.message || (typeof err === 'string' ? err : 'Sync failed');
           if (item.tempId) failedTempIds.add(String(item.tempId));
           if (p.temp_id) failedTempIds.add(String(p.temp_id));
           if (p.offline_temp_id) failedTempIds.add(String(p.offline_temp_id));
