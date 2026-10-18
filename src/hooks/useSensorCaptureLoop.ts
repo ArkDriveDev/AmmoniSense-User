@@ -56,7 +56,7 @@ export function useSensorCaptureLoop(onReading?: (r: CapturedSessionReading) => 
   const start = useCallback(() => {
     clearTimers();
     sessionIdRef.current = generateUUID();
-    tagTempIdRef.current = generateUUID();
+    tagTempIdRef.current = `temp_tag_${generateUUID()}`;
     setReadings([]);
     accumulatedMsRef.current = 0;
     setElapsedMs(0);
