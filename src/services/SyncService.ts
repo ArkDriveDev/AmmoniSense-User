@@ -676,25 +676,6 @@ class SyncService {
     payload.latitude = parseNum(payload.latitude, 0);
     payload.longitude = parseNum(payload.longitude, 0);
 
-    // Ensure device is registered — if it can't be, null out device_uid to avoid FK violation
-    if (payload.device_uid) {
-      try {
-        await this.ensureDeviceExists(payload.device_uid);
-        // Verify the device row actually exists before using the FK
-        const { data: devCheck } = await supabase
-          .from('devices')
-          .select('device_uid')
-          .eq('device_uid', payload.device_uid)
-          .maybeSingle();
-        if (!devCheck) {
-          console.warn(`[SyncService] Device "${payload.device_uid}" not found after ensure — dropping FK to avoid constraint error.`);
-          payload.device_uid = null;
-        }
-      } catch (e) {
-        console.warn('[SyncService] ensureDeviceExists failed — nulling device_uid for safe insert:', e);
-        payload.device_uid = null;
-      }
-    }
 
     // Validate inspection_schedule_id: check tempIdMap, fallback to offline_temp_id query, verify existence
     let scheduleId: number | null = null;
@@ -780,49 +761,14 @@ class SyncService {
       if (stored?.dataUrl) photoData = stored.dataUrl;
     }
 
-
-
     const { data: user } = await supabase.auth.getUser();
 
-    // Step 1: Always create a sensor_data row (readings live ONLY in sensor_data)
-    let sensorDataId: number | null = payload.sensor_data_id ? Number(payload.sensor_data_id) : null;
-    if (!sensorDataId) {
-      try {
-        const devUid = payload.device_uid || 'MANUAL-ENTRY';
-        await this.ensureDeviceExists(devUid);
-
-        const { data: sRec, error: sErr } = await supabase
-          .from('sensor_data')
-          .insert([{
-            device_uid: devUid,
-            ammonia: Number(payload.ammonia) || 0,
-            temperature: Number(payload.temperature) || 0,
-            humidity: Number(payload.humidity) || 0,
-            battery: payload.battery !== undefined && payload.battery !== null ? Number(payload.battery) : 100,
-            latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
-            longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
-            status: calculateAmmoniaStatus(payload.ammonia ?? 0),
-            submitted_by: payload.created_by || user.user?.id || null,
-          }])
-          .select('id')
-          .single();
-
-        if (!sErr && sRec?.id) {
-          sensorDataId = sRec.id;
-        } else if (sErr) {
-          console.warn('[SYNC] sensor_data insert failed, tag will have no reading link:', sErr.message);
-        }
-      } catch (err: any) {
-        console.warn('[SYNC] Failed to insert raw sensor reading:', err?.message);
-      }
-    }
-
-    // Step 2: Save tag WITHOUT reading values using strict whitelist
+    // Save tag WITHOUT reading values using strict whitelist (readings exist in sensor_data via capture)
     const tagBase: Record<string, any> = {
       tag_name: (payload.tag_name || 'TAG').toUpperCase(),
       inspection_schedule_id: payload.inspection_schedule_id || null,
       inspection_site_id: payload.inspection_site_id || null,
-      sensor_data_id: sensorDataId,
+      sensor_data_id: null,
       latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
@@ -843,7 +789,6 @@ class SyncService {
     console.log('[SYNC] Final payload:', {
       site_id: tagRecord.inspection_site_id,
       schedule_id: tagRecord.inspection_schedule_id,
-      sensor_data_id: tagRecord.sensor_data_id,
     });
 
     let { data: newTagData, error } = await supabase
