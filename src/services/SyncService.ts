@@ -300,11 +300,25 @@ class SyncService {
       const resolvedTagId = resolveTempId(payload.inspection_tag_temp_id);
       if (resolvedTagId) {
         payload.inspection_tag_id = resolvedTagId;
+      } else {
+        const { data: tag } = await supabase
+          .from('inspection_tags')
+          .select('id')
+          .eq('offline_temp_id', payload.inspection_tag_temp_id)
+          .maybeSingle();
+        if (tag?.id) {
+          payload.inspection_tag_id = tag.id;
+          try {
+            const map = JSON.parse(localStorage.getItem('tempIdMap') || '{}');
+            map[payload.inspection_tag_temp_id] = tag.id;
+            localStorage.setItem('tempIdMap', JSON.stringify(map));
+          } catch { /* ignore */ }
+        }
       }
     }
 
     if (!payload.inspection_tag_id && payload.inspection_tag_temp_id) {
-      throw new Error(`Cannot sync sensor reading: parent tag "${payload.inspection_tag_temp_id}" is not yet synced to Supabase.`);
+      throw new Error(`Cannot sync reading: parent tag ${payload.inspection_tag_temp_id} has no offline_temp_id in Supabase — was the tag synced?`);
     }
 
     // 3. Insert into sensor_data table (with cascading schema-resilient retries)
