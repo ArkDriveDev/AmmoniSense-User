@@ -58,20 +58,40 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
     setTime(candidate);
   };
 
+  const handleDateChange = (newDateVal: string) => {
+    const currentToday = getTodayLocalDate();
+    const clampedDate = newDateVal && newDateVal < currentToday ? currentToday : newDateVal;
+    setDate(clampedDate);
+
+    if (clampedDate === currentToday) {
+      const minSlot = getNext5MinuteSlot();
+      if (time < minSlot) {
+        setTime(minSlot);
+        showToast({ message: 'Time adjusted to the next available slot.', color: 'warning' });
+      }
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       const currentToday = getTodayLocalDate();
+      const minSlot = getNext5MinuteSlot();
       if (editSchedule) {
         setName(editSchedule.schedule_name || '');
         const schedDate = editSchedule.scheduled_date || currentToday;
-        setDate(schedDate < currentToday ? currentToday : schedDate);
-        setTime(editSchedule.scheduled_time || '09:00');
+        const effectiveDate = schedDate < currentToday ? currentToday : schedDate;
+        setDate(effectiveDate);
+        let schedTime = editSchedule.scheduled_time || minSlot;
+        if (effectiveDate === currentToday && schedTime < minSlot) {
+          schedTime = minSlot;
+        }
+        setTime(schedTime);
         setNotes(editSchedule.notes || '');
         setStatus(editSchedule.status || 'PENDING');
       } else {
         setName('');
         setDate(currentToday);
-        setTime('09:00');
+        setTime(minSlot);
         setNotes('');
         setStatus('PENDING');
       }
@@ -147,11 +167,7 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
             type="date"
             value={date}
             min={todayStr}
-            onChange={(e) => {
-              const val = e.target.value;
-              const currentToday = getTodayLocalDate();
-              setDate(val && val < currentToday ? currentToday : val);
-            }}
+            onChange={(e) => handleDateChange(e.target.value)}
             style={{ width: '100%', padding: '8px 0', border: 'none', background: 'transparent' }}
           />
         </IonItem>
