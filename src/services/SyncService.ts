@@ -310,18 +310,7 @@ class SyncService {
       return;
     }
 
-    // 1. Upload photo if present in photo_store
-    if (item.photoStoreId && !payload.photo_url) {
-      const storedPhoto = await offlineStorage.getPhoto(item.photoStoreId);
-      if (storedPhoto?.dataUrl) {
-        const publicUrl = await this.uploadDataUrlToSupabase(storedPhoto.dataUrl);
-        if (publicUrl) {
-          payload.photo_url = publicUrl;
-        }
-      }
-    }
-
-    // 2. Ensure device exists in devices table before inserting sensor_data
+    // 1. Ensure device exists in devices table before inserting sensor_data
     const deviceUid = payload.device_uid || 'ESP32-AMMONIA-NODE-01';
     await this.ensureDeviceExists(deviceUid);
 
@@ -351,28 +340,38 @@ class SyncService {
       throw new Error(`Cannot sync reading: parent tag ${payload.inspection_tag_temp_id} has no offline_temp_id in Supabase — was the tag synced?`);
     }
 
-    // 3. Insert into sensor_data table (with cascading schema-resilient retries)
-    let { data: inserted, error } = await supabase
+    const { data: userData } = await supabase.auth.getUser();
+    const currentUserId = userData?.user?.id || null;
+
+    // 2. Normalize parsed payload → real columns
+    const sensorRecord: Record<string, any> = {
+      device_uid: deviceUid,
+      ammonia: Number(payload.nh3_ppm ?? payload.ammonia ?? 0),
+      temperature: payload.temperature !== undefined && payload.temperature !== null
+        ? Number(payload.temperature) : null,
+      humidity: payload.humidity !== undefined && payload.humidity !== null
+        ? Number(payload.humidity) : null,
+      battery: payload.battery_percent !== undefined && payload.battery_percent !== null
+        ? Number(payload.battery_percent)
+        : (payload.battery !== undefined && payload.battery !== null
+            ? Number(payload.battery) : null),
+      status: payload.status || calculateAmmoniaStatus(Number(payload.nh3_ppm ?? 0)),
+      latitude: payload.latitude !== undefined && payload.latitude !== null
+        ? Number(payload.latitude) : null,
+      longitude: payload.longitude !== undefined && payload.longitude !== null
+        ? Number(payload.longitude) : null,
+      submitted_by: payload.submitted_by || payload.created_by || currentUserId,
+      session_id: payload.session_id || null,
+      inspection_tag_id: payload.inspection_tag_id || null,
+      inspection_tag_temp_id: payload.inspection_tag_temp_id || null,
+    };
+    if (payload.notes !== undefined) sensorRecord.notes = payload.notes;
+
+    const { data: inserted, error } = await supabase
       .from('sensor_data')
-      .insert([{ ...payload, device_uid: deviceUid }])
+      .insert([sensorRecord])
       .select('id')
       .maybeSingle();
-
-    // Retry without inspection_site_id if column missing from schema cache
-    if (error && (
-      error.message?.includes('inspection_site_id') ||
-      error.code === '42703' ||
-      error.code === 'PGRST204'
-    )) {
-      const { inspection_site_id: _s, ...minPayload } = payload;
-      const { data: r3, error: e3 } = await supabase
-        .from('sensor_data')
-        .insert([{ ...minPayload, device_uid: deviceUid }])
-        .select('id')
-        .maybeSingle();
-      if (!e3 && r3) { inserted = r3; error = null; }
-      else if (e3) { error = e3; }
-    }
 
     if (error) {
       throw new Error(`sensor_data insert error: ${error.message}`);
