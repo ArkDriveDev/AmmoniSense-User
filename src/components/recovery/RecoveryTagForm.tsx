@@ -3,9 +3,11 @@ import {
   IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle,
   IonInput, IonItem, IonLabel, IonSelect, IonSelectOption, IonTextarea,
 } from '@ionic/react';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import offlineStorage from '../../services/OfflineStorageService';
 import { VIOLATION_CATEGORIES } from '../../constants/violationCategories';
 import { ViolationCategory } from '../../types/inspection';
+import { createThumbnail } from '../../utils/thumbnailUtils';
 import { SessionGroup } from '../../pages/user/RecoveryScreen';
 
 export interface RecoveryFormValues {
@@ -25,7 +27,7 @@ interface Props {
   onSave: (values: RecoveryFormValues) => Promise<void>;
 }
 
-const RecoveryTagForm: React.FC<Props> = ({ session, onCancel, onSave }) => {
+const RecoveryTagForm: React.FC<Props> = ({ session, usageRatio, onCancel, onSave }) => {
   const [sites, setSites] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
   const [siteId, setSiteId] = useState<string | number>('');
@@ -33,7 +35,10 @@ const RecoveryTagForm: React.FC<Props> = ({ session, onCancel, onSave }) => {
   const [tagName, setTagName] = useState(`RECOVERY TAG ${session.sessionId.slice(0, 8).toUpperCase()}`);
   const [violationCategory, setViolationCategory] = useState<ViolationCategory | null>(null);
   const [notes, setNotes] = useState('');
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [thumbDataUrl, setThumbDataUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const quotaExceeded = usageRatio > 0.9;
 
   useEffect(() => { offlineStorage.getAllSitesFromIDB().then(setSites).catch(() => setSites([])); }, []);
   useEffect(() => {
@@ -42,11 +47,26 @@ const RecoveryTagForm: React.FC<Props> = ({ session, onCancel, onSave }) => {
     offlineStorage.getAllSchedulesFromIDB(siteId).then(setSchedules).catch(() => setSchedules([]));
   }, [siteId]);
 
-  const handleSubmit = async () => {
+  const pickPhoto = async (source: CameraSource) => {
+    try {
+      const photo = await Camera.getPhoto({ quality: 80, allowEditing: false, resultType: CameraResultType.DataUrl, source });
+      if (!photo.dataUrl) return;
+      const thumb = await createThumbnail(photo.dataUrl);
+      setPhotoDataUrl(photo.dataUrl);
+      setThumbDataUrl(thumb);
+    } catch { /* cancelled */ }
+  };
+
+  const handleSubmit = async (skipPhoto = false) => {
     if (!siteId || !scheduleId || !tagName.trim()) return;
     setSaving(true);
-    try { await onSave({ siteId, scheduleId, tagName, violationCategory, notes, photoDataUrl: null, thumbDataUrl: null }); }
-    finally { setSaving(false); }
+    try {
+      await onSave({
+        siteId, scheduleId, tagName, violationCategory, notes,
+        photoDataUrl: skipPhoto || quotaExceeded ? null : photoDataUrl,
+        thumbDataUrl: skipPhoto || quotaExceeded ? null : thumbDataUrl,
+      });
+    } finally { setSaving(false); }
   };
 
   return (
@@ -81,8 +101,24 @@ const RecoveryTagForm: React.FC<Props> = ({ session, onCancel, onSave }) => {
           </IonSelect>
         </IonItem>
         <IonItem><IonLabel position="stacked">Notes</IonLabel><IonTextarea value={notes} rows={2} onIonInput={(e) => setNotes(String(e.detail.value || ''))} /></IonItem>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-          <IonButton expand="block" disabled={!siteId || !scheduleId || !tagName.trim() || saving} onClick={handleSubmit}>{saving ? 'Saving…' : 'Save Tag to Queue'}</IonButton>
+        {quotaExceeded ? (
+          <div style={{ color: '#DC2626', fontSize: '13px', padding: '4px 8px', fontWeight: 600 }}>
+            Storage usage &gt; 90%. Photo attach disabled — tag will be saved without a photo.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 0' }}>
+            <IonButton size="small" fill="outline" onClick={() => pickPhoto(CameraSource.Photos)}>Pick from Gallery</IonButton>
+            <IonButton size="small" fill="outline" onClick={() => pickPhoto(CameraSource.Camera)}>Take Photo</IonButton>
+            {thumbDataUrl && (
+              <img src={thumbDataUrl} alt="Preview" style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} />
+            )}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+          <IonButton expand="block" disabled={!siteId || !scheduleId || !tagName.trim() || saving} onClick={() => handleSubmit(false)}>{saving ? 'Saving…' : 'Save Tag to Queue'}</IonButton>
+          {photoDataUrl && !quotaExceeded && (
+            <IonButton fill="outline" color="warning" disabled={saving} onClick={() => handleSubmit(true)}>Save Without Photo</IonButton>
+          )}
           <IonButton fill="outline" color="medium" onClick={onCancel}>Cancel</IonButton>
         </div>
       </IonCardContent>
