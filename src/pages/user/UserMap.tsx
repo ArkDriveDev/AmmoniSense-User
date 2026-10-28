@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   IonPage,
   IonContent,
@@ -60,6 +60,7 @@ export default function UserMap() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState<boolean>(true);
+  const hasLoadedOnceRef = useRef<boolean>(false);
   const [sites, setSites] = useState<SiteMarkerData[]>([]);
   const [readings, setReadings] = useState<ReadingMarkerData[]>([]);
   const [photoTags, setPhotoTags] = useState<PhotoTagMarkerData[]>([]);
@@ -115,7 +116,7 @@ export default function UserMap() {
   }, []);
 
   const loadMapData = async () => {
-    setLoading(true);
+    if (!hasLoadedOnceRef.current) setLoading(true);
     try {
       const loadedSites = await fetchSites();
       await Promise.all([
@@ -123,6 +124,7 @@ export default function UserMap() {
         fetchPhotoTags(loadedSites)
       ]);
     } finally {
+      hasLoadedOnceRef.current = true;
       setLoading(false);
     }
   };
@@ -294,7 +296,7 @@ export default function UserMap() {
 
     const finalSites = Array.from(combinedMap.values());
     console.log('📍 Total sites loaded for map display:', finalSites.length, finalSites);
-    setSites(finalSites);
+    setSites((prev) => (JSON.stringify(prev) === JSON.stringify(finalSites) ? prev : finalSites));
     return finalSites;
   };
 
@@ -323,7 +325,7 @@ export default function UserMap() {
         }))
         .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
 
-      setReadings(mappedReadings);
+      setReadings((prev) => (JSON.stringify(prev) === JSON.stringify(mappedReadings) ? prev : mappedReadings));
     } catch (err) {
       console.warn('Error fetching inspection tags for map readings:', err);
     }
@@ -354,24 +356,24 @@ export default function UserMap() {
         })
         .filter((pt) => IS_IN_MANOLO_FORTICH(pt.latitude, pt.longitude));
 
-      setPhotoTags(mappedPhotoTags);
+      setPhotoTags((prev) => (JSON.stringify(prev) === JSON.stringify(mappedPhotoTags) ? prev : mappedPhotoTags));
     } catch (err) {
       console.warn('Error fetching photo tags from inspection tags:', err);
     }
   };
 
   // Filter photo tags by search query
-  const filteredPhotoTags = photoTags.filter((tag) => {
+  const filteredPhotoTags = useMemo(() => photoTags.filter((tag) => {
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     return (
       tag.site_name?.toLowerCase().includes(query) ||
       tag.id.toString().includes(query)
     );
-  });
+  }), [photoTags, searchText]);
 
   // Filter sites by search query
-  const filteredSites = sites.filter((site) => {
+  const filteredSites = useMemo(() => sites.filter((site) => {
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     return (
@@ -380,10 +382,10 @@ export default function UserMap() {
       site.address?.toLowerCase().includes(query) ||
       site.site_type?.toLowerCase().includes(query)
     );
-  });
+  }), [sites, searchText]);
 
   // Filter readings by search query
-  const filteredReadings = readings.filter((reading) => {
+  const filteredReadings = useMemo(() => readings.filter((reading) => {
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     const severity = getAmmoniaSeverityLabel(reading.ammonia).toLowerCase();
@@ -392,7 +394,7 @@ export default function UserMap() {
       reading.ammonia.toString().includes(query) ||
       severity.includes(query)
     );
-  });
+  }), [readings, searchText]);
 
   // Locate User GPS
   const handleLocateUser = async () => {
