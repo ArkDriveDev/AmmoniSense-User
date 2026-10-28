@@ -76,15 +76,16 @@ export default function UserInspectionSites() {
 
   useEffect(() => {
     fetchSites();
-    window.addEventListener('sites_updated', fetchSites);
-    window.addEventListener('site_synced', fetchSites);
-    window.addEventListener('site_deleted', fetchSites);
+    const handler = () => { fetchSites(); };
+    window.addEventListener('sites_updated', handler);
+    window.addEventListener('site_synced', handler);
+    window.addEventListener('site_deleted', handler);
     return () => {
-      window.removeEventListener('sites_updated', fetchSites);
-      window.removeEventListener('site_synced', fetchSites);
-      window.removeEventListener('site_deleted', fetchSites);
+      window.removeEventListener('sites_updated', handler);
+      window.removeEventListener('site_synced', handler);
+      window.removeEventListener('site_deleted', handler);
     };
-  }, [fetchSites]);
+  }, []);
 
   return (
     <IonPage>

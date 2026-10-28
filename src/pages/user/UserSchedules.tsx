@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonRefresher, IonRefresherContent, IonIcon, IonSpinner, IonSelect, IonSelectOption, IonItem, IonLabel
@@ -33,13 +33,20 @@ export default function UserSchedules() {
     }
   }, [filterSite]);
 
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
   useEffect(() => {
     load();
-    window.addEventListener('schedules_updated', load);
-    return () => {
-      window.removeEventListener('schedules_updated', load);
-    };
   }, [load]);
+
+  useEffect(() => {
+    const handler = () => { loadRef.current(); };
+    window.addEventListener('schedules_updated', handler);
+    return () => {
+      window.removeEventListener('schedules_updated', handler);
+    };
+  }, []);
 
   return (
     <IonPage>

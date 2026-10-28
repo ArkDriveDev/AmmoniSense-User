@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonBackButton,
   IonButtons, IonButton, IonIcon, IonSpinner, IonCard, IonCardContent
@@ -57,17 +57,24 @@ export default function InspectionSiteDetail() {
     }
   }, [id]);
 
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
   useEffect(() => {
     fetchData();
-    window.addEventListener('schedules_updated', fetchData);
-    window.addEventListener('site_synced', fetchData);
-    window.addEventListener('sites_updated', fetchData);
-    return () => {
-      window.removeEventListener('schedules_updated', fetchData);
-      window.removeEventListener('site_synced', fetchData);
-      window.removeEventListener('sites_updated', fetchData);
-    };
   }, [fetchData]);
+
+  useEffect(() => {
+    const handler = () => { fetchDataRef.current(); };
+    window.addEventListener('schedules_updated', handler);
+    window.addEventListener('site_synced', handler);
+    window.addEventListener('sites_updated', handler);
+    return () => {
+      window.removeEventListener('schedules_updated', handler);
+      window.removeEventListener('site_synced', handler);
+      window.removeEventListener('sites_updated', handler);
+    };
+  }, []);
 
   return (
     <IonPage>
