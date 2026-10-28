@@ -406,7 +406,12 @@ class OfflineStorageService {
       const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
       const store = tx.objectStore(OFFLINE_SITES_STORE);
       const req = store.put(record);
-      req.onsuccess = () => resolve(record);
+      req.onsuccess = () => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('sites_updated'));
+        }
+        resolve(record);
+      };
       req.onerror = () => reject(req.error);
     });
   }
@@ -440,6 +445,9 @@ class OfflineStorageService {
           const putReq = store.put(updatedItem);
           putReq.onsuccess = async () => {
             await this.upsertSitesToIDB([updatedItem]);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('sites_updated'));
+            }
             resolve();
           };
           putReq.onerror = () => reject(putReq.error);
@@ -453,6 +461,9 @@ class OfflineStorageService {
 
   async deleteOfflineSite(id: string): Promise<void> {
     await this.deleteSiteFromIDB(id);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sites_updated'));
+    }
     // 1. Delete from IndexedDB OFFLINE_SITES_STORE
     try {
       const db = await this.initDB();
@@ -598,12 +609,18 @@ class OfflineStorageService {
     list.unshift(schedule);
     localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
     this.upsertSchedulesToIDB([{ ...schedule, isOffline: true, offline_temp_id: schedule.id }]);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('schedules_updated'));
+    }
   }
 
   public removeOfflineSchedule(id: string | number): void {
     const list = this.getOfflineSchedules().filter((s: any) => String(s.id) !== String(id));
     localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
     this.deleteScheduleFromIDB(id);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('schedules_updated'));
+    }
   }
 
   async getAllTagsFromIDB(filter?: { scheduleId?: number | string; siteId?: number | string; scheduleTempId?: string }): Promise<any[]> {
@@ -683,12 +700,18 @@ class OfflineStorageService {
     list.unshift(tag);
     localStorage.setItem('offline_inspection_tags', JSON.stringify(list));
     this.upsertTagsToIDB([{ ...tag, isOffline: true, offline_temp_id: tag.id }]);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tags_updated'));
+    }
   }
 
   public removeOfflineTag(id: string | number): void {
     const list = this.getOfflineTags().filter((t: any) => String(t.id) !== String(id));
     localStorage.setItem('offline_inspection_tags', JSON.stringify(list));
     this.deleteTagFromIDB(id);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tags_updated'));
+    }
   }
 
   /** Remove all offline schedules belonging to a site and return their IDs. */

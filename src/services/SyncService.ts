@@ -124,6 +124,7 @@ class SyncService {
       window.dispatchEvent(new CustomEvent('schedules_updated'));
       window.dispatchEvent(new CustomEvent('tags_updated'));
       window.dispatchEvent(new CustomEvent('site_synced'));
+      window.dispatchEvent(new CustomEvent('sites_updated'));
     }
     return result;
   }
@@ -416,7 +417,10 @@ class SyncService {
         .update(siteUpdates)
         .eq('id', targetId);
       if (updErr) throw new Error(`inspection_sites update error: ${updErr.message}`);
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('site_synced'));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site_synced'));
+        window.dispatchEvent(new CustomEvent('sites_updated'));
+      }
       return;
     }
 
@@ -500,6 +504,7 @@ class SyncService {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('site_synced'));
       window.dispatchEvent(new CustomEvent('site_deleted'));
+      window.dispatchEvent(new CustomEvent('sites_updated'));
     }
   }
 

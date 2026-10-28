@@ -192,6 +192,7 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
   // 3. Notify all listeners (UserMap, UserSites, etc.) via custom event
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('site_deleted', { detail: { siteId: strId } }));
+    window.dispatchEvent(new CustomEvent('sites_updated'));
   }
 };
 
