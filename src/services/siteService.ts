@@ -205,6 +205,18 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
       throw err;
     }
 
+  // 2. Purge local cached copies and any pending queued updates
+  try {
+    const removedScheduleIds = offlineStorage.removeOfflineSchedulesBySite(strId);
+    offlineStorage.removeOfflineTagsBySiteOrSchedules(strId, removedScheduleIds);
+    await offlineStorage.purgeQueueItemsForSite(strId, removedScheduleIds);
+    await offlineStorage.deleteSiteFromIDB(strId);
+    offlineStorage.removeSiteFromLocalStorage(strId);
+    offlineStorage.removeCachedSite(strId);
+  } catch (e) {
+    console.warn('Error purging local site/schedule/tag records:', e);
+  }
+
   // 3. Notify all listeners (UserMap, UserSites, etc.) via custom event
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('site_deleted', { detail: { siteId: strId } }));
