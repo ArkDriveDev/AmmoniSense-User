@@ -46,10 +46,13 @@ export interface StoredPhoto {
 }
 
 const DB_NAME = 'AmmoniSenseOfflineDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const QUEUE_STORE = 'offline_queue';
 const PHOTO_STORE = 'photo_store';
 const OFFLINE_SITES_STORE = 'offline_sites';
+const SITES_STORE = 'all_sites';
+const SCHEDULES_STORE = 'all_schedules';
+const TAGS_STORE = 'all_tags';
 
 // LOCALSTORAGE KEYS
 const SESSION_KEY = 'ammonisense_session';
@@ -81,6 +84,15 @@ class OfflineStorageService {
         }
         if (!db.objectStoreNames.contains(OFFLINE_SITES_STORE)) {
           db.createObjectStore(OFFLINE_SITES_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(SITES_STORE)) {
+          db.createObjectStore(SITES_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(SCHEDULES_STORE)) {
+          db.createObjectStore(SCHEDULES_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(TAGS_STORE)) {
+          db.createObjectStore(TAGS_STORE, { keyPath: 'id' });
         }
       };
 
@@ -327,16 +339,74 @@ class OfflineStorageService {
   }
 
   // ==========================================
-  // INDEXEDDB OFFLINE SITES HELPERS
+  // INDEXEDDB OFFLINE SITES HELPERS & ALL SITES (SINGLE SOURCE OF TRUTH)
   // ==========================================
+
+  async getAllSitesFromIDB(): Promise<any[]> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SITES_STORE, 'readonly');
+      const store = tx.objectStore(SITES_STORE);
+      const req = store.getAll();
+      req.onsuccess = async () => {
+        let list: any[] = req.result || [];
+        if (list.length === 0) {
+          const offline = await this.getOfflineSites().catch(() => []);
+          const cached = this.getCachedSites();
+          const seedMap = new Map<string, any>();
+          cached.forEach((s) => seedMap.set(String(s.id), s));
+          offline.forEach((s) => seedMap.set(String(s.id), { ...s, isOffline: true, offline_temp_id: s.id }));
+          list = Array.from(seedMap.values());
+          if (list.length > 0) {
+            await this.upsertSitesToIDB(list);
+          }
+        }
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async upsertSitesToIDB(sites: any[]): Promise<void> {
+    if (!Array.isArray(sites) || sites.length === 0) return;
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SITES_STORE, 'readwrite');
+      const store = tx.objectStore(SITES_STORE);
+      sites.forEach((s) => {
+        const id = s.id !== undefined && s.id !== null ? s.id : s.offline_temp_id || s.temp_id;
+        if (id !== undefined && id !== null) {
+          store.put({ ...s, id });
+        }
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async deleteSiteFromIDB(id: string | number): Promise<void> {
+    const db = await this.initDB();
+    const strId = String(id);
+    const numId = Number(id);
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SITES_STORE, 'readwrite');
+      const store = tx.objectStore(SITES_STORE);
+      store.delete(strId);
+      if (!isNaN(numId)) store.delete(numId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
 
   async saveOfflineSite(site: OfflineSite): Promise<OfflineSite> {
     const db = await this.initDB();
+    const record = { ...site, isOffline: true, offline_temp_id: site.id };
+    await this.upsertSitesToIDB([record]);
     return new Promise((resolve, reject) => {
       const tx = db.transaction(OFFLINE_SITES_STORE, 'readwrite');
       const store = tx.objectStore(OFFLINE_SITES_STORE);
-      const req = store.put(site);
-      req.onsuccess = () => resolve(site);
+      const req = store.put(record);
+      req.onsuccess = () => resolve(record);
       req.onerror = () => reject(req.error);
     });
   }
@@ -359,7 +429,7 @@ class OfflineStorageService {
       const store = tx.objectStore(OFFLINE_SITES_STORE);
       const getReq = store.get(id);
 
-      getReq.onsuccess = () => {
+      getReq.onsuccess = async () => {
         const item: OfflineSite = getReq.result;
         if (item) {
           const updatedItem = {
@@ -368,7 +438,10 @@ class OfflineStorageService {
             lastModified: new Date().toISOString(),
           };
           const putReq = store.put(updatedItem);
-          putReq.onsuccess = () => resolve();
+          putReq.onsuccess = async () => {
+            await this.upsertSitesToIDB([updatedItem]);
+            resolve();
+          };
           putReq.onerror = () => reject(putReq.error);
         } else {
           resolve();
@@ -379,6 +452,7 @@ class OfflineStorageService {
   }
 
   async deleteOfflineSite(id: string): Promise<void> {
+    await this.deleteSiteFromIDB(id);
     // 1. Delete from IndexedDB OFFLINE_SITES_STORE
     try {
       const db = await this.initDB();
