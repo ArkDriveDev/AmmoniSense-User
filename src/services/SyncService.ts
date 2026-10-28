@@ -48,6 +48,7 @@ class SyncService {
 
   constructor() {
     this.initNetworkListeners();
+    this.initQueueListeners();
   }
 
   private initNetworkListeners() {
@@ -62,6 +63,18 @@ class SyncService {
       this.onlineStatus = false;
       this.notifyListeners('status_change');
     });
+  }
+
+  private initQueueListeners() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('sync_queue_changed', () => {
+        this.notifyQueueChanged();
+      });
+    }
+  }
+
+  public notifyQueueChanged(): void {
+    this.notifyListeners('status_change');
   }
 
   public isOnline(): boolean {
