@@ -734,17 +734,22 @@ class OfflineStorageService {
     localStorage.setItem('offline_inspection_tags', JSON.stringify(kept));
   }
 
-  /** Purge IndexedDB queue items for a deleted site and all its child schedules/tags. */
+  /** Purge IndexedDB queue items and photos for a deleted site and all its child schedules/tags. */
   async purgeQueueItemsForSite(siteId: string | number, scheduleIds: string[]): Promise<void> {
     const siteStr = String(siteId);
     const schedSet = new Set(scheduleIds);
     try {
       const queue = await this.getQueue();
-      for (const item of queue) {
+      const toDelete = queue.filter((item) => {
         const p = item.payload || {};
-        const isSite = String(p.temp_id) === siteStr || String(p.id) === siteStr || String(p.inspection_site_id) === siteStr;
+        const isSite = String(p.temp_id) === siteStr || String(p.offline_temp_id) === siteStr || String(p.id) === siteStr || String(p.inspection_site_id) === siteStr || String(p.site_id) === siteStr;
         const isSched = schedSet.has(String(p.temp_id)) || schedSet.has(String(p.id)) || schedSet.has(String(p.inspection_schedule_id));
-        if (isSite || isSched) await this.removeQueueItem(item.id);
+        return isSite || isSched;
+      });
+
+      for (const item of toDelete) {
+        if (item.photoStoreId) await this.removePhoto(item.photoStoreId).catch(() => {});
+        await this.removeQueueItem(item.id);
       }
     } catch (e) {
       console.warn('[OfflineStorage] Could not purge queue for deleted site:', e);

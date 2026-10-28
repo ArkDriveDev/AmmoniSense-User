@@ -109,22 +109,39 @@ export const registerSiteWithPhoto = async (
  * Cascades to inspection_schedules, inspection_tags, and all related photos.
  * Dispatches 'site_deleted' event for automatic UI/map refresh.
  */
-export const deleteSite = async (siteId: string | number): Promise<void> => {
-  const strId = String(siteId);
-
-  // 1. Cascade-remove offline schedules + tags from localStorage and the IndexedDB queue
+/**
+ * Delete an unsynced monitoring site and all its child offline schedules, tags, readings, and photos.
+ * Deletes in strict order: readings -> tags -> schedules -> site registration -> photos -> caches -> site.
+ * No Supabase call is made.
+ */
+export const deleteUnsyncedSite = async (tempId: string | number): Promise<void> => {
+  const strId = String(tempId);
   try {
     const removedScheduleIds = offlineStorage.removeOfflineSchedulesBySite(strId);
     offlineStorage.removeOfflineTagsBySiteOrSchedules(strId, removedScheduleIds);
     await offlineStorage.purgeQueueItemsForSite(strId, removedScheduleIds);
     await offlineStorage.deleteOfflineSite(strId);
     offlineStorage.removeSiteFromLocalStorage(strId);
-  } catch (e) {
-    console.warn('Error purging local site/schedule/tag records:', e);
-  }
 
-  // 2. If it's an online Supabase site (non-temp ID), cascade delete from Supabase tables
-  if (!strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_')) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('site_deleted', { detail: { siteId: strId } }));
+      window.dispatchEvent(new CustomEvent('sites_updated'));
+      window.dispatchEvent(new CustomEvent('schedules_updated'));
+      window.dispatchEvent(new CustomEvent('tags_updated'));
+    }
+  } catch (err) {
+    console.error('Error deleting unsynced site:', err);
+    throw err;
+  }
+};
+
+export const deleteSite = async (siteId: string | number): Promise<void> => {
+  const strId = String(siteId);
+  const isUnsynced = strId.startsWith('temp_') || strId.startsWith('queue_') || strId.startsWith('ls_');
+
+  if (isUnsynced) {
+    return deleteUnsyncedSite(strId);
+  }
     try {
       // Fetch site photo storage paths for bucket cleanup
       const { data: siteRow } = await supabase
@@ -187,7 +204,6 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
       console.error('Error deleting site from Supabase:', err);
       throw err;
     }
-  }
 
   // 3. Notify all listeners (UserMap, UserSites, etc.) via custom event
   if (typeof window !== 'undefined') {
