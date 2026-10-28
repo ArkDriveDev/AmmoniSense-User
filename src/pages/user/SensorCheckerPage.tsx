@@ -3,6 +3,7 @@ import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonGrid, IonButto
 import { bluetoothOutline, closeCircleOutline, alertCircleOutline } from 'ionicons/icons';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
 import LiveReadingsPanel from '../../components/checker/LiveReadingsPanel';
+import RawStreamDisclosure from '../../components/checker/RawStreamDisclosure';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
 
 export default function SensorCheckerPage() {
@@ -122,6 +123,9 @@ export default function SensorCheckerPage() {
 
           {/* Live Readings Panel */}
           <LiveReadingsPanel reading={reading} isConnected={isConnected} isStale={isStale} lastUpdate={lastUpdate} />
+
+          {/* Raw serial stream disclosure */}
+          <RawStreamDisclosure rawLine={reading?.raw_line} />
         </IonGrid>
       </IonContent>
     </IonPage>
