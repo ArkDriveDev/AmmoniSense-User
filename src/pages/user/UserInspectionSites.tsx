@@ -5,8 +5,9 @@ import {
   IonIcon, IonBadge, IonSpinner, IonCard, IonCardContent
 } from '@ionic/react';
 import {
-  addOutline, refreshOutline, businessOutline, locationOutline,
-  chevronForwardOutline, calendarOutline, pricetagOutline
+  addOutline, businessOutline, locationOutline,
+  chevronForwardOutline, calendarOutline, pricetagOutline,
+  createOutline, trashOutline
 } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
@@ -23,6 +24,21 @@ export default function UserInspectionSites() {
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<Record<string, { schedules: number; tags: number }>>({});
   const [showCreate, setShowCreate] = useState(false);
+  const [editingSite, setEditingSite] = useState<any | null>(null);
+
+  const handleEditSite = (e: React.MouseEvent, site: any) => {
+    e.stopPropagation();
+    setEditingSite(site.offlineRecord || site);
+    setShowCreate(true);
+  };
+
+  const handleDeleteSite = (e: React.MouseEvent, site: any) => {
+    e.stopPropagation();
+    // Dispatch or trigger delete site
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('request_delete_site', { detail: { site } }));
+    }
+  };
 
   const fetchSites = useCallback(async () => {
     setLoading(true);
@@ -133,7 +149,29 @@ export default function UserInspectionSites() {
                         {s.address || s.location || 'No address'}
                       </p>
                     </div>
-                    <IonIcon icon={chevronForwardOutline} color="medium" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <IonButton
+                        size="small"
+                        fill="clear"
+                        color="primary"
+                        onClick={(e) => handleEditSite(e, s)}
+                        title="Update site details"
+                        style={{ '--padding-start': '6px', '--padding-end': '6px', margin: 0 }}
+                      >
+                        <IonIcon icon={createOutline} slot="icon-only" />
+                      </IonButton>
+                      <IonButton
+                        size="small"
+                        fill="clear"
+                        color="danger"
+                        onClick={(e) => handleDeleteSite(e, s)}
+                        title="Delete site"
+                        style={{ '--padding-start': '6px', '--padding-end': '6px', margin: 0 }}
+                      >
+                        <IonIcon icon={trashOutline} slot="icon-only" />
+                      </IonButton>
+                      <IonIcon icon={chevronForwardOutline} color="medium" style={{ marginLeft: '4px' }} />
+                    </div>
                   </div>
                   {!s.isOffline && counts[s.id] && (
                     <div style={{ display: 'flex', gap: '12px', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
@@ -150,7 +188,15 @@ export default function UserInspectionSites() {
             ))}
           </div>
         )}
-        <CreateSiteModal isOpen={showCreate} onClose={() => setShowCreate(false)} onSiteCreated={fetchSites} editSite={null} />
+        <CreateSiteModal
+          isOpen={showCreate}
+          onClose={() => {
+            setShowCreate(false);
+            setEditingSite(null);
+          }}
+          onSiteCreated={fetchSites}
+          editSite={editingSite}
+        />
       </IonContent>
     </IonPage>
   );
