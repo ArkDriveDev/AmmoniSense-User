@@ -732,6 +732,46 @@ class OfflineStorageService {
     }
   }
 
+  /**
+   * Purge a tag and all its queued sensor_data readings, photos, and queue records.
+   */
+  async deleteTagAndChildren(tagTempId: string): Promise<void> {
+    const strId = String(tagTempId);
+    try {
+      const queue = await this.getQueue();
+      const toDelete = queue.filter((item) => {
+        const p = item.payload || {};
+        const isChildReading =
+          (item.type === 'sensor_data' || item.type === 'SENSOR_READING') &&
+          (p.inspection_tag_temp_id === strId ||
+           item.tempId === strId ||
+           String(p.inspection_tag_id) === strId ||
+           String(p.tag_id) === strId);
+        const isTagItem =
+          (item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG' || item.type === 'DEVICE_TAG') &&
+          (item.tempId === strId || String(item.targetId) === strId || String(p.id) === strId || String(p.temp_id) === strId);
+        return isChildReading || isTagItem;
+      });
+
+      for (const item of toDelete) {
+        if (item.photoStoreId) {
+          await this.removePhoto(item.photoStoreId).catch(() => {});
+        }
+        await this.removeQueueItem(item.id);
+      }
+    } catch (e) {
+      console.warn('[OfflineStorage] Error purging queued readings for tag:', e);
+    }
+
+    this.removeOfflineTag(strId);
+    await this.deleteTagFromIDB(strId);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tags_updated'));
+      window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+    }
+  }
+
   /** Remove all offline schedules belonging to a site and return their IDs. */
   public removeOfflineSchedulesBySite(siteId: string | number): string[] {
     const siteStr = String(siteId);
