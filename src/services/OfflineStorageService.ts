@@ -641,6 +641,61 @@ class OfflineStorageService {
     }
   }
 
+  /**
+   * Purge a schedule and all its queued tags, readings, photos, and queue records.
+   */
+  async deleteScheduleAndChildren(scheduleTempId: string): Promise<void> {
+    const strId = String(scheduleTempId);
+    try {
+      const childTags = this.getOfflineTags().filter(
+        (t: any) => String(t.inspection_schedule_id) === strId
+      );
+      const childTagIds = new Set(childTags.map((t: any) => String(t.id)));
+
+      const queue = await this.getQueue();
+      const toDelete = queue.filter((item) => {
+        const p = item.payload || {};
+        const isSchedule =
+          (item.type === 'inspection_schedule' || item.type === 'INSPECTION_SCHEDULE') &&
+          (item.tempId === strId || String(item.targetId) === strId || String(p.id) === strId || String(p.temp_id) === strId);
+        const isChildTag =
+          (item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG' || item.type === 'DEVICE_TAG') &&
+          (String(p.inspection_schedule_id) === strId || childTagIds.has(String(item.tempId)) || childTagIds.has(String(p.id)));
+        const isChildReading =
+          (item.type === 'sensor_data' || item.type === 'SENSOR_READING') &&
+          (String(p.inspection_schedule_id) === strId ||
+           childTagIds.has(String(p.inspection_tag_temp_id)) ||
+           childTagIds.has(String(item.tempId)) ||
+           childTagIds.has(String(p.inspection_tag_id)) ||
+           childTagIds.has(String(p.tag_id)));
+        return isSchedule || isChildTag || isChildReading;
+      });
+
+      for (const item of toDelete) {
+        if (item.photoStoreId) {
+          await this.removePhoto(item.photoStoreId).catch(() => {});
+        }
+        await this.removeQueueItem(item.id);
+      }
+
+      for (const tagId of childTagIds) {
+        this.removeOfflineTag(tagId);
+        await this.deleteTagFromIDB(tagId).catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[OfflineStorage] Error purging queued items for schedule:', e);
+    }
+
+    this.removeOfflineSchedule(strId);
+    await this.deleteScheduleFromIDB(strId);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tags_updated'));
+      window.dispatchEvent(new CustomEvent('schedules_updated'));
+      window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+    }
+  }
+
   async getAllTagsFromIDB(filter?: { scheduleId?: number | string; siteId?: number | string; scheduleTempId?: string }): Promise<any[]> {
     const db = await this.initDB();
     return new Promise((resolve, reject) => {
