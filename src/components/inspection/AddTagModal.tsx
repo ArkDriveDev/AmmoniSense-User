@@ -19,6 +19,8 @@ import offlineStorage from '../../services/OfflineStorageService';
 import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { CapturedSessionReading, CaptureSummary } from '../../types/capture';
 import { computeCaptureSummary } from '../../utils/captureSummary';
+import { generateUUID } from '../../hooks/useSensorCaptureLoop';
+import { RECOVERY_MODE } from '../../constants/recovery';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
 import { showToast } from '../../utils/toast';
 
@@ -107,6 +109,61 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     }
     setSaving(true);
     try {
+      if (captureSource === 'existing' && selectedSession && RECOVERY_MODE) {
+        const recoveryTagTempId = `temp_tag_${generateUUID()}`;
+        let photoStoreId: string | undefined;
+        let finalNotes = toUpperClean(notes);
+        if (photoDataUrl) {
+          try {
+            photoStoreId = await offlineStorage.savePhoto(photoDataUrl);
+          } catch (photoErr) {
+            console.warn('[AddTagModal] Photo save failed in recovery mode, continuing without photo:', photoErr);
+            finalNotes = finalNotes ? `${finalNotes} [PHOTO PENDING]` : '[PHOTO PENDING]';
+          }
+        }
+        const tagPayload = {
+          tag_name: toUpperClean(tagName),
+          inspection_schedule_id: scheduleId,
+          violation_category: violationCategory || null,
+          notes: finalNotes,
+          latitude: lat,
+          longitude: lng,
+          session_id: selectedSession.sessionId,
+          offline_temp_id: recoveryTagTempId,
+        };
+        await offlineStorage.enqueueItem('inspection_tag', tagPayload, {
+          tempId: recoveryTagTempId,
+          photoStoreId,
+        });
+        const queue = await offlineStorage.getQueue();
+        const otherTagIds = new Set(
+          queue
+            .filter((q) => (q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG') && q.tempId !== recoveryTagTempId)
+            .flatMap((t) => [t.tempId, t.payload?.temp_id, t.payload?.offline_temp_id])
+            .filter(Boolean).map(String)
+        );
+        for (const item of queue) {
+          if (item.type === 'sensor_data' && item.payload?.session_id === selectedSession.sessionId) {
+            const existingTagRef = item.payload?.inspection_tag_temp_id ? String(item.payload.inspection_tag_temp_id) : '';
+            if (existingTagRef && otherTagIds.has(existingTagRef)) continue;
+            await offlineStorage.updateQueueItemPayload(item.id, {
+              ...item.payload,
+              inspection_tag_temp_id: recoveryTagTempId,
+            });
+          }
+        }
+        window.dispatchEvent(new CustomEvent('tags_updated'));
+        window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+        showToast({ message: 'Tag queued for sync (recovery mode)', color: 'success' });
+        setTagName('');
+        setNotes('');
+        setPhotoDataUrl('');
+        setThumbDataUrl('');
+        onCreated?.();
+        onClose();
+        return;
+      }
+
       const effectiveTempId = captureSource === 'existing'
         ? `temp_tag_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
         : (tagTempId || undefined);
