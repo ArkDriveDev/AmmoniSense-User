@@ -221,16 +221,17 @@ export async function uploadTagPhoto(
   blob: Blob,
   thumbnailBlob: Blob | null,
   tagId: string | number,
-  siteId: string | number
+  siteId?: string | number | null
 ): Promise<UploadedTagPhoto> {
   const cleanSiteId = sanitizeNumericId(siteId);
   const cleanTagId = sanitizeNumericId(tagId);
-  if (!cleanSiteId || !cleanTagId) {
-    throw new Error(`[photoStorageService] Numeric IDs required. Got siteId: ${siteId}, tagId: ${tagId}`);
+  if (!cleanTagId) {
+    throw new Error(`[photoStorageService] Numeric tagId required. Got tagId: ${tagId}`);
   }
 
-  const path = `${cleanSiteId}/tags/${cleanTagId}/photo.jpg`;
-  const thumbPath = `${cleanSiteId}/tags/${cleanTagId}/photo_thumb.jpg`;
+  const prefix = cleanSiteId ? `${cleanSiteId}/tags/${cleanTagId}` : `tags/${cleanTagId}`;
+  const path = `${prefix}/photo.jpg`;
+  const thumbPath = `${prefix}/photo_thumb.jpg`;
 
   const { error: upErr } = await supabase.storage
     .from('inspection-photos')
