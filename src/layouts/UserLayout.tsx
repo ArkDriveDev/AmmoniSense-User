@@ -39,11 +39,28 @@ import {
   pulseOutline,
   mapOutline
 } from 'ionicons/icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { RECOVERY_MODE } from '../constants/recoveryConfig';
 
 export default function UserLayout({ children }: any) {
   const navigate = useNavigate();
   const location = useLocation();
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleHeaderTitleTap = () => {
+    if (!RECOVERY_MODE) return;
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      navigate('/recovery');
+      return;
+    }
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 1500);
+  };
   const [userName, setUserName] = useState('User');
   const [userEmail, setUserEmail] = useState('');
   const [toast, setToast] = useState<{
@@ -271,7 +288,12 @@ export default function UserLayout({ children }: any) {
                 <IonIcon icon={menuOutline} />
               </IonMenuButton>
             </IonButtons>
-            <IonTitle style={{ fontWeight: 700, color: '#ffffff' }}>AmmoniSense</IonTitle>
+            <IonTitle
+              onClick={handleHeaderTitleTap}
+              style={{ fontWeight: 700, color: '#ffffff', userSelect: 'none' }}
+            >
+              AmmoniSense
+            </IonTitle>
             <IonButtons slot="end" style={{ paddingRight: '12px' }}>
               <SyncStatusBanner />
             </IonButtons>

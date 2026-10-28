@@ -13,9 +13,11 @@ import AddTagPage from './pages/user/AddTagPage';
 import UserMap from './pages/user/UserMap';
 import UserBLESensor from './pages/user/UserBLESensor';
 import SensorCheckerPage from './pages/user/SensorCheckerPage';
+import RecoveryScreen from './pages/user/RecoveryScreen';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './layouts/UserLayout';
+import { RECOVERY_MODE } from './constants/recoveryConfig';
 
 export default function AppRouter() {
   return (
@@ -151,6 +153,19 @@ export default function AppRouter() {
       <Route path="/my-sensor-data" element={<Navigate to="/schedules" replace />} />
       <Route path="/sensor-data" element={<Navigate to="/schedules" replace />} />
       <Route path="/my-alerts" element={<Navigate to="/dashboard" replace />} />
+
+      {RECOVERY_MODE && (
+        <Route
+          path="/recovery"
+          element={
+            <ProtectedRoute>
+              <UserLayout>
+                <RecoveryScreen />
+              </UserLayout>
+            </ProtectedRoute>
+          }
+        />
+      )}
     </Routes>
   );
 }
