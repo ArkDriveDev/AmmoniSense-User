@@ -146,7 +146,6 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
     action: 'insert',
     tempId,
   });
-  window.dispatchEvent(new CustomEvent('schedules_updated'));
   return offlineRec;
 }
 

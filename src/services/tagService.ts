@@ -141,7 +141,6 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     tempId,
     photoStoreId,
   });
-  window.dispatchEvent(new CustomEvent('tags_updated'));
   return offlineRec;
 }
 

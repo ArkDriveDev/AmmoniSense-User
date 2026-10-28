@@ -125,7 +125,6 @@ export const deleteUnsyncedSite = async (tempId: string | number): Promise<void>
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('site_deleted', { detail: { siteId: strId } }));
-      window.dispatchEvent(new CustomEvent('sites_updated'));
       window.dispatchEvent(new CustomEvent('schedules_updated'));
       window.dispatchEvent(new CustomEvent('tags_updated'));
     }
