@@ -637,10 +637,8 @@ class SyncService {
     const { temp_id, ...payload } = item.data || item.payload;
 
     const allowedTagFields = [
-      'tag_name', 'inspection_schedule_id', 'inspection_site_id',
-      'sensor_data_id', 'latitude', 'longitude',
-      'photo_url', 'photo_thumbnail_url', 'photo_storage_path',
-      'photo_thumbnail_storage_path', 'notes', 'violation_category',
+      'tag_name', 'inspection_schedule_id', 'latitude', 'longitude',
+      'photo_url', 'photo_thumbnail_url', 'notes', 'violation_category',
       'offline_temp_id', 'created_by',
     ];
 
@@ -787,14 +785,10 @@ class SyncService {
     const tagBase: Record<string, any> = {
       tag_name: (payload.tag_name || 'TAG').toUpperCase(),
       inspection_schedule_id: payload.inspection_schedule_id || null,
-      inspection_site_id: payload.inspection_site_id || null,
-      sensor_data_id: null,
       latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
       photo_thumbnail_url: payload.photo_thumbnail_url || null,
-      photo_storage_path: payload.photo_storage_path || null,
-      photo_thumbnail_storage_path: payload.photo_thumbnail_storage_path || null,
       notes: payload.notes?.toUpperCase() || null,
       violation_category: payload.violation_category || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
@@ -807,7 +801,6 @@ class SyncService {
     }
 
     console.log('[SYNC] Final payload:', {
-      site_id: tagRecord.inspection_site_id,
       schedule_id: tagRecord.inspection_schedule_id,
     });
 
