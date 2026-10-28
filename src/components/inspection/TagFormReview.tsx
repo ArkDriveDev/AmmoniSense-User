@@ -13,6 +13,8 @@ interface Props {
   lat: number;
   lng: number;
   saving: boolean;
+  isRecoveryMode?: boolean;
+  errorMessage?: string | null;
   onChangeTagName: (v: string) => void;
   onChangeNotes: (v: string) => void;
   onChangeViolationCategory: (v: ViolationCategory | null) => void;
@@ -22,6 +24,7 @@ interface Props {
 
 export const TagFormReview: React.FC<Props> = ({
   tagName, notes, violationCategory, ammonia, temperature, lat, lng, saving,
+  isRecoveryMode, errorMessage,
   onChangeTagName, onChangeNotes, onChangeViolationCategory, onBack, onSave
 }) => (
   <div>
@@ -64,6 +67,16 @@ export const TagFormReview: React.FC<Props> = ({
       </div>
       <div><strong>GPS:</strong> {lat.toFixed(4)}, {lng.toFixed(4)}</div>
     </div>
+    {errorMessage && (
+      <div style={{ marginTop: '10px', padding: '10px', background: '#FEE2E2', border: '1px solid #EF4444', borderRadius: '6px', color: '#991B1B', fontSize: '12px', fontWeight: 600 }}>
+        {errorMessage}
+      </div>
+    )}
+    {isRecoveryMode && (
+      <div style={{ marginTop: '8px', fontSize: '12px', color: '#B45309', fontWeight: 600, textAlign: 'right' }}>
+        Saves to queue only (recovery)
+      </div>
+    )}
     <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
       <IonButton fill="outline" onClick={onBack}><IonIcon icon={arrowBackOutline} /></IonButton>
       <IonButton expand="block" style={{ flex: 1 }} color="success" onClick={onSave} disabled={saving}>

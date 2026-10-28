@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IonBadge, IonButton, IonCard, IonCardContent, IonIcon, IonSpinner } from '@ionic/react';
 import { arrowBackOutline } from 'ionicons/icons';
 import offlineStorage, { QueueItem } from '../../services/OfflineStorageService';
+import { RECOVERY_MODE } from '../../constants/recovery';
 
 export interface UntaggedSessionOption {
   sessionId: string;
@@ -73,6 +74,11 @@ export const UntaggedSessionList: React.FC<Props> = ({ onSelect, onBack }) => {
 
   return (
     <div style={{ display: 'grid', gap: '10px' }}>
+      {RECOVERY_MODE && (
+        <div style={{ padding: '8px 12px', background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '6px', fontSize: '12px', fontWeight: 600, color: '#92400E' }}>
+          Recovery mode active
+        </div>
+      )}
       <h4 style={{ margin: 0, fontWeight: 700 }}>Select Untagged Session</h4>
       {sessions.length === 0 ? (
         <div style={{ padding: '16px', background: '#F8FAFC', borderRadius: '8px', textAlign: 'center', color: '#475569' }}>No untagged sessions available.</div>

@@ -51,6 +51,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [captureSummary, setCaptureSummary] = useState<CaptureSummary | null>(null);
   const [tagTempId, setTagTempId] = useState<string>('');
   const [selectedSession, setSelectedSession] = useState<UntaggedSessionOption | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,6 +61,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       setViolationCategory(null);
       setCaptureSummary(null);
       setTagTempId('');
+      setSaveError(null);
       Geolocation.getCurrentPosition({ enableHighAccuracy: true })
         .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
         .catch(() => {});
@@ -108,6 +110,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       return alert('Please specify violation details in NOTES when category is "OTHERS"');
     }
     setSaving(true);
+    setSaveError(null);
+    const isQuotaErr = (e: any) => e?.name === 'QuotaExceededError' || /quota/i.test(String(e?.message || e || ''));
     try {
       if (captureSource === 'existing' && selectedSession && RECOVERY_MODE) {
         const recoveryTagTempId = `temp_tag_${generateUUID()}`;
@@ -131,10 +135,14 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           session_id: selectedSession.sessionId,
           offline_temp_id: recoveryTagTempId,
         };
-        await offlineStorage.enqueueItem('inspection_tag', tagPayload, {
-          tempId: recoveryTagTempId,
-          photoStoreId,
-        });
+        try {
+          await offlineStorage.enqueueItem('inspection_tag', tagPayload, {
+            tempId: recoveryTagTempId,
+            photoStoreId,
+          });
+        } catch (enqErr: any) {
+          throw new Error(isQuotaErr(enqErr) ? 'IndexedDB is also full. Delete some offline photos before retrying.' : (enqErr?.message || String(enqErr)));
+        }
         const queue = await offlineStorage.getQueue();
         const otherTagIds = new Set(
           queue
@@ -146,10 +154,14 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           if (item.type === 'sensor_data' && item.payload?.session_id === selectedSession.sessionId) {
             const existingTagRef = item.payload?.inspection_tag_temp_id ? String(item.payload.inspection_tag_temp_id) : '';
             if (existingTagRef && otherTagIds.has(existingTagRef)) continue;
-            await offlineStorage.updateQueueItemPayload(item.id, {
-              ...item.payload,
-              inspection_tag_temp_id: recoveryTagTempId,
-            });
+            try {
+              await offlineStorage.updateQueueItemPayload(item.id, {
+                ...item.payload,
+                inspection_tag_temp_id: recoveryTagTempId,
+              });
+            } catch (updErr: any) {
+              throw new Error(isQuotaErr(updErr) ? 'IndexedDB is also full. Delete some offline photos before retrying.' : (updErr?.message || String(updErr)));
+            }
           }
         }
         window.dispatchEvent(new CustomEvent('tags_updated'));
@@ -218,7 +230,9 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       showToast({ message: 'Inspection tag saved successfully!', color: 'success' });
       onClose();
     } catch (err: any) {
-      showToast({ message: err.message || 'Failed to save tag', color: 'danger' });
+      const exactMsg = err?.message || String(err);
+      setSaveError(exactMsg);
+      showToast({ message: exactMsg, color: 'danger', duration: 5000 });
     } finally {
       setSaving(false);
     }
@@ -299,6 +313,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           <TagFormReview
             tagName={tagName} notes={notes} violationCategory={violationCategory}
             ammonia={ammonia} temperature={temp} lat={lat} lng={lng} saving={saving}
+            isRecoveryMode={captureSource === 'existing' && RECOVERY_MODE}
+            errorMessage={saveError}
             onChangeTagName={setTagName} onChangeNotes={setNotes}
             onChangeViolationCategory={setViolationCategory}
             onBack={() => setStep(3)} onSave={handleSave}
