@@ -20,6 +20,18 @@ export const SyncStatusBanner: React.FC = () => {
     sitesCacheService.getLastSyncedAt().then((ts) => {
       if (ts) setLastSyncedTime(new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     });
+
+    syncService.getPendingCount().then((count) => {
+      setPendingCount(count);
+    });
+
+    const handleQueueChanged = () => {
+      syncService.getPendingCount().then((count) => {
+        setPendingCount(count);
+      });
+    };
+    window.addEventListener('sync_queue_changed', handleQueueChanged);
+
     const unsubscribe = syncService.subscribe((evt) => {
       setIsOnline(evt.isOnline);
       setPendingCount(evt.pendingCount);
@@ -33,7 +45,10 @@ export const SyncStatusBanner: React.FC = () => {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      window.removeEventListener('sync_queue_changed', handleQueueChanged);
+    };
   }, []);
 
   const handleResync = async () => {
@@ -53,6 +68,8 @@ export const SyncStatusBanner: React.FC = () => {
         setFailedItems(failed);
         setShowResultModal(true);
         showToast({ message: `⚠️ Sync completed with ${res.failed} error(s). Review details in the popup.`, color: 'warning', duration: 4000 });
+      } else if (res.success === 0 && res.failed === 0) {
+        showToast({ message: 'All offline records are already in sync.', color: 'success', duration: 3000 });
       } else {
         showToast({ message: `🎉 Synced successfully! Last synced at ${timeStr}.`, color: 'success', duration: 3500 });
       }
