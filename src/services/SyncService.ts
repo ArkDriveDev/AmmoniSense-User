@@ -368,29 +368,24 @@ class SyncService {
     const { data: userData } = await supabase.auth.getUser();
     const currentUserId = userData?.user?.id || null;
 
-    // 2. Normalize parsed payload → real columns
+    // 2. Normalize parsed payload → real columns (strict whitelist)
+    const rawAmmonia = Number(payload.nh3_ppm ?? payload.ammonia ?? 0);
+    const rawBattery = payload.battery_percent ?? payload.battery;
     const sensorRecord: Record<string, any> = {
       device_uid: deviceUid,
-      ammonia: Number(payload.nh3_ppm ?? payload.ammonia ?? 0),
+      ammonia: rawAmmonia,
       temperature: payload.temperature !== undefined && payload.temperature !== null
         ? Number(payload.temperature) : null,
       humidity: payload.humidity !== undefined && payload.humidity !== null
         ? Number(payload.humidity) : null,
-      battery: payload.battery_percent !== undefined && payload.battery_percent !== null
-        ? Number(payload.battery_percent)
-        : (payload.battery !== undefined && payload.battery !== null
-            ? Number(payload.battery) : null),
-      status: payload.status || calculateAmmoniaStatus(Number(payload.nh3_ppm ?? 0)),
-      latitude: payload.latitude !== undefined && payload.latitude !== null
-        ? Number(payload.latitude) : null,
-      longitude: payload.longitude !== undefined && payload.longitude !== null
-        ? Number(payload.longitude) : null,
-      submitted_by: payload.submitted_by || payload.created_by || currentUserId,
+      battery: rawBattery !== undefined && rawBattery !== null
+        ? Number(rawBattery) : null,
+      status: payload.status || calculateAmmoniaStatus(rawAmmonia),
+      submitted_by: payload.submitted_by ?? payload.created_by ?? currentUserId ?? null,
       session_id: payload.session_id || null,
       inspection_tag_id: payload.inspection_tag_id || null,
       inspection_tag_temp_id: payload.inspection_tag_temp_id || null,
     };
-    if (payload.notes !== undefined) sensorRecord.notes = payload.notes;
 
     const { data: inserted, error } = await supabase
       .from('sensor_data')
