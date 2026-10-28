@@ -530,6 +530,62 @@ class OfflineStorageService {
     }
   }
 
+  async getAllSchedulesFromIDB(siteId?: string | number): Promise<any[]> {
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SCHEDULES_STORE, 'readonly');
+      const store = tx.objectStore(SCHEDULES_STORE);
+      const req = store.getAll();
+      req.onsuccess = async () => {
+        let list: any[] = req.result || [];
+        if (list.length === 0) {
+          const offline = this.getOfflineSchedules();
+          if (offline.length > 0) {
+            await this.upsertSchedulesToIDB(offline);
+            list = offline;
+          }
+        }
+        if (siteId) {
+          const target = String(siteId);
+          list = list.filter((s: any) => String(s.inspection_site_id) === target || String(s.offline_temp_id) === target);
+        }
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async upsertSchedulesToIDB(schedules: any[]): Promise<void> {
+    if (!Array.isArray(schedules) || schedules.length === 0) return;
+    const db = await this.initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SCHEDULES_STORE, 'readwrite');
+      const store = tx.objectStore(SCHEDULES_STORE);
+      schedules.forEach((s) => {
+        const id = s.id !== undefined && s.id !== null ? s.id : s.offline_temp_id || s.temp_id;
+        if (id !== undefined && id !== null) {
+          store.put({ ...s, id });
+        }
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async deleteScheduleFromIDB(id: string | number): Promise<void> {
+    const db = await this.initDB();
+    const strId = String(id);
+    const numId = Number(id);
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SCHEDULES_STORE, 'readwrite');
+      const store = tx.objectStore(SCHEDULES_STORE);
+      store.delete(strId);
+      if (!isNaN(numId)) store.delete(numId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   public getOfflineSchedules(): any[] {
     try {
       const data = localStorage.getItem('offline_inspection_schedules');
@@ -541,11 +597,13 @@ class OfflineStorageService {
     const list = this.getOfflineSchedules().filter((s: any) => s.id !== schedule.id);
     list.unshift(schedule);
     localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
+    this.upsertSchedulesToIDB([{ ...schedule, isOffline: true, offline_temp_id: schedule.id }]);
   }
 
   public removeOfflineSchedule(id: string | number): void {
     const list = this.getOfflineSchedules().filter((s: any) => String(s.id) !== String(id));
     localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
+    this.deleteScheduleFromIDB(id);
   }
 
   public getOfflineTags(): any[] {
