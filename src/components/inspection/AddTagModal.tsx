@@ -5,14 +5,17 @@ import {
 } from '@ionic/react';
 import { closeOutline, arrowForwardOutline, arrowBackOutline } from 'ionicons/icons';
 import { Geolocation } from '@capacitor/geolocation';
+import { CameraSource } from '@capacitor/camera';
 import BLEConnectPanel from './BLEConnectPanel';
 import SensorCaptureFlow from './SensorCaptureFlow';
 import CaptureSummaryView from './CaptureSummaryView';
 import TagLocationStep from './TagLocationStep';
 import TagPhotoStep from './TagPhotoStep';
 import TagFormReview from './TagFormReview';
+import UntaggedSessionList, { UntaggedSessionOption } from './UntaggedSessionList';
 import { captureInspectionPhoto } from '../../services/photoStorageService';
 import { createTag } from '../../services/tagService';
+import offlineStorage from '../../services/OfflineStorageService';
 import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { CapturedSessionReading, CaptureSummary } from '../../types/capture';
 import { computeCaptureSummary } from '../../utils/captureSummary';
@@ -45,11 +48,17 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [saving, setSaving] = useState<boolean>(false);
   const [captureSummary, setCaptureSummary] = useState<CaptureSummary | null>(null);
   const [tagTempId, setTagTempId] = useState<string>('');
+  const [selectedSession, setSelectedSession] = useState<UntaggedSessionOption | null>(null);
+  const [activeSiteId, setActiveSiteId] = useState<number | string>(siteId || '');
+  const [activeScheduleId, setActiveScheduleId] = useState<number | string>(scheduleId || '');
 
   useEffect(() => {
     if (isOpen) {
       setStep(0);
       setCaptureSource('new');
+      setSelectedSession(null);
+      setActiveSiteId(siteId || '');
+      setActiveScheduleId(scheduleId || '');
       setViolationCategory(null);
       setCaptureSummary(null);
       setTagTempId('');
@@ -57,7 +66,22 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
         .catch(() => {});
     }
-  }, [isOpen]);
+  }, [isOpen, siteId, scheduleId]);
+
+  const handleSelectExistingSession = (s: UntaggedSessionOption) => {
+    setSelectedSession(s);
+    setAmmonia(s.avgPpm);
+    setTemp(s.avgTemp);
+    setHum(s.avgHum);
+    setBattery(s.avgBat);
+    if (s.deviceUid) setDeviceUid(s.deviceUid);
+    Geolocation.getCurrentPosition({ enableHighAccuracy: true })
+      .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
+      .catch(() => {
+        if (s.firstLat !== undefined && s.firstLng !== undefined) { setLat(s.firstLat); setLng(s.firstLng); }
+      });
+    setStep(3);
+  };
 
   const handleCaptureComplete = useCallback((readings: CapturedSessionReading[], sessionId: string, tempId: string) => {
     const sum = computeCaptureSummary(readings, sessionId, tempId);
@@ -72,8 +96,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     }
   }, []);
 
-  const handleCapturePhoto = async () => {
-    const res = await captureInspectionPhoto();
+  const handleCapturePhoto = async (source: CameraSource = CameraSource.Camera) => {
+    const res = await captureInspectionPhoto(source);
     if (res) {
       setPhotoDataUrl(res.dataUrl);
       setThumbDataUrl(res.thumbnailDataUrl);
@@ -82,13 +106,21 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
 
   const handleSave = async () => {
     if (!tagName.trim()) return alert('Please enter a TAG NAME');
+    if (captureSource === 'existing' && (!activeSiteId || !activeScheduleId)) {
+      return alert('Please select both a SITE and a SCHEDULE');
+    }
     if (violationCategory === 'OTHERS' && !notes.trim()) {
       return alert('Please specify violation details in NOTES when category is "OTHERS"');
     }
     setSaving(true);
     try {
-      // 1. Create tag record first to obtain its numeric database ID
-      const createdTag = await createTag({
+      const effectiveTempId = captureSource === 'existing'
+        ? `temp_tag_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+        : (tagTempId || undefined);
+      const finalSchedId = captureSource === 'existing' ? activeScheduleId : scheduleId;
+      const finalSiteId = captureSource === 'existing' ? activeSiteId : siteId;
+
+      await createTag({
         tag_name: toUpperClean(tagName),
         ammonia: (ammonia !== undefined && ammonia !== null && !isNaN(Number(ammonia))) ? Number(ammonia) : 0,
         temperature: (temp !== undefined && temp !== null && !isNaN(Number(temp))) ? Number(temp) : undefined,
@@ -99,12 +131,40 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         photo_url: photoDataUrl || null,
         photo_thumbnail_url: thumbDataUrl || null,
         device_uid: deviceUid,
-        inspection_schedule_id: scheduleId,
-        inspection_site_id: siteId || undefined,
+        inspection_schedule_id: finalSchedId,
+        inspection_site_id: finalSiteId || undefined,
         violation_category: violationCategory || null,
         notes: toUpperClean(notes),
-        offline_temp_id: tagTempId || undefined,
+        offline_temp_id: effectiveTempId,
       });
+
+      if (captureSource === 'existing' && selectedSession && effectiveTempId) {
+        const queue = await offlineStorage.getQueue();
+        const otherTagIds = new Set(
+          queue
+            .filter((q) => (q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG') && q.tempId !== effectiveTempId)
+            .flatMap((t) => [t.tempId, t.payload?.temp_id, t.payload?.offline_temp_id])
+            .filter(Boolean).map(String)
+        );
+        const tagItem = queue.find((q) => q.tempId === effectiveTempId || q.payload?.offline_temp_id === effectiveTempId);
+        if (tagItem) {
+          await offlineStorage.updateQueueItemPayload(tagItem.id, {
+            ...tagItem.payload,
+            session_id: selectedSession.sessionId,
+            inspection_site_id: finalSiteId,
+            inspection_schedule_id: finalSchedId,
+          });
+        }
+        for (const q of queue) {
+          if ((q.type === 'sensor_data' || q.type === 'SENSOR_READING') && q.payload?.session_id === selectedSession.sessionId) {
+            const existingTagRef = q.payload?.inspection_tag_temp_id ? String(q.payload.inspection_tag_temp_id) : '';
+            if (existingTagRef && otherTagIds.has(existingTagRef)) continue;
+            await offlineStorage.updateQueueItemPayload(q.id, { ...q.payload, inspection_tag_temp_id: effectiveTempId });
+          }
+        }
+        window.dispatchEvent(new CustomEvent('tags_updated'));
+        window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+      }
 
       onCreated?.();
       showToast({ message: 'Inspection tag saved successfully!', color: 'success' });
@@ -158,6 +218,9 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             </IonButton>
           </div>
         )}
+        {step === 1 && captureSource === 'existing' && (
+          <UntaggedSessionList onSelect={handleSelectExistingSession} onBack={() => setStep(0)} />
+        )}
         {step === 2 && (
           <div>
             <h4 style={{ margin: '0 0 12px 0' }}>Step 2: AmmoniSense Sensor Reading</h4>
@@ -178,8 +241,9 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         {step === 3 && (
           <TagPhotoStep
             photoDataUrl={photoDataUrl}
-            onCapture={handleCapturePhoto}
-            onBack={() => setStep(2)}
+            onCapture={() => handleCapturePhoto(CameraSource.Camera)}
+            onPickGallery={() => handleCapturePhoto(CameraSource.Photos)}
+            onBack={() => setStep(captureSource === 'existing' ? 1 : 2)}
             onNext={() => setStep(4)}
           />
         )}
@@ -187,6 +251,9 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           <TagFormReview
             tagName={tagName} notes={notes} violationCategory={violationCategory}
             ammonia={ammonia} temperature={temp} lat={lat} lng={lng} saving={saving}
+            showSiteSchedulePickers={captureSource === 'existing'}
+            selectedSiteId={activeSiteId} selectedScheduleId={activeScheduleId}
+            onChangeSiteId={setActiveSiteId} onChangeScheduleId={setActiveScheduleId}
             onChangeTagName={setTagName} onChangeNotes={setNotes}
             onChangeViolationCategory={setViolationCategory}
             onBack={() => setStep(3)} onSave={handleSave}
