@@ -220,60 +220,48 @@ export const deleteReading = async (readingId: string | number): Promise<void> =
 };
 
 /**
- * Fetch all monitoring sites with offline resilience:
- * - Reads locally cached sites immediately from IndexedDB (sitesCacheService)
- * - Fetches from Supabase if online and updates local cache
- * - Combines with any pending offline-registered sites
+ * Fetch all monitoring sites with IndexedDB as single source of truth:
+ * - Reads locally stored sites immediately from IndexedDB (all_sites)
+ * - Kicks off background fetch from Supabase to upsert into IndexedDB
+ * - Unsynced sites with offline_temp_id are never overwritten or deleted
  */
 export const fetchSites = async (userId?: string): Promise<any[]> => {
-  let cachedSites = await sitesCacheService.getCachedSites(userId);
-  if (cachedSites.length === 0) {
-    const fallbackLs = offlineStorage.getCachedSites();
-    cachedSites = userId ? fallbackLs.filter((s: any) => !s.created_by || s.created_by === userId) : fallbackLs;
-  }
+  const idbSites = await offlineStorage.getAllSitesFromIDB();
 
-  let onlineSites: any[] = cachedSites;
+  const formatList = (raw: any[]) =>
+    raw
+      .filter((s: any) => !userId || !s.created_by || s.created_by === userId)
+      .map((s: any) => {
+        const isOffline = Boolean(s.isOffline || s.offline_temp_id || String(s.id).startsWith('temp_'));
+        return {
+          ...s,
+          isOffline,
+          is_pending_sync: isOffline,
+          location: s.location || s.address,
+          address: s.address || s.location,
+        };
+      });
 
   if (isOnline()) {
-    try {
-      let q = supabase.from('inspection_sites').select('*');
-      if (userId) q = q.eq('created_by', userId);
-      const { data, error } = await withTimeout<any>(q, 3500);
-      if (!error && data) {
-        await sitesCacheService.saveSitesCache(userId, data);
-        offlineStorage.saveCachedSites(data);
-        onlineSites = data;
+    (async () => {
+      try {
+        let q = supabase.from('inspection_sites').select('*');
+        if (userId) q = q.eq('created_by', userId);
+        const { data, error } = await withTimeout<any>(q, 3500);
+        if (!error && Array.isArray(data)) {
+          await offlineStorage.upsertSitesToIDB(data);
+          offlineStorage.saveCachedSites(data);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('sites_updated'));
+          }
+        }
+      } catch (err) {
+        console.warn('[siteService] Background Supabase fetch failed:', err);
       }
-    } catch (err) {
-      console.warn('[siteService] Network offline/slow during fetchSites, serving cached:', err);
-    }
+    })();
   }
 
-  let offlineSites: any[] = [];
-  try {
-    const offlineRecords = await offlineStorage.getOfflineSites();
-    offlineSites = offlineRecords.map((os) => ({
-      id: os.id,
-      offline_temp_id: os.id,
-      site_name: os.site_name,
-      location: os.address,
-      address: os.address,
-      site_code: os.site_code,
-      site_type: os.site_type || 'POULTRY',
-      poultry_type: os.poultry_type || null,
-      chicken_type: os.chicken_type || null,
-      current_latitude: os.current_latitude,
-      current_longitude: os.current_longitude,
-      isOffline: true,
-      is_pending_sync: true,
-      offlineRecord: os,
-    }));
-  } catch (e) {
-    console.warn('[siteService] Error reading offline sites:', e);
-  }
-
-  const onlineIds = new Set(onlineSites.map((s) => String(s.id)));
-  return [...offlineSites.filter((os) => !onlineIds.has(String(os.id))), ...onlineSites];
+  return formatList(idbSites);
 };
 
 /**
