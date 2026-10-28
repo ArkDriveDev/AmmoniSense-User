@@ -275,17 +275,30 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           });
 
           const queue = await offlineStorage.getQueue();
-          const strId = String(editSite.id);
-          const existingQueueItem = queue.find((q) =>
-            q.tempId === strId || q.payload?.temp_id === strId || (q.targetId && String(q.targetId) === strId)
-          );
+          const strId = String(editSite.offline_temp_id || editSite.id);
+          const existingQueueItem = queue.find((q) => {
+            const isSiteType = q.type === 'SITE_REGISTRATION' || q.type === 'inspection_site';
+            if (!isSiteType) return false;
+            const pTempId = q.payload?.temp_id || q.payload?.offline_temp_id;
+            return (
+              q.tempId === strId ||
+              pTempId === strId ||
+              String(q.payload?.id) === strId ||
+              (q.targetId && String(q.targetId) === strId)
+            );
+          });
 
-          if (existingQueueItem && existingQueueItem.action === 'insert') {
-            const updatedPayload = { ...existingQueueItem.payload, ...siteUpdateData };
+          if (existingQueueItem) {
+            const updatedPayload = {
+              ...existingQueueItem.payload,
+              ...siteUpdateData,
+              temp_id: existingQueueItem.payload?.temp_id || strId,
+              offline_temp_id: existingQueueItem.payload?.offline_temp_id || strId,
+            };
             await offlineStorage.updateQueueItemPayload(existingQueueItem.id, updatedPayload);
           } else {
-            await offlineStorage.enqueueItem('inspection_site', siteUpdateData, {
-              action: 'update',
+            await offlineStorage.enqueueItem('SITE_REGISTRATION', siteUpdateData, {
+              action: isOfflineOnly ? 'insert' : 'update',
               targetId: !isOfflineOnly ? Number(editSite.id) : null,
               tempId: isOfflineOnly ? strId : null,
             });
@@ -363,7 +376,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
       await offlineStorage.saveOfflineSite(offlineSiteRecord);
 
-      await offlineStorage.enqueueItem('inspection_site', sitePayload, {
+      await offlineStorage.enqueueItem('SITE_REGISTRATION', sitePayload, {
         action: 'insert',
         tempId,
       });
