@@ -36,51 +36,53 @@ const formatTag = (d: any, isOffline = false): InspectionTag => {
 };
 
 export async function fetchTags(filter?: { scheduleId?: number | string; siteId?: number | string; scheduleTempId?: string }): Promise<InspectionTag[]> {
-  let online: InspectionTag[] = [];
-  try {
-    let q = supabase.from('inspection_tags').select('*, sensor_data(*)').order('created_at', { ascending: false });
-    if (filter?.scheduleId) q = q.eq('inspection_schedule_id', filter.scheduleId);
-    if (filter?.siteId) q = q.eq('inspection_site_id', filter.siteId);
-    let { data, error } = await q;
-    if (error) {
-      console.warn('[tagService] sensor_data join notice, falling back:', error.message);
-      let fallbackQ = supabase.from('inspection_tags').select('*').order('created_at', { ascending: false });
-      if (filter?.scheduleId) fallbackQ = fallbackQ.eq('inspection_schedule_id', filter.scheduleId);
-      if (filter?.siteId) fallbackQ = fallbackQ.eq('inspection_site_id', filter.siteId);
-      const res = await fallbackQ;
-      data = res.data;
-    }
-    if (data) {
-      online = await Promise.all(
-        data.map(async (d: any) => {
-          const t = formatTag(d, false);
-          if (t.photo_thumbnail_url && !t.photo_thumbnail_url.startsWith('data:')) {
-            const signed = await getSignedPhotoUrl('inspection-thumbnails', t.photo_thumbnail_url);
-            if (signed) t.photo_thumbnail_url = signed;
-          }
-          if (t.photo_url && !t.photo_url.startsWith('data:')) {
-            const signed = await getSignedPhotoUrl('inspection-photos', t.photo_url);
-            if (signed) t.photo_url = signed;
-          }
-          return t;
-        })
-      );
-    }
-  } catch (err) {
-    console.warn('[tagService] Online fetch tags notice:', err);
-  }
+  const idbTags = await offlineStorage.getAllTagsFromIDB(filter);
 
-  const offline = offlineStorage.getOfflineTags().filter((t: any) => {
-    if (filter?.scheduleId) {
-      const matchScheduleId = String(t.inspection_schedule_id) === String(filter.scheduleId);
-      const matchTempId = filter.scheduleTempId && String(t.inspection_schedule_id) === String(filter.scheduleTempId);
-      if (!matchScheduleId && !matchTempId) return false;
+  const formatList = (raw: any[]) =>
+    raw.map((d: any) => {
+      const isOffline = Boolean(d.isOffline || d.offline_temp_id || String(d.id).startsWith('temp_'));
+      return formatTag(d, isOffline);
+    });
+
+  (async () => {
+    try {
+      let q = supabase.from('inspection_tags').select('*, sensor_data(*)').order('created_at', { ascending: false });
+      if (filter?.scheduleId) q = q.eq('inspection_schedule_id', filter.scheduleId);
+      if (filter?.siteId) q = q.eq('inspection_site_id', filter.siteId);
+      let { data, error } = await q;
+      if (error) {
+        let fallbackQ = supabase.from('inspection_tags').select('*').order('created_at', { ascending: false });
+        if (filter?.scheduleId) fallbackQ = fallbackQ.eq('inspection_schedule_id', filter.scheduleId);
+        if (filter?.siteId) fallbackQ = fallbackQ.eq('inspection_site_id', filter.siteId);
+        const res = await fallbackQ;
+        data = res.data;
+      }
+      if (data && Array.isArray(data)) {
+        const online = await Promise.all(
+          data.map(async (d: any) => {
+            const t = formatTag(d, false);
+            if (t.photo_thumbnail_url && !t.photo_thumbnail_url.startsWith('data:')) {
+              const signed = await getSignedPhotoUrl('inspection-thumbnails', t.photo_thumbnail_url);
+              if (signed) t.photo_thumbnail_url = signed;
+            }
+            if (t.photo_url && !t.photo_url.startsWith('data:')) {
+              const signed = await getSignedPhotoUrl('inspection-photos', t.photo_url);
+              if (signed) t.photo_url = signed;
+            }
+            return t;
+          })
+        );
+        await offlineStorage.upsertTagsToIDB(online);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tags_updated'));
+        }
+      }
+    } catch (err) {
+      console.warn('[tagService] Background Supabase fetch tags notice:', err);
     }
-    if (filter?.siteId && t.inspection_site_id && String(t.inspection_site_id) !== String(filter.siteId)) return false;
-    return true;
-  });
-  const onlineIds = new Set(online.map((t) => String(t.id)));
-  return [...offline.filter((t: any) => !onlineIds.has(String(t.id))), ...online];
+  })();
+
+  return formatList(idbTags);
 }
 
 export async function createTag(payload: CreateTagPayload): Promise<InspectionTag> {
