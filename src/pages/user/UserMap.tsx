@@ -103,18 +103,14 @@ export default function UserMap() {
       loadMapData();
     };
 
+    window.addEventListener('sites_updated', handleSyncOrDelete);
     window.addEventListener('site_deleted', handleSyncOrDelete);
     window.addEventListener('site_synced', handleSyncOrDelete);
-    window.addEventListener('sensor_synced', handleSyncOrDelete);
-    window.addEventListener('offline_sync_completed', handleSyncOrDelete);
-    window.addEventListener('tags_updated', handleSyncOrDelete);
 
     return () => {
+      window.removeEventListener('sites_updated', handleSyncOrDelete);
       window.removeEventListener('site_deleted', handleSyncOrDelete);
       window.removeEventListener('site_synced', handleSyncOrDelete);
-      window.removeEventListener('sensor_synced', handleSyncOrDelete);
-      window.removeEventListener('offline_sync_completed', handleSyncOrDelete);
-      window.removeEventListener('tags_updated', handleSyncOrDelete);
     };
   }, []);
 
