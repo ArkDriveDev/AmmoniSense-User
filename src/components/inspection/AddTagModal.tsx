@@ -20,7 +20,7 @@ import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { CapturedSessionReading, CaptureSummary } from '../../types/capture';
 import { computeCaptureSummary } from '../../utils/captureSummary';
 import { generateUUID } from '../../hooks/useSensorCaptureLoop';
-import { RECOVERY_MODE } from '../../constants/recovery';
+import { RECOVERY_MODE, RECOVERY_FALLBACKS } from '../../constants/recovery';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
 import { showToast } from '../../utils/toast';
 
@@ -35,8 +35,9 @@ interface Props {
 export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, siteId, onCreated }) => {
   const [step, setStep] = useState<number>(0);
   const [captureSource, setCaptureSource] = useState<'new' | 'existing'>('new');
-  const [lat, setLat] = useState<number>(8.3683);
-  const [lng, setLng] = useState<number>(124.8637);
+  const [lat, setLat] = useState<number | null>(8.3683);
+  const [lng, setLng] = useState<number | null>(124.8637);
+  const [recoveryIndex, setRecoveryIndex] = useState<number>(0);
   const [ammonia, setAmmonia] = useState<number | null>(null);
   const [temp, setTemp] = useState<number | null>(null);
   const [hum, setHum] = useState<number | null>(null);
@@ -75,10 +76,13 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     setHum(s.avgHum);
     setBattery(s.avgBat);
     if (s.deviceUid) setDeviceUid(s.deviceUid);
+    setLat(s.firstLat ?? null);
+    setLng(s.firstLng ?? null);
     Geolocation.getCurrentPosition({ enableHighAccuracy: true })
       .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
       .catch(() => {
-        if (s.firstLat !== undefined && s.firstLng !== undefined) { setLat(s.firstLat); setLng(s.firstLng); }
+        setLat(s.firstLat ?? null);
+        setLng(s.firstLng ?? null);
       });
     setStep(3);
   };
@@ -125,13 +129,14 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             finalNotes = finalNotes ? `${finalNotes} [PHOTO PENDING]` : '[PHOTO PENDING]';
           }
         }
+        const fb = RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length];
         const tagPayload = {
           tag_name: toUpperClean(tagName),
           inspection_schedule_id: scheduleId,
           violation_category: violationCategory || null,
           notes: finalNotes,
-          latitude: lat,
-          longitude: lng,
+          latitude: lat ?? fb.lat,
+          longitude: lng ?? fb.lng,
           session_id: selectedSession.sessionId,
           offline_temp_id: recoveryTagTempId,
         };
@@ -165,6 +170,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             }
           }
         }
+        setRecoveryIndex((prev) => (prev + 1) % RECOVERY_FALLBACKS.length);
         window.dispatchEvent(new CustomEvent('tags_updated'));
         window.dispatchEvent(new CustomEvent('sync_queue_changed'));
         showToast({ message: 'Tag queued for sync (recovery mode)', color: 'success' });
@@ -187,8 +193,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         temperature: (temp !== undefined && temp !== null && !isNaN(Number(temp))) ? Number(temp) : undefined,
         humidity: (hum !== undefined && hum !== null && !isNaN(Number(hum))) ? Number(hum) : undefined,
         battery: (battery !== undefined && battery !== null && !isNaN(Number(battery))) ? Number(battery) : undefined,
-        latitude: lat,
-        longitude: lng,
+        latitude: lat ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lat,
+        longitude: lng ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lng,
         photo_url: photoDataUrl || null,
         photo_thumbnail_url: thumbDataUrl || null,
         device_uid: deviceUid,
@@ -223,6 +229,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             await offlineStorage.updateQueueItemPayload(q.id, { ...q.payload, inspection_tag_temp_id: effectiveTempId });
           }
         }
+        setRecoveryIndex((prev) => (prev + 1) % RECOVERY_FALLBACKS.length);
         window.dispatchEvent(new CustomEvent('tags_updated'));
         window.dispatchEvent(new CustomEvent('sync_queue_changed'));
       }
@@ -275,7 +282,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         )}
         {step === 1 && captureSource === 'new' && (
           <div>
-            <TagLocationStep lat={lat} lng={lng} onChangeLat={setLat} onChangeLng={setLng} onNext={() => setStep(2)} />
+            <TagLocationStep lat={lat ?? 8.3683} lng={lng ?? 124.8637} onChangeLat={setLat} onChangeLng={setLng} onNext={() => setStep(2)} />
             <IonButton expand="block" fill="clear" color="medium" style={{ marginTop: '8px' }} onClick={() => setStep(0)}>
               <IonIcon icon={arrowBackOutline} slot="start" /> Back to Capture Source
             </IonButton>
@@ -313,7 +320,10 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         {step === 4 && (
           <TagFormReview
             tagName={tagName} notes={notes} violationCategory={violationCategory}
-            ammonia={ammonia} temperature={temp} lat={lat} lng={lng} saving={saving}
+            ammonia={ammonia} temperature={temp}
+            lat={lat ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lat}
+            lng={lng ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lng}
+            saving={saving}
             isRecoveryMode={captureSource === 'existing' && RECOVERY_MODE}
             errorMessage={saveError}
             onChangeTagName={setTagName} onChangeNotes={setNotes}
