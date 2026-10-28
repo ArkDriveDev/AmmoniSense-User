@@ -12,6 +12,7 @@ import UserDevices from './pages/user/UserDevices';
 import AddTagPage from './pages/user/AddTagPage';
 import UserMap from './pages/user/UserMap';
 import UserBLESensor from './pages/user/UserBLESensor';
+import SensorCheckerPage from './pages/user/SensorCheckerPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './layouts/UserLayout';
@@ -98,6 +99,17 @@ export default function AppRouter() {
           <ProtectedRoute>
             <UserLayout>
               <ScheduleDetail />
+            </UserLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/checker"
+        element={
+          <ProtectedRoute>
+            <UserLayout>
+              <SensorCheckerPage />
             </UserLayout>
           </ProtectedRoute>
         }

@@ -36,6 +36,7 @@ import {
   personCircleOutline,
   closeOutline,
   menuOutline,
+  pulseOutline,
   mapOutline
 } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
@@ -232,6 +233,18 @@ export default function UserLayout({ children }: any) {
               >
                 <IonIcon icon={hardwareChipOutline} slot="start" color={isActive('/devices') || isActive('/my-devices') ? 'light' : 'primary'} />
                 <IonLabel>Devices</IonLabel>
+              </IonItem>
+            </IonMenuToggle>
+
+            <IonMenuToggle menu="user-menu" autoHide={false}>
+              <IonItem
+                button
+                onClick={() => handleNavigate('/checker')}
+                color={isActive('/checker') ? 'primary' : undefined}
+                style={isActive('/checker') ? { borderLeft: '4px solid #1D5D9B', fontWeight: 'bold' } : {}}
+              >
+                <IonIcon icon={pulseOutline} slot="start" color={isActive('/checker') ? 'light' : 'primary'} />
+                <IonLabel>Checker</IonLabel>
               </IonItem>
             </IonMenuToggle>
 
