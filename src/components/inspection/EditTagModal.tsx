@@ -9,6 +9,7 @@ import {
   batteryChargingOutline, locationOutline, cameraOutline, trashOutline
 } from 'ionicons/icons';
 import { updateTag, deleteTag } from '../../services/tagService';
+import offlineStorage from '../../services/OfflineStorageService';
 import { InspectionTag, ViolationCategory, toUpperClean } from '../../types/inspection';
 import { VIOLATION_CATEGORIES } from '../../constants/violationCategories';
 import { captureImageWithCameraOrFallback, dataURLtoBlob } from '../../utils/photoUtils';
@@ -107,9 +108,15 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
   };
 
   const handleDelete = async () => {
+    if (!tag) return;
     setDeleting(true);
     try {
-      await deleteTag(tag.id);
+      const isOffline = String(tag.id).startsWith('temp_') || (tag as any).isOffline;
+      if (isOffline) {
+        await offlineStorage.deleteTagAndChildren(String(tag.id));
+      } else {
+        await deleteTag(tag.id);
+      }
       showToast({ message: 'Inspection tag deleted successfully!', color: 'success' });
       onDeleted?.();
       onClose();
