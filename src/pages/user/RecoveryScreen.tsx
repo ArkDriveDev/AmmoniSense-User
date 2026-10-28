@@ -9,6 +9,9 @@ import {
 } from '@ionic/react';
 import offlineStorage, { QueueItem } from '../../services/OfflineStorageService';
 import syncService from '../../services/SyncService';
+import { createTag } from '../../services/tagService';
+import { showToast } from '../../utils/toast';
+import RecoveryTagForm, { RecoveryFormValues } from '../../components/recovery/RecoveryTagForm';
 
 export interface SessionGroup {
   sessionId: string;
@@ -104,6 +107,52 @@ const RecoveryScreen: React.FC = () => {
   }, [queueItems]);
 
   const storageBadgeColor = diag.usageRatio > 0.85 ? 'danger' : diag.usageRatio >= 0.6 ? 'warning' : 'success';
+  const activeSession = sessions.find((s) => s.sessionId === activeSessionId && !s.matchedTag);
+
+  const handleSaveTag = async (session: SessionGroup, values: RecoveryFormValues) => {
+    const tempTagId = `temp_tag_${Date.now()}`;
+    const firstReading = session.readings[0]?.payload || {};
+    await createTag({
+      tag_name: values.tagName,
+      ammonia: Number(session.maxPpm.toFixed(2)),
+      temperature: Number(session.avgTemp.toFixed(2)),
+      humidity: Number(session.avgHum.toFixed(2)),
+      battery: Math.round(session.avgBat || 100),
+      latitude: Number(firstReading.latitude || 0),
+      longitude: Number(firstReading.longitude || 0),
+      device_uid: firstReading.device_uid || null,
+      inspection_schedule_id: values.scheduleId,
+      inspection_site_id: values.siteId,
+      violation_category: values.violationCategory,
+      notes: values.notes,
+      photo_url: values.photoDataUrl,
+      photo_thumbnail_url: values.thumbDataUrl,
+      offline_temp_id: tempTagId,
+    });
+
+    const latestQueue = await offlineStorage.getQueue();
+    const tagItem = latestQueue.find((q) => q.tempId === tempTagId || q.payload?.offline_temp_id === tempTagId);
+    if (tagItem) {
+      await offlineStorage.updateQueueItemPayload(tagItem.id, {
+        ...tagItem.payload,
+        session_id: session.sessionId,
+        inspection_site_id: values.siteId,
+      });
+    }
+
+    for (const item of session.readings) {
+      await offlineStorage.updateQueueItemPayload(item.id, {
+        ...item.payload,
+        inspection_tag_temp_id: tempTagId,
+      });
+    }
+
+    window.dispatchEvent(new CustomEvent('tags_updated'));
+    window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+    showToast({ message: `Tag created & linked to ${session.readings.length} readings`, color: 'success' });
+    setActiveSessionId(null);
+    await loadRecoveryData();
+  };
 
   return (
     <IonPage>
@@ -167,6 +216,15 @@ const RecoveryScreen: React.FC = () => {
               ))}
             </IonCardContent>
           </IonCard>
+        )}
+
+        {!loading && activeSession && (
+          <RecoveryTagForm
+            session={activeSession}
+            usageRatio={diag.usageRatio}
+            onCancel={() => setActiveSessionId(null)}
+            onSave={(vals) => handleSaveTag(activeSession, vals)}
+          />
         )}
       </IonContent>
     </IonPage>
