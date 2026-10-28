@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonRefresher, IonRefresherContent, IonButton, IonButtons,
-  IonIcon, IonBadge, IonSpinner, IonCard, IonCardContent
+  IonIcon, IonBadge, IonSpinner, IonCard, IonCardContent, IonAlert
 } from '@ionic/react';
 import {
   addOutline, businessOutline, locationOutline,
@@ -12,7 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
-import { fetchSites as loadAllSites } from '../../services/siteService';
+import { fetchSites as loadAllSites, deleteSite } from '../../services/siteService';
 import CreateSiteModal from '../../components/sites/CreateSiteModal';
 import PendingSyncBadge from '../../components/common/PendingSyncBadge';
 import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
@@ -25,6 +25,7 @@ export default function UserInspectionSites() {
   const [counts, setCounts] = useState<Record<string, { schedules: number; tags: number }>>({});
   const [showCreate, setShowCreate] = useState(false);
   const [editingSite, setEditingSite] = useState<any | null>(null);
+  const [siteToDelete, setSiteToDelete] = useState<any | null>(null);
 
   const handleEditSite = (e: React.MouseEvent, site: any) => {
     e.stopPropagation();
@@ -34,10 +35,7 @@ export default function UserInspectionSites() {
 
   const handleDeleteSite = (e: React.MouseEvent, site: any) => {
     e.stopPropagation();
-    // Dispatch or trigger delete site
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('request_delete_site', { detail: { site } }));
-    }
+    setSiteToDelete(site);
   };
 
   const fetchSites = useCallback(async () => {
@@ -131,7 +129,7 @@ export default function UserInspectionSites() {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>{s.site_name}</h2>
-                        {s.isOffline && <PendingSyncBadge />}
+                        {s.isOffline && <PendingSyncBadge label="Offline — not synced" />}
                         <SiteTypeBadge siteType={s.site_type} />
                         {s.poultry_type && (
                           <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
@@ -196,6 +194,33 @@ export default function UserInspectionSites() {
           }}
           onSiteCreated={fetchSites}
           editSite={editingSite}
+        />
+        <IonAlert
+          isOpen={!!siteToDelete}
+          onDidDismiss={() => setSiteToDelete(null)}
+          header="Delete Inspection Site?"
+          message={
+            siteToDelete?.isOffline
+              ? 'Delete this site and all its offline schedules, tags, and readings? This cannot be undone.'
+              : `Delete "${siteToDelete?.site_name}"?\n\nThis will permanently delete the site along with ALL its inspection schedules, tags, and readings.\nThis action cannot be undone.`
+          }
+          buttons={[
+            { text: 'Cancel', role: 'cancel' },
+            {
+              text: 'Delete',
+              role: 'destructive',
+              handler: async () => {
+                if (!siteToDelete) return;
+                try {
+                  await deleteSite(siteToDelete.id);
+                } catch (err: any) {
+                  alert(err.message || 'Failed to delete site.');
+                } finally {
+                  setSiteToDelete(null);
+                }
+              },
+            },
+          ]}
         />
       </IonContent>
     </IonPage>
