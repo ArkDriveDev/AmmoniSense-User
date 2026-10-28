@@ -144,16 +144,17 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           throw new Error(isQuotaErr(enqErr) ? 'IndexedDB is also full. Delete some offline photos before retrying.' : (enqErr?.message || String(enqErr)));
         }
         const queue = await offlineStorage.getQueue();
-        const otherTagIds = new Set(
+        const queuedTagIds = new Set(
           queue
-            .filter((q) => (q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG') && q.tempId !== recoveryTagTempId)
-            .flatMap((t) => [t.tempId, t.payload?.temp_id, t.payload?.offline_temp_id])
+            .filter((q) => q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG')
+            .flatMap((t) => [t.tempId, t.payload?.offline_temp_id, t.payload?.temp_id])
             .filter(Boolean).map(String)
         );
         for (const item of queue) {
           if (item.type === 'sensor_data' && item.payload?.session_id === selectedSession.sessionId) {
-            const existingTagRef = item.payload?.inspection_tag_temp_id ? String(item.payload.inspection_tag_temp_id) : '';
-            if (existingTagRef && otherTagIds.has(existingTagRef)) continue;
+            const existingRef = item.payload?.inspection_tag_temp_id ? String(item.payload.inspection_tag_temp_id) : '';
+            const needsRelink = !existingRef || existingRef === recoveryTagTempId || !queuedTagIds.has(existingRef);
+            if (!needsRelink) continue;
             try {
               await offlineStorage.updateQueueItemPayload(item.id, {
                 ...item.payload,
