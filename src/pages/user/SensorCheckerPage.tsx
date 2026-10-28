@@ -2,10 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonGrid, IonButton, IonBadge, IonSpinner, IonIcon } from '@ionic/react';
 import { bluetoothOutline, closeCircleOutline, alertCircleOutline } from 'ionicons/icons';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
-import { BluetoothConnectionStatus } from '../../types/schema';
+import LiveReadingsPanel from '../../components/checker/LiveReadingsPanel';
+import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
 
 export default function SensorCheckerPage() {
   const [status, setStatus] = useState<BluetoothConnectionStatus>(bluetoothClassicService.getStatus());
+  const [reading, setReading] = useState<AmmoniSenseReading | null>(bluetoothClassicService.getLatestReading());
   const [isBtEnabled, setIsBtEnabled] = useState<boolean>(true);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -22,7 +24,11 @@ export default function SensorCheckerPage() {
       if (st === 'connected') setErrorMessage(null);
       else if (st === 'failed' || st === 'device_not_found') setErrorMessage('Device not ready. Check the sensor is on.');
     });
-    return () => unsub();
+    const unsubReading = bluetoothClassicService.onReading((r) => setReading(r));
+    return () => {
+      unsub();
+      unsubReading();
+    };
   }, [checkBt]);
 
   const handleConnect = async () => {
@@ -89,6 +95,9 @@ export default function SensorCheckerPage() {
               )}
             </div>
           </div>
+
+          {/* Live Readings Panel */}
+          <LiveReadingsPanel reading={reading} isConnected={isConnected} />
         </IonGrid>
       </IonContent>
     </IonPage>
