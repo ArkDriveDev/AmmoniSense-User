@@ -49,16 +49,12 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [captureSummary, setCaptureSummary] = useState<CaptureSummary | null>(null);
   const [tagTempId, setTagTempId] = useState<string>('');
   const [selectedSession, setSelectedSession] = useState<UntaggedSessionOption | null>(null);
-  const [activeSiteId, setActiveSiteId] = useState<number | string>(siteId || '');
-  const [activeScheduleId, setActiveScheduleId] = useState<number | string>(scheduleId || '');
 
   useEffect(() => {
     if (isOpen) {
       setStep(0);
       setCaptureSource('new');
       setSelectedSession(null);
-      setActiveSiteId(siteId || '');
-      setActiveScheduleId(scheduleId || '');
       setViolationCategory(null);
       setCaptureSummary(null);
       setTagTempId('');
@@ -66,7 +62,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
         .catch(() => {});
     }
-  }, [isOpen, siteId, scheduleId]);
+  }, [isOpen]);
 
   const handleSelectExistingSession = (s: UntaggedSessionOption) => {
     setSelectedSession(s);
@@ -106,9 +102,6 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
 
   const handleSave = async () => {
     if (!tagName.trim()) return alert('Please enter a TAG NAME');
-    if (captureSource === 'existing' && (!activeSiteId || !activeScheduleId)) {
-      return alert('Please select both a SITE and a SCHEDULE');
-    }
     if (violationCategory === 'OTHERS' && !notes.trim()) {
       return alert('Please specify violation details in NOTES when category is "OTHERS"');
     }
@@ -117,8 +110,6 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       const effectiveTempId = captureSource === 'existing'
         ? `temp_tag_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
         : (tagTempId || undefined);
-      const finalSchedId = captureSource === 'existing' ? activeScheduleId : scheduleId;
-      const finalSiteId = captureSource === 'existing' ? activeSiteId : siteId;
 
       await createTag({
         tag_name: toUpperClean(tagName),
@@ -131,8 +122,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         photo_url: photoDataUrl || null,
         photo_thumbnail_url: thumbDataUrl || null,
         device_uid: deviceUid,
-        inspection_schedule_id: finalSchedId,
-        inspection_site_id: finalSiteId || undefined,
+        inspection_schedule_id: scheduleId,
+        inspection_site_id: siteId || undefined,
         violation_category: violationCategory || null,
         notes: toUpperClean(notes),
         offline_temp_id: effectiveTempId,
@@ -151,8 +142,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           await offlineStorage.updateQueueItemPayload(tagItem.id, {
             ...tagItem.payload,
             session_id: selectedSession.sessionId,
-            inspection_site_id: finalSiteId,
-            inspection_schedule_id: finalSchedId,
+            inspection_site_id: siteId || tagItem.payload?.inspection_site_id,
+            inspection_schedule_id: scheduleId,
           });
         }
         for (const q of queue) {
@@ -251,9 +242,6 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           <TagFormReview
             tagName={tagName} notes={notes} violationCategory={violationCategory}
             ammonia={ammonia} temperature={temp} lat={lat} lng={lng} saving={saving}
-            showSiteSchedulePickers={captureSource === 'existing'}
-            selectedSiteId={activeSiteId} selectedScheduleId={activeScheduleId}
-            onChangeSiteId={setActiveSiteId} onChangeScheduleId={setActiveScheduleId}
             onChangeTagName={setTagName} onChangeNotes={setNotes}
             onChangeViolationCategory={setViolationCategory}
             onBack={() => setStep(3)} onSave={handleSave}
