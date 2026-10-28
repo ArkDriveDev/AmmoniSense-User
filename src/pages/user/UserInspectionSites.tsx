@@ -62,9 +62,11 @@ export default function UserInspectionSites() {
 
   useEffect(() => {
     fetchSites();
+    window.addEventListener('sites_updated', fetchSites);
     window.addEventListener('site_synced', fetchSites);
     window.addEventListener('site_deleted', fetchSites);
     return () => {
+      window.removeEventListener('sites_updated', fetchSites);
       window.removeEventListener('site_synced', fetchSites);
       window.removeEventListener('site_deleted', fetchSites);
     };
@@ -79,7 +81,6 @@ export default function UserInspectionSites() {
             <IonButton onClick={() => setShowCreate(true)} style={{ '--color': '#ffffff' }}>
               <IonIcon icon={addOutline} slot="start" /> New Site
             </IonButton>
-            <IonButton onClick={fetchSites} style={{ '--color': '#ffffff' }}><IonIcon icon={refreshOutline} /></IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>

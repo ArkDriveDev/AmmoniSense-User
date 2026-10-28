@@ -36,7 +36,11 @@ export default function UserSchedules() {
   useEffect(() => {
     load();
     window.addEventListener('schedules_updated', load);
-    return () => window.removeEventListener('schedules_updated', load);
+    window.addEventListener('sites_updated', load);
+    return () => {
+      window.removeEventListener('schedules_updated', load);
+      window.removeEventListener('sites_updated', load);
+    };
   }, [load]);
 
   return (

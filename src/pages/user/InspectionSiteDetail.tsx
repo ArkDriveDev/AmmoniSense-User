@@ -61,9 +61,11 @@ export default function InspectionSiteDetail() {
     fetchData();
     window.addEventListener('schedules_updated', fetchData);
     window.addEventListener('site_synced', fetchData);
+    window.addEventListener('sites_updated', fetchData);
     return () => {
       window.removeEventListener('schedules_updated', fetchData);
       window.removeEventListener('site_synced', fetchData);
+      window.removeEventListener('sites_updated', fetchData);
     };
   }, [fetchData]);
 
