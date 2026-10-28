@@ -31,13 +31,13 @@ export interface UploadedTagPhoto {
   photo_thumbnail_storage_path: string | null;
 }
 
-export async function captureInspectionPhoto(): Promise<PhotoCaptureResult | null> {
+export async function captureInspectionPhoto(source: CameraSource = CameraSource.Camera): Promise<PhotoCaptureResult | null> {
   try {
     const photo = await Camera.getPhoto({
       quality: 85,
       allowEditing: false,
       resultType: CameraResultType.DataUrl,
-      source: CameraSource.Camera,
+      source,
     });
     if (!photo.dataUrl) return null;
     const thumbnailDataUrl = await createThumbnail(photo.dataUrl);
