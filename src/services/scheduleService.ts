@@ -23,56 +23,58 @@ const formatSched = (d: any, isOffline = false): InspectionSchedule => ({
 });
 
 export async function fetchSchedules(siteId?: number | string): Promise<InspectionSchedule[]> {
-  let online: InspectionSchedule[] = [];
-  try {
-    let q = supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').order('scheduled_date', { ascending: false });
-    if (siteId) q = q.eq('inspection_site_id', siteId);
-    const { data } = isOnline() ? await withTimeout<any>(q, 3500) : { data: null };
-    if (data) {
-      online = data.map((d: any) => formatSched(d, false));
+  const idbSchedules = await offlineStorage.getAllSchedulesFromIDB(siteId);
 
-      const schedIds = online.map(s => s.id);
-      if (schedIds.length > 0) {
-        const { data: tagRows } = await supabase
-          .from('inspection_tags')
-          .select('id, inspection_schedule_id')
-          .in('inspection_schedule_id', schedIds);
+  const formatList = (raw: any[]) => {
+    const offlineTags = offlineStorage.getOfflineTags?.() || [];
+    return raw.map((d: any) => {
+      const isOffline = Boolean(d.isOffline || d.offline_temp_id || String(d.id).startsWith('temp_'));
+      const item = formatSched(d, isOffline);
+      const pendingCount = offlineTags.filter((ot: any) => String(ot.inspection_schedule_id) === String(item.id)).length;
+      item.tags_count = (item.tags_count || 0) + pendingCount;
+      return item;
+    });
+  };
 
-        if (tagRows) {
-          const counts: Record<string, number> = {};
-          tagRows.forEach((r: any) => {
-            if (r.inspection_schedule_id) {
-              const k = String(r.inspection_schedule_id);
-              counts[k] = (counts[k] || 0) + 1;
+  if (isOnline()) {
+    (async () => {
+      try {
+        let q = supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').order('scheduled_date', { ascending: false });
+        if (siteId) q = q.eq('inspection_site_id', siteId);
+        const { data, error } = await withTimeout<any>(q, 3500);
+        if (!error && Array.isArray(data)) {
+          const formatted = data.map((d: any) => formatSched(d, false));
+          const schedIds = formatted.map((s) => s.id);
+          if (schedIds.length > 0) {
+            const { data: tagRows } = await supabase
+              .from('inspection_tags')
+              .select('id, inspection_schedule_id')
+              .in('inspection_schedule_id', schedIds);
+            if (tagRows) {
+              const counts: Record<string, number> = {};
+              tagRows.forEach((r: any) => {
+                if (r.inspection_schedule_id) {
+                  const k = String(r.inspection_schedule_id);
+                  counts[k] = (counts[k] || 0) + 1;
+                }
+              });
+              formatted.forEach((s) => {
+                s.tags_count = counts[String(s.id)] || 0;
+              });
             }
-          });
-          online.forEach((s) => {
-            s.tags_count = counts[String(s.id)] || 0;
-          });
+          }
+          await offlineStorage.upsertSchedulesToIDB(formatted);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('schedules_updated'));
+          }
         }
+      } catch (err) {
+        console.warn('[scheduleService] Background Supabase fetch failed:', err);
       }
-    }
-  } catch (err) {
-    console.warn('[scheduleService] Online fetch notice:', err);
+    })();
   }
 
-  const offline = offlineStorage.getOfflineSchedules().filter((s: any) => {
-    if (!siteId) return true;
-    const target = String(siteId);
-    return String(s.inspection_site_id) === target || String(s.offline_temp_id) === target;
-  });
-  const offlineTags = offlineStorage.getOfflineTags?.() || [];
-  offline.forEach((os: any) => {
-    os.tags_count = offlineTags.filter((ot: any) => String(ot.inspection_schedule_id) === String(os.id)).length;
-  });
-
-  online.forEach((s) => {
-    const pendingCount = offlineTags.filter((ot: any) => String(ot.inspection_schedule_id) === String(s.id)).length;
-    s.tags_count = (s.tags_count || 0) + pendingCount;
-  });
-
-  const onlineIds = new Set(online.map((s) => String(s.id)));
-  return [...offline.filter((s: any) => !onlineIds.has(String(s.id))), ...online];
+  return formatList(idbSchedules);
 }
 
 export async function fetchScheduleById(id: number | string): Promise<InspectionSchedule | null> {
