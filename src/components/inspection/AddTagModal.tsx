@@ -28,7 +28,8 @@ interface Props {
 }
 
 export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, siteId, onCreated }) => {
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(0);
+  const [captureSource, setCaptureSource] = useState<'new' | 'existing'>('new');
   const [lat, setLat] = useState<number>(8.3683);
   const [lng, setLng] = useState<number>(124.8637);
   const [ammonia, setAmmonia] = useState<number | null>(null);
@@ -47,7 +48,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
 
   useEffect(() => {
     if (isOpen) {
-      setStep(1);
+      setStep(0);
+      setCaptureSource('new');
       setViolationCategory(null);
       setCaptureSummary(null);
       setTagTempId('');
@@ -118,13 +120,43 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Add Inspection Tag (Step {step}/4)</IonTitle>
+          <IonTitle>Add Inspection Tag {step > 0 ? `(Step ${step}/4)` : ''}</IonTitle>
           <IonButtons slot="end"><IonButton onClick={onClose}><IonIcon icon={closeOutline} /></IonButton></IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        {step === 1 && (
-          <TagLocationStep lat={lat} lng={lng} onChangeLat={setLat} onChangeLng={setLng} onNext={() => setStep(2)} />
+        {step === 0 && (
+          <div style={{ display: 'grid', gap: '12px' }}>
+            <h4 style={{ margin: '0 0 4px 0', fontWeight: 700 }}>Choose Capture Source</h4>
+            <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B' }}>
+              Start a new 5-minute sensor capture or attach a tag to an existing untagged session in the offline queue.
+            </p>
+            <IonButton
+              expand="block"
+              color="primary"
+              style={{ height: '52px', fontWeight: 700 }}
+              onClick={() => { setCaptureSource('new'); setStep(1); }}
+            >
+              New capture
+            </IonButton>
+            <IonButton
+              expand="block"
+              fill="outline"
+              color="primary"
+              style={{ height: '52px', fontWeight: 700 }}
+              onClick={() => { setCaptureSource('existing'); setStep(1); }}
+            >
+              Use existing session
+            </IonButton>
+          </div>
+        )}
+        {step === 1 && captureSource === 'new' && (
+          <div>
+            <TagLocationStep lat={lat} lng={lng} onChangeLat={setLat} onChangeLng={setLng} onNext={() => setStep(2)} />
+            <IonButton expand="block" fill="clear" color="medium" style={{ marginTop: '8px' }} onClick={() => setStep(0)}>
+              <IonIcon icon={arrowBackOutline} slot="start" /> Back to Capture Source
+            </IonButton>
+          </div>
         )}
         {step === 2 && (
           <div>
