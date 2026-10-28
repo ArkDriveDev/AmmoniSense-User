@@ -132,13 +132,6 @@ class SyncService {
       console.warn('[SyncService] Could not reset failed items for resync:', e);
     }
     const result = await this.syncAll({ silent: true });
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('schedules_updated'));
-      window.dispatchEvent(new CustomEvent('tags_updated'));
-      window.dispatchEvent(new CustomEvent('site_synced'));
-      window.dispatchEvent(new CustomEvent('sites_updated'));
-    }
     return result;
   }
 
@@ -150,6 +143,7 @@ class SyncService {
     this.isSyncing = true;
     let successCount = 0;
     let failedCount = 0;
+    const syncedTypes = new Set<'site' | 'schedule' | 'tag'>();
 
     try {
       const queue = await offlineStorage.getQueue();
@@ -219,6 +213,9 @@ class SyncService {
           }
 
           successCount++;
+          if (item.type === 'inspection_site' || item.type === 'SITE_REGISTRATION') syncedTypes.add('site');
+          if (item.type === 'inspection_schedule' || item.type === 'INSPECTION_SCHEDULE') syncedTypes.add('schedule');
+          if (item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG') syncedTypes.add('tag');
         } catch (err: any) {
           const sanitizedPayload = { ...p };
           for (const key of Object.keys(sanitizedPayload)) {
@@ -251,6 +248,18 @@ class SyncService {
     } finally {
       this.isSyncing = false;
       this.notifyListeners('sync_complete');
+      if (typeof window !== 'undefined') {
+        if (syncedTypes.has('site')) {
+          window.dispatchEvent(new CustomEvent('site_synced'));
+          window.dispatchEvent(new CustomEvent('sites_updated'));
+        }
+        if (syncedTypes.has('schedule')) {
+          window.dispatchEvent(new CustomEvent('schedules_updated'));
+        }
+        if (syncedTypes.has('tag')) {
+          window.dispatchEvent(new CustomEvent('tags_updated'));
+        }
+      }
       if (!options?.silent && successCount > 0) {
         showToast({
           message: `🎉 Auto-sync complete: ${successCount} offline item(s) synchronized!`,
@@ -430,10 +439,6 @@ class SyncService {
         .update(siteUpdates)
         .eq('id', targetId);
       if (updErr) throw new Error(`inspection_sites update error: ${updErr.message}`);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('site_synced'));
-        window.dispatchEvent(new CustomEvent('sites_updated'));
-      }
       return;
     }
 
@@ -514,11 +519,6 @@ class SyncService {
         console.warn('Could not remove local offline site record:', e);
       }
     }
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('site_synced'));
-      window.dispatchEvent(new CustomEvent('site_deleted'));
-      window.dispatchEvent(new CustomEvent('sites_updated'));
-    }
   }
 
   private async syncDeviceTag(item: QueueItem): Promise<void> {
@@ -560,7 +560,6 @@ class SyncService {
         .update(schedUpdates)
         .eq('id', targetId);
       if (updErr) throw new Error(`inspection_schedules update error: ${updErr.message}`);
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
       return;
     }
 
@@ -632,7 +631,6 @@ class SyncService {
     }
 
     if (temp_id) offlineStorage.removeOfflineSchedule(temp_id);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
   }
 
   private async syncInspectionTag(item: QueueItem): Promise<void> {
@@ -666,7 +664,6 @@ class SyncService {
         .update(tagUpdates)
         .eq('id', targetId);
       if (updErr) throw new Error(`inspection_tags update error: ${updErr.message}`);
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
       return;
     }
 
@@ -877,7 +874,6 @@ class SyncService {
     }
 
     if (temp_id) offlineStorage.removeOfflineTag(temp_id);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
   }
 
   /**
