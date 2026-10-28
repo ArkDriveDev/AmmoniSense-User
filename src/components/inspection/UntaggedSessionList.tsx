@@ -29,6 +29,7 @@ interface Props {
 export const UntaggedSessionList: React.FC<Props> = ({ onSelect, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<UntaggedSessionOption[]>([]);
+  const [orphanDiag, setOrphanDiag] = useState<{ sessionId: string; count: number; danglingTagId: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -38,6 +39,22 @@ export const UntaggedSessionList: React.FC<Props> = ({ onSelect, onBack }) => {
         const tagItems = queue.filter((q) => q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG');
         const ownedSessionIds = new Set(tagItems.map((t) => String(t.payload?.session_id || '')).filter(Boolean));
         const ownedTagTempIds = new Set(tagItems.flatMap((t) => [t.tempId, t.payload?.temp_id, t.payload?.offline_temp_id]).filter(Boolean).map(String));
+        if (RECOVERY_MODE) {
+          const orphanGroups = new Map<string, { count: number; danglingTagId: string }>();
+          for (const q of queue) {
+            if (q.type === 'sensor_data') {
+              const ref = String(q.payload?.inspection_tag_temp_id || '');
+              if (!ref || !ownedTagTempIds.has(ref)) {
+                const sid = String(q.payload?.session_id || 'unknown');
+                const cur = orphanGroups.get(sid) || { count: 0, danglingTagId: ref || 'none' };
+                orphanGroups.set(sid, { count: cur.count + 1, danglingTagId: cur.danglingTagId });
+              }
+            }
+          }
+          const diagList = Array.from(orphanGroups.entries()).map(([sessionId, v]) => ({ sessionId, ...v }));
+          console.log('[RECOVERY DIAGNOSTIC] Orphaned sensor_data by session_id:', diagList);
+          setOrphanDiag(diagList);
+        }
         const grouped = new Map<string, QueueItem[]>();
         for (const q of queue) {
           if ((q.type === 'sensor_data' || q.type === 'SENSOR_READING') && q.payload?.session_id) {
@@ -76,7 +93,12 @@ export const UntaggedSessionList: React.FC<Props> = ({ onSelect, onBack }) => {
     <div style={{ display: 'grid', gap: '10px' }}>
       {RECOVERY_MODE && (
         <div style={{ padding: '8px 12px', background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '6px', fontSize: '12px', fontWeight: 600, color: '#92400E' }}>
-          Recovery mode active
+          <div>Recovery mode active</div>
+          {orphanDiag.length > 0 && (
+            <div style={{ marginTop: '4px', fontSize: '11px', fontWeight: 400 }}>
+              Orphaned sessions: {orphanDiag.map((d) => `${d.sessionId.slice(0, 8)} (${d.count} rows → ${d.danglingTagId.slice(0, 14)})`).join(', ')}
+            </div>
+          )}
         </div>
       )}
       <h4 style={{ margin: 0, fontWeight: 700 }}>Select Untagged Session</h4>
