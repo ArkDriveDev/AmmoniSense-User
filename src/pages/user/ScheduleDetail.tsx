@@ -10,6 +10,7 @@ import {
 } from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchScheduleById, deleteSchedule } from '../../services/scheduleService';
+import offlineStorage from '../../services/OfflineStorageService';
 import { fetchTags } from '../../services/tagService';
 import TagList from '../../components/inspection/TagList';
 import AddTagModal from '../../components/inspection/AddTagModal';
@@ -71,13 +72,20 @@ export default function ScheduleDetail() {
 
   const handleDeleteSchedule = async () => {
     if (!schedule) return;
+    const isOffline = String(schedule.id).startsWith('temp_') || (schedule as any).isOffline;
     const confirmed = window.confirm(
-      `Delete "${schedule.schedule_name}"?\n\nThis will permanently delete the schedule and ALL its inspection tags.\nThis action cannot be undone.`
+      isOffline
+        ? 'Delete this schedule and all its offline tags and readings? This cannot be undone.'
+        : `Delete "${schedule.schedule_name}"?\n\nThis will permanently delete the schedule and ALL its inspection tags.\nThis action cannot be undone.`
     );
     if (!confirmed) return;
     setDeleting(true);
     try {
-      await deleteSchedule(schedule.id);
+      if (isOffline) {
+        await offlineStorage.deleteScheduleAndChildren(String(schedule.id));
+      } else {
+        await deleteSchedule(schedule.id);
+      }
       navigate(-1);
     } catch (err: any) {
       alert(err.message || 'Failed to delete schedule.');
