@@ -1,15 +1,17 @@
 import React from 'react';
 import { IonCard, IonCardContent, IonBadge, IonGrid, IonRow, IonCol, IonIcon } from '@ionic/react';
-import { thermometerOutline, waterOutline, batteryChargingOutline } from 'ionicons/icons';
+import { thermometerOutline, waterOutline, batteryChargingOutline, warningOutline, timeOutline } from 'ionicons/icons';
 import { AmmoniSenseReading } from '../../types/schema';
 import { calculateAmmoniaStatus } from '../../types/inspection';
 
 interface Props {
   reading: AmmoniSenseReading | null;
   isConnected: boolean;
+  isStale?: boolean;
+  lastUpdate?: Date | null;
 }
 
-export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected }) => {
+export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isStale, lastUpdate }) => {
   const nh3 = reading?.nh3_ppm ?? null;
   const temp = reading?.temperature ?? null;
   const hum = reading?.humidity ?? null;
@@ -24,7 +26,14 @@ export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected }) => 
   };
 
   return (
-    <div style={{ marginBottom: '16px' }}>
+    <div style={{ marginBottom: '16px', opacity: isConnected && isStale ? 0.5 : 1, transition: 'opacity 0.3s ease' }}>
+      {isStale && isConnected && (
+        <div style={{ marginBottom: '12px', padding: '8px 12px', borderRadius: '8px', background: '#FEF3C7', color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <IonIcon icon={warningOutline} style={{ flexShrink: 0 }} />
+          <span>No data — check connection.</span>
+        </div>
+      )}
+
       {/* Primary NH3 Card */}
       <IonCard className="premium-card" style={{ margin: '0 0 12px 0', background: 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', color: '#fff', borderRadius: '14px', padding: '16px' }}>
         <IonCardContent style={{ padding: 0 }}>
@@ -41,6 +50,14 @@ export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected }) => 
               </div>
             </div>
             <div>{renderBadge()}</div>
+          </div>
+
+          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', opacity: 0.9 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <IonIcon icon={timeOutline} />
+              {lastUpdate ? `Last update: ${lastUpdate.toTimeString().split(' ')[0]}` : 'Waiting for data…'}
+            </span>
+            <span>Classic SPP (Live)</span>
           </div>
         </IonCardContent>
       </IonCard>

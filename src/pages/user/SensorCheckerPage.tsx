@@ -8,6 +8,11 @@ import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schem
 export default function SensorCheckerPage() {
   const [status, setStatus] = useState<BluetoothConnectionStatus>(bluetoothClassicService.getStatus());
   const [reading, setReading] = useState<AmmoniSenseReading | null>(bluetoothClassicService.getLatestReading());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(() => {
+    const lr = bluetoothClassicService.getLatestReading();
+    return lr?.timestamp ? new Date(lr.timestamp) : null;
+  });
+  const [isStale, setIsStale] = useState<boolean>(false);
   const [isBtEnabled, setIsBtEnabled] = useState<boolean>(true);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -24,12 +29,31 @@ export default function SensorCheckerPage() {
       if (st === 'connected') setErrorMessage(null);
       else if (st === 'failed' || st === 'device_not_found') setErrorMessage('Device not ready. Check the sensor is on.');
     });
-    const unsubReading = bluetoothClassicService.onReading((r) => setReading(r));
+    const unsubReading = bluetoothClassicService.onReading((r) => {
+      setReading(r);
+      setLastUpdate(new Date(r.timestamp || Date.now()));
+      setIsStale(false);
+    });
     return () => {
       unsub();
       unsubReading();
     };
   }, [checkBt]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (status === 'connected') {
+        if (!lastUpdate || Date.now() - lastUpdate.getTime() > 5000) {
+          setIsStale(true);
+        } else {
+          setIsStale(false);
+        }
+      } else {
+        setIsStale(false);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [status, lastUpdate]);
 
   const handleConnect = async () => {
     if (isConnecting) return;
@@ -97,7 +121,7 @@ export default function SensorCheckerPage() {
           </div>
 
           {/* Live Readings Panel */}
-          <LiveReadingsPanel reading={reading} isConnected={isConnected} />
+          <LiveReadingsPanel reading={reading} isConnected={isConnected} isStale={isStale} lastUpdate={lastUpdate} />
         </IonGrid>
       </IonContent>
     </IonPage>
