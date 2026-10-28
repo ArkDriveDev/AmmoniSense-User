@@ -212,9 +212,18 @@ class OfflineStorageService {
       const tx = db.transaction(QUEUE_STORE, 'readwrite');
       const store = tx.objectStore(QUEUE_STORE);
       const req = store.add(item);
-      req.onsuccess = () => resolve(item);
+      req.onsuccess = () => {
+        this.notifyQueueChanged();
+        resolve(item);
+      };
       req.onerror = () => reject(req.error);
     });
+  }
+
+  private notifyQueueChanged(): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+    }
   }
 
   async getQueue(): Promise<QueueItem[]> {
@@ -234,7 +243,10 @@ class OfflineStorageService {
       const tx = db.transaction(QUEUE_STORE, 'readwrite');
       const store = tx.objectStore(QUEUE_STORE);
       const req = store.delete(id);
-      req.onsuccess = () => resolve();
+      req.onsuccess = () => {
+        this.notifyQueueChanged();
+        resolve();
+      };
       req.onerror = () => reject(req.error);
     });
   }
@@ -261,7 +273,10 @@ class OfflineStorageService {
             item.errorMsg = errorMsg;
           }
           const putReq = store.put(item);
-          putReq.onsuccess = () => resolve();
+          putReq.onsuccess = () => {
+            this.notifyQueueChanged();
+            resolve();
+          };
           putReq.onerror = () => reject(putReq.error);
         } else {
           resolve();
@@ -284,7 +299,10 @@ class OfflineStorageService {
           item.payload = payload;
           item.data = payload;
           const putReq = store.put(item);
-          putReq.onsuccess = () => resolve();
+          putReq.onsuccess = () => {
+            this.notifyQueueChanged();
+            resolve();
+          };
           putReq.onerror = () => reject(putReq.error);
         } else {
           resolve();
