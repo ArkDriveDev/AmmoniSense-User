@@ -24,6 +24,13 @@ export default function SensorCheckerPage() {
 
   useEffect(() => {
     checkBt();
+
+    const handleResume = async () => {
+      await checkBt();
+      await bluetoothClassicService.checkLiveStateAndNotify();
+    };
+    window.addEventListener('focus', handleResume);
+
     const unsub = bluetoothClassicService.onStatusChange((st) => {
       setStatus(st);
       setIsConnecting(st === 'connecting' || st === 'scanning');
@@ -36,8 +43,10 @@ export default function SensorCheckerPage() {
       setIsStale(false);
     });
     return () => {
+      window.removeEventListener('focus', handleResume);
       unsub();
       unsubReading();
+      bluetoothClassicService.disconnect();
     };
   }, [checkBt]);
 
