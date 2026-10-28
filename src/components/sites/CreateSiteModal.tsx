@@ -80,25 +80,34 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
   useEffect(() => {
     if (isOpen) {
       if (editSite) {
-        const rawLat = editSite.current_latitude ?? editSite.latitude;
-        const rawLng = editSite.current_longitude ?? editSite.longitude;
-        const latNum = parseFloat(rawLat);
-        const lngNum = parseFloat(rawLng);
-        const areaNum = parseFloat(editSite.area_size_hectares);
-        setForm({
-          site_code: editSite.site_code || `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
-          site_name: editSite.site_name || '',
-          site_type: editSite.site_type || 'POULTRY',
-          poultry_type: editSite.poultry_type || 'CONVENTIONAL',
-          chicken_type: editSite.chicken_type || 'BROILER',
-          address: editSite.address || '',
-          area_size_hectares: (!isNaN(areaNum) && areaNum > 0 ? areaNum : 1.0).toString(),
-          current_latitude: !isNaN(latNum) && latNum !== 0 ? latNum : 8.3683,
-          current_longitude: !isNaN(lngNum) && lngNum !== 0 ? lngNum : 124.8637,
-        });
-        if (editSite.site_photo_url || editSite.site_photo_thumbnail) {
-          setPhotoPreview(editSite.site_photo_url || editSite.site_photo_thumbnail);
-        }
+        (async () => {
+          let siteData = editSite;
+          const tempId = editSite.offline_temp_id || (String(editSite.id).startsWith('temp_') ? String(editSite.id) : null);
+          if (tempId) {
+            const offlineRecords = await offlineStorage.getOfflineSites().catch(() => []);
+            const match = offlineRecords.find((s) => String(s.id) === tempId || s.offline_temp_id === tempId);
+            if (match) siteData = match;
+          }
+          const rawLat = siteData.current_latitude ?? siteData.latitude;
+          const rawLng = siteData.current_longitude ?? siteData.longitude;
+          const latNum = parseFloat(rawLat);
+          const lngNum = parseFloat(rawLng);
+          const areaNum = parseFloat(siteData.area_size_hectares);
+          setForm({
+            site_code: siteData.site_code || `SITE-${Math.floor(1000 + Math.random() * 9000)}`,
+            site_name: siteData.site_name || '',
+            site_type: siteData.site_type || 'POULTRY',
+            poultry_type: siteData.poultry_type || 'CONVENTIONAL',
+            chicken_type: siteData.chicken_type || 'BROILER',
+            address: siteData.address || '',
+            area_size_hectares: (!isNaN(areaNum) && areaNum > 0 ? areaNum : 1.0).toString(),
+            current_latitude: !isNaN(latNum) && latNum !== 0 ? latNum : 8.3683,
+            current_longitude: !isNaN(lngNum) && lngNum !== 0 ? lngNum : 124.8637,
+          });
+          if (siteData.site_photo_url || siteData.site_photo_thumbnail) {
+            setPhotoPreview(siteData.site_photo_url || siteData.site_photo_thumbnail);
+          }
+        })();
       } else {
         const draft = offlineStorage.getDraft<typeof form>(SITE_DRAFT_KEY);
         if (draft && draft.site_name) {
