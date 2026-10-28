@@ -64,9 +64,6 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
             }
           }
           await offlineStorage.upsertSchedulesToIDB(formatted);
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('schedules_updated'));
-          }
         }
       } catch (err) {
         console.warn('[scheduleService] Background Supabase fetch failed:', err);

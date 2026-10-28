@@ -280,9 +280,6 @@ export const fetchSites = async (userId?: string): Promise<any[]> => {
         if (!error && Array.isArray(data)) {
           await offlineStorage.upsertSitesToIDB(data);
           offlineStorage.saveCachedSites(data);
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('sites_updated'));
-          }
         }
       } catch (err) {
         console.warn('[siteService] Background Supabase fetch failed:', err);

@@ -73,9 +73,6 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
           })
         );
         await offlineStorage.upsertTagsToIDB(online);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('tags_updated'));
-        }
       }
     } catch (err) {
       console.warn('[tagService] Background Supabase fetch tags notice:', err);
