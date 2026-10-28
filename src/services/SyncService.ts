@@ -821,16 +821,23 @@ class SyncService {
     }
 
     // Post-insert upload photo using the numeric tag ID
-    if (newTagData?.id && photoData && photoData.startsWith('data:') && tagRecord.inspection_site_id) {
+    if (newTagData?.id && photoData && photoData.startsWith('data:')) {
       try {
+        let derivedSiteId: number | null = null;
+        if (tagRecord.inspection_schedule_id) {
+          const { data: schedRow } = await supabase
+            .from('inspection_schedules')
+            .select('inspection_site_id')
+            .eq('id', tagRecord.inspection_schedule_id)
+            .maybeSingle();
+          derivedSiteId = schedRow?.inspection_site_id ?? null;
+        }
         const photoBlob = dataUrlToBlob(photoData);
         const thumbBlob = thumbData && thumbData.startsWith('data:') ? dataUrlToBlob(thumbData) : null;
-        const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, newTagData.id, tagRecord.inspection_site_id);
+        const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, newTagData.id, derivedSiteId);
         await supabase.from('inspection_tags').update({
           photo_url: uploaded.photo_url,
           photo_thumbnail_url: uploaded.photo_thumbnail_url,
-          photo_storage_path: uploaded.photo_storage_path,
-          photo_thumbnail_storage_path: uploaded.photo_thumbnail_storage_path,
         }).eq('id', newTagData.id);
       } catch (uploadErr) {
         console.warn('[SyncService] Post-insert photo upload failed during sync:', uploadErr);
