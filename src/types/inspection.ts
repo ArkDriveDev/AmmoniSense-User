@@ -36,8 +36,7 @@ export interface InspectionSchedule {
   scheduled_date: string;
   scheduled_time: string | null;
   status: ScheduleStatus;
-  started_at?: string | null;       // auto-managed by trigger
-  completed_at?: string | null;     // auto-managed by trigger
+  confirmed?: boolean | null;       // read-only (Admin-only confirmation)
   created_at?: string;
   created_by?: string | null;
   updated_at?: string;

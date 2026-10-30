@@ -64,3 +64,4 @@ export interface InspectionSite {
   created_by?: string | null;
 }
 
+export type { InspectionSchedule, ScheduleStatus } from './inspection';

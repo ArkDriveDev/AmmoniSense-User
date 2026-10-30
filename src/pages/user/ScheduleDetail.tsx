@@ -157,8 +157,13 @@ export default function ScheduleDetail() {
                         <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94A3B8' }}>Site: {schedule.site_name}</p>
                       )}
                     </div>
-                    <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                       <IonBadge color={statusColor(schedule.status)}>{schedule.status}</IonBadge>
+                      {schedule.status === 'COMPLETED' && (
+                        <IonBadge color={schedule.confirmed ? 'success' : 'medium'} style={{ fontSize: '10px' }}>
+                          {schedule.confirmed ? 'Confirmed' : 'Pending confirmation'}
+                        </IonBadge>
+                      )}
                     </div>
                   </div>
                   {schedule.notes && (

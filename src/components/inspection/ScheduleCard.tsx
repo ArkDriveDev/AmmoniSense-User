@@ -38,6 +38,11 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
           <IonBadge color={statusColor(schedule.status)}>{schedule.status}</IonBadge>
+          {schedule.status === 'COMPLETED' && (
+            <IonBadge color={schedule.confirmed ? 'success' : 'medium'} style={{ fontSize: '10px' }}>
+              {schedule.confirmed ? 'Confirmed' : 'Pending confirmation'}
+            </IonBadge>
+          )}
           {schedule.isOffline && (
             <IonBadge color="warning" style={{ fontSize: '10px' }}>
               <IonIcon icon={cloudOfflineOutline} style={{ marginRight: '3px' }} /> Offline — not synced
