@@ -139,16 +139,28 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
       photoStoreId = await offlineStorage.savePhoto(clean.photo_url);
     } catch (e) {
       console.warn('[tagService] Failed to save photo to IndexedDB:', e);
+      clean.notes = clean.notes ? `${clean.notes} [PHOTO PENDING]` : '[PHOTO PENDING]';
     }
   }
 
   const offlineRec = formatTag({ ...clean, id: tempId, offline_temp_id: tempId, created_at: new Date().toISOString() }, true);
-  offlineStorage.saveOfflineTag(offlineRec);
-  await offlineStorage.enqueueItem('inspection_tag', { ...clean, temp_id: tempId, offline_temp_id: tempId }, {
+  await offlineStorage.upsertTagsToIDB([offlineRec]);
+  const queuePayload = {
+    tag_name: clean.tag_name,
+    inspection_schedule_id: clean.inspection_schedule_id,
+    violation_category: clean.violation_category,
+    notes: clean.notes,
+    latitude: clean.latitude,
+    longitude: clean.longitude,
+    session_id: (payload as any).session_id || undefined,
+    offline_temp_id: tempId,
+  };
+  await offlineStorage.enqueueItem('inspection_tag', queuePayload, {
     action: 'insert',
     tempId,
     photoStoreId,
   });
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
   return offlineRec;
 }
 
@@ -198,12 +210,11 @@ export async function updateTag(
     }
   }
 
-  // Update local cache if present
-  const all = offlineStorage.getOfflineTags();
+  // Update local IndexedDB cache if present
+  const all = await offlineStorage.getAllTagsFromIDB();
   const target = all.find((t: any) => String(t.id) === String(tagId));
   if (target) {
-    Object.assign(target, clean);
-    offlineStorage.saveOfflineTag(target);
+    await offlineStorage.upsertTagsToIDB([{ ...target, ...clean }]);
   }
 
   // If not synced directly to Supabase, enqueue or update in offline queue

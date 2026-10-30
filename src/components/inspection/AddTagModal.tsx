@@ -141,6 +141,17 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           offline_temp_id: recoveryTagTempId,
         };
         try {
+          await offlineStorage.upsertTagsToIDB([{
+            ...tagPayload,
+            id: recoveryTagTempId,
+            ammonia: ammonia ?? 0,
+            temperature: temp ?? 0,
+            humidity: hum ?? 0,
+            battery: battery ?? 100,
+            photo_url: photoDataUrl || null,
+            isOffline: true,
+            created_at: new Date().toISOString(),
+          }]);
           await offlineStorage.enqueueItem('inspection_tag', tagPayload, {
             tempId: recoveryTagTempId,
             photoStoreId,
@@ -184,8 +195,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       }
 
       const effectiveTempId = captureSource === 'existing'
-        ? `temp_tag_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-        : (tagTempId || undefined);
+        ? `temp_tag_${generateUUID()}`
+        : (tagTempId || `temp_tag_${generateUUID()}`);
 
       await createTag({
         tag_name: toUpperClean(tagName),
@@ -202,9 +213,11 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         violation_category: violationCategory || null,
         notes: toUpperClean(notes),
         offline_temp_id: effectiveTempId,
-      });
+        session_id: captureSource === 'existing' ? selectedSession?.sessionId : captureSummary?.session_id,
+      } as any);
 
-      if (captureSource === 'existing' && selectedSession && effectiveTempId) {
+      const targetSessionId = captureSource === 'existing' ? selectedSession?.sessionId : captureSummary?.session_id;
+      if (targetSessionId && effectiveTempId) {
         const queue = await offlineStorage.getQueue();
         const otherTagIds = new Set(
           queue
@@ -212,23 +225,16 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             .flatMap((t) => [t.tempId, t.payload?.temp_id, t.payload?.offline_temp_id])
             .filter(Boolean).map(String)
         );
-        const tagItem = queue.find((q) => q.tempId === effectiveTempId || q.payload?.offline_temp_id === effectiveTempId);
-        if (tagItem) {
-          await offlineStorage.updateQueueItemPayload(tagItem.id, {
-            ...tagItem.payload,
-            session_id: selectedSession.sessionId,
-            inspection_site_id: siteId || tagItem.payload?.inspection_site_id,
-            inspection_schedule_id: scheduleId,
-          });
-        }
         for (const q of queue) {
-          if ((q.type === 'sensor_data' || q.type === 'SENSOR_READING') && q.payload?.session_id === selectedSession.sessionId) {
+          if ((q.type === 'sensor_data' || q.type === 'SENSOR_READING') && q.payload?.session_id === targetSessionId) {
             const existingTagRef = q.payload?.inspection_tag_temp_id ? String(q.payload.inspection_tag_temp_id) : '';
-            if (existingTagRef && otherTagIds.has(existingTagRef)) continue;
-            await offlineStorage.updateQueueItemPayload(q.id, { ...q.payload, inspection_tag_temp_id: effectiveTempId });
+            if (existingTagRef && existingTagRef !== effectiveTempId && otherTagIds.has(existingTagRef)) continue;
+            if (existingTagRef !== effectiveTempId) {
+              await offlineStorage.updateQueueItemPayload(q.id, { ...q.payload, inspection_tag_temp_id: effectiveTempId });
+            }
           }
         }
-        setRecoveryIndex((prev) => (prev + 1) % RECOVERY_FALLBACKS.length);
+        if (captureSource === 'existing') setRecoveryIndex((prev) => (prev + 1) % RECOVERY_FALLBACKS.length);
         window.dispatchEvent(new CustomEvent('tags_updated'));
         window.dispatchEvent(new CustomEvent('sync_queue_changed'));
       }
