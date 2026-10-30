@@ -532,8 +532,6 @@ class SyncService {
       'scheduled_date',
       'scheduled_time',
       'status',
-      'started_at',
-      'completed_at',
       'notes',
     ];
 
@@ -550,6 +548,7 @@ class SyncService {
       for (const key of allowedScheduleFields) {
         if (payload[key] !== undefined) schedUpdates[key] = payload[key];
       }
+      delete schedUpdates.confirmed;
       const { error: updErr } = await supabase
         .from('inspection_schedules')
         .update(schedUpdates)
@@ -591,6 +590,7 @@ class SyncService {
     for (const key of allowedScheduleFields) {
       if (payload[key] !== undefined) scheduleRecord[key] = payload[key];
     }
+    delete scheduleRecord.confirmed;
     scheduleRecord.offline_temp_id = temp_id || null;
     scheduleRecord.created_by = user.user?.id || null;
 

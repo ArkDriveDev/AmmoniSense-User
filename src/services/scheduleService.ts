@@ -234,8 +234,10 @@ export async function updateSchedule(scheduleId: number | string, updates: Parti
 
     if (existingQueueItem && existingQueueItem.action === 'insert') {
       const updatedPayload = { ...existingQueueItem.payload, ...clean };
+      delete updatedPayload.confirmed;
       await offlineStorage.updateQueueItemPayload(existingQueueItem.id, updatedPayload);
     } else {
+      delete clean.confirmed;
       await offlineStorage.enqueueItem('inspection_schedule', clean, {
         action: 'update',
         targetId: !isOffline ? Number(scheduleId) : null,
