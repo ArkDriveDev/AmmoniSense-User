@@ -260,13 +260,25 @@ export const deleteReading = async (readingId: string | number): Promise<void> =
  * - Unsynced sites with offline_temp_id are never overwritten or deleted
  */
 export const fetchSites = async (userId?: string): Promise<any[]> => {
-  const idbSites = await offlineStorage.getAllSitesFromIDB();
+  const [idbSites, queue] = await Promise.all([
+    offlineStorage.getAllSitesFromIDB(),
+    offlineStorage.getQueue().catch(() => []),
+  ]);
+  const queuedIds = new Set(
+    queue.flatMap((q) => [q.tempId, q.targetId, q.payload?.temp_id, q.payload?.offline_temp_id, q.payload?.id]).filter(Boolean).map(String)
+  );
+  const syncedOfflineTempIds = new Set(
+    idbSites.filter((s: any) => !isNaN(Number(s.id)) && s.offline_temp_id).map((s: any) => String(s.offline_temp_id))
+  );
 
   const formatList = (raw: any[]) =>
     raw
       .filter((s: any) => !userId || !s.created_by || s.created_by === userId)
+      .filter((s: any) => !(isNaN(Number(s.id)) && syncedOfflineTempIds.has(String(s.id))))
       .map((s: any) => {
-        const isOffline = Boolean(s.isOffline || s.offline_temp_id || String(s.id).startsWith('temp_'));
+        const hasNumericId = !String(s.id).startsWith('temp_') && !String(s.id).startsWith('queue_') && !isNaN(Number(s.id));
+        const inQueue = queuedIds.has(String(s.id)) || (s.offline_temp_id ? queuedIds.has(String(s.offline_temp_id)) : false);
+        const isOffline = !hasNumericId || inQueue;
         return {
           ...s,
           isOffline,
@@ -285,6 +297,7 @@ export const fetchSites = async (userId?: string): Promise<any[]> => {
         if (!error && Array.isArray(data)) {
           await offlineStorage.upsertSitesToIDB(data);
           offlineStorage.saveCachedSites(data);
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('sites_updated'));
         }
       } catch (err) {
         console.warn('[siteService] Background Supabase fetch failed:', err);

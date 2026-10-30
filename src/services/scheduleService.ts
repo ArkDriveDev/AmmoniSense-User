@@ -23,17 +23,30 @@ const formatSched = (d: any, isOffline = false): InspectionSchedule => ({
 });
 
 export async function fetchSchedules(siteId?: number | string): Promise<InspectionSchedule[]> {
-  const idbSchedules = await offlineStorage.getAllSchedulesFromIDB(siteId);
+  const [idbSchedules, queue] = await Promise.all([
+    offlineStorage.getAllSchedulesFromIDB(siteId),
+    offlineStorage.getQueue().catch(() => []),
+  ]);
+  const queuedIds = new Set(
+    queue.flatMap((q) => [q.tempId, q.targetId, q.payload?.temp_id, q.payload?.offline_temp_id, q.payload?.id]).filter(Boolean).map(String)
+  );
+  const syncedOfflineTempIds = new Set(
+    idbSchedules.filter((s: any) => !isNaN(Number(s.id)) && s.offline_temp_id).map((s: any) => String(s.offline_temp_id))
+  );
 
   const formatList = (raw: any[]) => {
     const offlineTags = offlineStorage.getOfflineTags?.() || [];
-    return raw.map((d: any) => {
-      const isOffline = Boolean(d.isOffline || d.offline_temp_id || String(d.id).startsWith('temp_'));
-      const item = formatSched(d, isOffline);
-      const pendingCount = offlineTags.filter((ot: any) => String(ot.inspection_schedule_id) === String(item.id)).length;
-      item.tags_count = (item.tags_count || 0) + pendingCount;
-      return item;
-    });
+    return raw
+      .filter((d: any) => !(isNaN(Number(d.id)) && syncedOfflineTempIds.has(String(d.id))))
+      .map((d: any) => {
+        const hasNumericId = !String(d.id).startsWith('temp_') && !isNaN(Number(d.id));
+        const inQueue = queuedIds.has(String(d.id)) || (d.offline_temp_id ? queuedIds.has(String(d.offline_temp_id)) : false);
+        const isOffline = !hasNumericId || inQueue;
+        const item = formatSched(d, isOffline);
+        const pendingCount = offlineTags.filter((ot: any) => String(ot.inspection_schedule_id) === String(item.id)).length;
+        item.tags_count = (item.tags_count || 0) + pendingCount;
+        return item;
+      });
   };
 
   if (isOnline()) {
@@ -64,6 +77,7 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
             }
           }
           await offlineStorage.upsertSchedulesToIDB(formatted);
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
         }
       } catch (err) {
         console.warn('[scheduleService] Background Supabase fetch failed:', err);

@@ -36,13 +36,26 @@ const formatTag = (d: any, isOffline = false): InspectionTag => {
 };
 
 export async function fetchTags(filter?: { scheduleId?: number | string; siteId?: number | string; scheduleTempId?: string }): Promise<InspectionTag[]> {
-  const idbTags = await offlineStorage.getAllTagsFromIDB(filter);
+  const [idbTags, queue] = await Promise.all([
+    offlineStorage.getAllTagsFromIDB(filter),
+    offlineStorage.getQueue().catch(() => []),
+  ]);
+  const queuedIds = new Set(
+    queue.flatMap((q) => [q.tempId, q.targetId, q.payload?.temp_id, q.payload?.offline_temp_id, q.payload?.id]).filter(Boolean).map(String)
+  );
+  const syncedOfflineTempIds = new Set(
+    idbTags.filter((t: any) => !isNaN(Number(t.id)) && t.offline_temp_id).map((t: any) => String(t.offline_temp_id))
+  );
 
   const formatList = (raw: any[]) =>
-    raw.map((d: any) => {
-      const isOffline = Boolean(d.isOffline || d.offline_temp_id || String(d.id).startsWith('temp_'));
-      return formatTag(d, isOffline);
-    });
+    raw
+      .filter((d: any) => !(isNaN(Number(d.id)) && syncedOfflineTempIds.has(String(d.id))))
+      .map((d: any) => {
+        const hasNumericId = !String(d.id).startsWith('temp_') && !isNaN(Number(d.id));
+        const inQueue = queuedIds.has(String(d.id)) || (d.offline_temp_id ? queuedIds.has(String(d.offline_temp_id)) : false);
+        const isOffline = !hasNumericId || inQueue;
+        return formatTag(d, isOffline);
+      });
 
   (async () => {
     try {
@@ -73,6 +86,7 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
           })
         );
         await offlineStorage.upsertTagsToIDB(online);
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
       }
     } catch (err) {
       console.warn('[tagService] Background Supabase fetch tags notice:', err);

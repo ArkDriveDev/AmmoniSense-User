@@ -40,7 +40,7 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
           <IonBadge color={statusColor(schedule.status)}>{schedule.status}</IonBadge>
           {schedule.isOffline && (
             <IonBadge color="warning" style={{ fontSize: '10px' }}>
-              <IonIcon icon={cloudOfflineOutline} style={{ marginRight: '3px' }} /> Offline
+              <IonIcon icon={cloudOfflineOutline} style={{ marginRight: '3px' }} /> Offline — not synced
             </IonBadge>
           )}
         </div>
