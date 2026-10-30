@@ -43,8 +43,10 @@ export default function UserSchedules() {
   useEffect(() => {
     const handler = () => { loadRef.current(); };
     window.addEventListener('schedules_updated', handler);
+    window.addEventListener('sync_queue_changed', handler);
     return () => {
       window.removeEventListener('schedules_updated', handler);
+      window.removeEventListener('sync_queue_changed', handler);
     };
   }, []);
 

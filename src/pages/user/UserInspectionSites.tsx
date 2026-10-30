@@ -80,10 +80,12 @@ export default function UserInspectionSites() {
     window.addEventListener('sites_updated', handler);
     window.addEventListener('site_synced', handler);
     window.addEventListener('site_deleted', handler);
+    window.addEventListener('sync_queue_changed', handler);
     return () => {
       window.removeEventListener('sites_updated', handler);
       window.removeEventListener('site_synced', handler);
       window.removeEventListener('site_deleted', handler);
+      window.removeEventListener('sync_queue_changed', handler);
     };
   }, []);
 

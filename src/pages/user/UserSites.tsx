@@ -52,12 +52,16 @@ export default function UserSites() {
       fetchSites();
     };
 
+    window.addEventListener('sites_updated', handleSiteDeleted);
     window.addEventListener('site_deleted', handleSiteDeleted);
     window.addEventListener('site_synced', handleSiteDeleted);
+    window.addEventListener('sync_queue_changed', handleSiteDeleted);
 
     return () => {
+      window.removeEventListener('sites_updated', handleSiteDeleted);
       window.removeEventListener('site_deleted', handleSiteDeleted);
       window.removeEventListener('site_synced', handleSiteDeleted);
+      window.removeEventListener('sync_queue_changed', handleSiteDeleted);
     };
   }, []);
 

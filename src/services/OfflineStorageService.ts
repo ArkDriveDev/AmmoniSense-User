@@ -626,19 +626,21 @@ class OfflineStorageService {
     const list = this.getOfflineSchedules().filter((s: any) => s.id !== schedule.id);
     list.unshift(schedule);
     localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
-    this.upsertSchedulesToIDB([{ ...schedule, isOffline: true, offline_temp_id: schedule.id }]);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('schedules_updated'));
-    }
+    this.upsertSchedulesToIDB([{ ...schedule, isOffline: true, offline_temp_id: schedule.id }]).then(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('schedules_updated'));
+      }
+    });
   }
 
   public removeOfflineSchedule(id: string | number): void {
     const list = this.getOfflineSchedules().filter((s: any) => String(s.id) !== String(id));
     localStorage.setItem('offline_inspection_schedules', JSON.stringify(list));
-    this.deleteScheduleFromIDB(id);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('schedules_updated'));
-    }
+    this.deleteScheduleFromIDB(id).then(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('schedules_updated'));
+      }
+    });
   }
 
   /**
@@ -711,6 +713,21 @@ class OfflineStorageService {
             list = offline;
           }
         }
+        try {
+          const queue = await this.getQueue();
+          const byId = new Map<string, any>();
+          list.forEach((t: any) => byId.set(String(t.id), t));
+          for (const q of queue) {
+            if ((q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG') && q.action !== 'update') {
+              const p = q.payload || q.data || {};
+              const tid = String(q.tempId || p.offline_temp_id || p.temp_id || p.id || '');
+              if (tid && !byId.has(tid)) {
+                byId.set(tid, { ...p, id: tid, offline_temp_id: tid, isOffline: true, created_at: p.created_at || q.createdAt });
+              }
+            }
+          }
+          list = Array.from(byId.values());
+        } catch { /* ignore */ }
         if (filter?.scheduleId) {
           const schedId = String(filter.scheduleId);
           const tempId = filter.scheduleTempId ? String(filter.scheduleTempId) : null;
@@ -781,10 +798,11 @@ class OfflineStorageService {
   public removeOfflineTag(id: string | number): void {
     const list = this.getOfflineTags().filter((t: any) => String(t.id) !== String(id));
     localStorage.setItem('offline_inspection_tags', JSON.stringify(list));
-    this.deleteTagFromIDB(id);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tags_updated'));
-    }
+    this.deleteTagFromIDB(id).then(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tags_updated'));
+      }
+    });
   }
 
   /**

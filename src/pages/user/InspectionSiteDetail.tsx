@@ -69,10 +69,12 @@ export default function InspectionSiteDetail() {
     window.addEventListener('schedules_updated', handler);
     window.addEventListener('site_synced', handler);
     window.addEventListener('sites_updated', handler);
+    window.addEventListener('sync_queue_changed', handler);
     return () => {
       window.removeEventListener('schedules_updated', handler);
       window.removeEventListener('site_synced', handler);
       window.removeEventListener('sites_updated', handler);
+      window.removeEventListener('sync_queue_changed', handler);
     };
   }, []);
 

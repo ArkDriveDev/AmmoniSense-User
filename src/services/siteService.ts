@@ -88,6 +88,12 @@ export const registerSiteWithPhoto = async (
       address: payload.address || payload.site_name,
     };
 
+    await offlineStorage.upsertSitesToIDB([createdSite]);
+    offlineStorage.saveCachedSites([createdSite]);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sites_updated'));
+    }
+
     return {
       site: createdSite,
       location: createdLocation,

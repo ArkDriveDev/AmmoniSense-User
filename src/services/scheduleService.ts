@@ -108,8 +108,10 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
         3500
       );
       if (!error && data) {
+        const formatted = formatSched(data, false);
+        await offlineStorage.upsertSchedulesToIDB([formatted]);
         window.dispatchEvent(new CustomEvent('schedules_updated'));
-        return formatSched(data, false);
+        return formatted;
       }
     } catch (err) {
       console.warn('[scheduleService] Network offline/slow, saving to offline queue:', err);
@@ -136,6 +138,7 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
     created_at: new Date().toISOString()
   }, true);
 
+  await offlineStorage.upsertSchedulesToIDB([offlineRec]);
   offlineStorage.saveOfflineSchedule(offlineRec);
   await offlineStorage.enqueueItem('inspection_schedule', {
     ...clean,

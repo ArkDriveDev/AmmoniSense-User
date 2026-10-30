@@ -94,11 +94,24 @@ export default function ScheduleDetail() {
     }
   };
 
+  const loadRef = React.useRef(load);
+  loadRef.current = load;
+
   useEffect(() => {
     load();
-    window.addEventListener('tags_updated', load);
-    return () => window.removeEventListener('tags_updated', load);
   }, [load]);
+
+  useEffect(() => {
+    const handler = () => { loadRef.current(); };
+    window.addEventListener('tags_updated', handler);
+    window.addEventListener('schedules_updated', handler);
+    window.addEventListener('sync_queue_changed', handler);
+    return () => {
+      window.removeEventListener('tags_updated', handler);
+      window.removeEventListener('schedules_updated', handler);
+      window.removeEventListener('sync_queue_changed', handler);
+    };
+  }, []);
 
   return (
     <IonPage>
