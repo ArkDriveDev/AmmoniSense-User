@@ -88,10 +88,11 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
 }
 
 export async function fetchScheduleById(id: number | string): Promise<InspectionSchedule | null> {
-  const local = offlineStorage.getOfflineSchedules().find(
+  const idbAll = await offlineStorage.getAllSchedulesFromIDB();
+  const local = idbAll.find(
     (s: any) => String(s.id) === String(id) || (s.offline_temp_id && String(s.offline_temp_id) === String(id))
   );
-  if (local) return local;
+  if (local) return formatSched(local, String(local.id).startsWith('temp_'));
   try {
     const { data } = await supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').eq('id', id).maybeSingle();
     return data ? formatSched(data, false) : null;
@@ -217,6 +218,11 @@ export async function updateSchedule(scheduleId: number | string, updates: Parti
     Object.assign(target, clean);
     offlineStorage.saveOfflineSchedule(target);
   }
+  const idbAll = await offlineStorage.getAllSchedulesFromIDB();
+  const idbTarget = idbAll.find((s: any) => String(s.id) === String(scheduleId) || (s.offline_temp_id && String(s.offline_temp_id) === String(scheduleId)));
+  if (idbTarget) {
+    await offlineStorage.upsertSchedulesToIDB([{ ...idbTarget, ...clean }]);
+  }
 
   // If not synced directly to Supabase, enqueue or update in offline queue
   if (!synced) {
@@ -239,5 +245,6 @@ export async function updateSchedule(scheduleId: number | string, updates: Parti
   }
 
   window.dispatchEvent(new CustomEvent('schedules_updated'));
+  window.dispatchEvent(new CustomEvent('sync_queue_changed'));
 }
 

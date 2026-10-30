@@ -6,10 +6,11 @@ import {
 } from '@ionic/react';
 import {
   addOutline, calendarOutline, timeOutline, pricetagOutline,
-  mapOutline, listOutline, syncOutline, trashOutline, createOutline
+  mapOutline, listOutline, syncOutline, trashOutline, createOutline, checkmarkDoneOutline
 } from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchScheduleById, deleteSchedule } from '../../services/scheduleService';
+import { fetchScheduleById, deleteSchedule, updateSchedule } from '../../services/scheduleService';
+import { showToast } from '../../utils/toast';
 import offlineStorage from '../../services/OfflineStorageService';
 import { fetchTags } from '../../services/tagService';
 import TagList from '../../components/inspection/TagList';
@@ -169,17 +170,34 @@ export default function ScheduleDetail() {
                   {schedule.notes && (
                     <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#475569', background: '#F8FAFC', padding: '8px', borderRadius: '8px' }}>{schedule.notes}</p>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9', fontSize: '13px', flexWrap: 'wrap', gap: '8px' }}>
                     <span style={{ color: '#475569' }}><IonIcon icon={pricetagOutline} color="primary" /> {tags.length} Tag{tags.length !== 1 ? 's' : ''}</span>
-                    <IonButton
-                      size="small"
-                      fill="outline"
-                      color="primary"
-                      onClick={() => setShowEditSchedule(true)}
-                      style={{ '--border-radius': '8px', fontSize: '12px', height: '30px' }}
-                    >
-                      <IonIcon icon={createOutline} slot="start" /> Update Details
-                    </IonButton>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {schedule.status !== 'COMPLETED' && (
+                        <IonButton
+                          size="small"
+                          color="success"
+                          onClick={async () => {
+                            await updateSchedule(schedule.id, { status: 'COMPLETED' });
+                            window.dispatchEvent(new CustomEvent('schedules_updated'));
+                            window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+                            showToast({ message: 'Schedule marked as completed', color: 'success' });
+                          }}
+                          style={{ '--border-radius': '8px', fontSize: '12px', height: '30px' }}
+                        >
+                          <IonIcon icon={checkmarkDoneOutline} slot="start" /> Mark as Completed
+                        </IonButton>
+                      )}
+                      <IonButton
+                        size="small"
+                        fill="outline"
+                        color="primary"
+                        onClick={() => setShowEditSchedule(true)}
+                        style={{ '--border-radius': '8px', fontSize: '12px', height: '30px' }}
+                      >
+                        <IonIcon icon={createOutline} slot="start" /> Update Details
+                      </IonButton>
+                    </div>
                   </div>
                 </IonCardContent>
               </IonCard>
