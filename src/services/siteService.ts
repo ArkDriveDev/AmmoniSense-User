@@ -5,6 +5,7 @@ import sitesCacheService from './sitesCacheService';
 import { deleteStorageFiles, uploadSitePhoto } from './photoStorageService';
 import { dataUrlToBlob, createThumbnail } from '../utils/thumbnailUtils';
 import { isOnline, withTimeout } from '../utils/networkUtils';
+import { recordsChanged } from '../utils/recordSignature';
 
 /**
  * Register Monitoring Site with photo & GPS without grid cells.
@@ -295,9 +296,10 @@ export const fetchSites = async (userId?: string): Promise<any[]> => {
         if (userId) q = q.eq('created_by', userId);
         const { data, error } = await withTimeout<any>(q, 3500);
         if (!error && Array.isArray(data)) {
+          const changed = recordsChanged(idbSites, data);
           await offlineStorage.upsertSitesToIDB(data);
           offlineStorage.saveCachedSites(data);
-          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('sites_updated'));
+          if (changed && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('sites_updated'));
         }
       } catch (err) {
         console.warn('[siteService] Background Supabase fetch failed:', err);

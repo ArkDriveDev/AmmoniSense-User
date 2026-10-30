@@ -4,6 +4,7 @@ import { InspectionTag, CreateTagPayload, ViolationCategory, calculateAmmoniaSta
 import { getSignedPhotoUrl, deleteStorageFiles, uploadTagPhoto } from './photoStorageService';
 import { autoRegisterDevice } from './deviceService';
 import { dataUrlToBlob } from '../utils/thumbnailUtils';
+import { recordsChanged } from '../utils/recordSignature';
 
 const parseNum = (v: any, fallback: number): number =>
   v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
@@ -80,8 +81,9 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
             return t;
           })
         );
+        const changed = recordsChanged(idbTags, online);
         await offlineStorage.upsertTagsToIDB(online);
-        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
+        if (changed && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tags_updated'));
       }
     } catch (err) {
       console.warn('[tagService] Background Supabase fetch tags notice:', err);

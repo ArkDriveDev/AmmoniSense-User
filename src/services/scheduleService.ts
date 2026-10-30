@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
 import { InspectionSchedule, CreateSchedulePayload, toUpperClean } from '../types/inspection';
 import { isOnline, withTimeout } from '../utils/networkUtils';
+import { recordsChanged } from '../utils/recordSignature';
 
 const formatSched = (d: any, isOffline = false): InspectionSchedule => ({
   id: d.id,
@@ -75,8 +76,9 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
               });
             }
           }
+          const changed = recordsChanged(idbSchedules, formatted);
           await offlineStorage.upsertSchedulesToIDB(formatted);
-          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
+          if (changed && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('schedules_updated'));
         }
       } catch (err) {
         console.warn('[scheduleService] Background Supabase fetch failed:', err);
