@@ -35,7 +35,8 @@ export function parseAmmoniSenseLine(line: string): AmmoniSenseReading | null {
   if (!trimmedLine) return null;
 
   // Fast check: Must contain key indicators of sensor stream
-  if (!trimmedLine.includes('Temp:') && !trimmedLine.includes('NH3')) {
+  const lowerLine = trimmedLine.toLowerCase();
+  if (!lowerLine.includes('temp') && !lowerLine.includes('nh3') && !lowerLine.includes('ammonia') && !lowerLine.includes('ppm')) {
     return null;
   }
 
@@ -99,6 +100,10 @@ export function parseAmmoniSenseLine(line: string): AmmoniSenseReading | null {
 
       case 'nh3 estimate':
       case 'nh3':
+      case 'nh3 ppm':
+      case 'ammonia':
+      case 'ammonia ppm':
+      case 'ppm':
         reading.nh3_ppm = extractNumber(val);
         break;
 
@@ -122,6 +127,15 @@ export function parseAmmoniSenseLine(line: string): AmmoniSenseReading | null {
 
       default:
         break;
+    }
+  }
+
+  if (reading.nh3_ppm === null) {
+    const fallbackMatch = trimmedLine.match(/(?:nh3(?:\s*estimate)?|ammonia)\s*[:=]\s*(-?\d+(?:\.\d+)?)/i)
+      || trimmedLine.match(/(-?\d+(?:\.\d+)?)\s*ppm/i);
+    if (fallbackMatch) {
+      const parsed = parseFloat(fallbackMatch[1]);
+      if (!isNaN(parsed)) reading.nh3_ppm = parsed;
     }
   }
 

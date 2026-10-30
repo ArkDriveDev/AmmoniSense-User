@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonGrid, IonButton, IonBadge, IonSpinner, IonIcon } from '@ionic/react';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonGrid, IonButton, IonBadge, IonSpinner, IonIcon, useIonViewWillLeave } from '@ionic/react';
 import { bluetoothOutline, closeCircleOutline, alertCircleOutline } from 'ionicons/icons';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
 import LiveReadingsPanel from '../../components/checker/LiveReadingsPanel';
@@ -21,6 +21,10 @@ export default function SensorCheckerPage() {
   const checkBt = useCallback(async () => {
     setIsBtEnabled(await bluetoothClassicService.checkLiveBluetoothEnabled());
   }, []);
+
+  useIonViewWillLeave(() => {
+    bluetoothClassicService.disconnect();
+  });
 
   useEffect(() => {
     checkBt();

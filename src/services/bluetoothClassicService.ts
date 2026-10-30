@@ -366,9 +366,9 @@ class BluetoothClassicService {
       this.notificationListenerHandle = await BluetoothSerial.addListener(
         result.eventName,
         (event: any) => {
-          const raw: string = event?.value ?? event?.data ?? '';
+          const raw: string = typeof event === 'string' ? event : (event?.value ?? event?.data ?? '');
           if (!raw) return;
-          const lines = this.streamBuffer.append(raw);
+          const lines = this.streamBuffer.append(raw.includes('\n') ? raw : `${raw}\n`);
           for (const line of lines) {
             const reading = parseAmmoniSenseLine(line);
             if (reading) {
