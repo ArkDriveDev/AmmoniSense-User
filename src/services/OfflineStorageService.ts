@@ -526,6 +526,7 @@ class OfflineStorageService {
 
     // 3. Purge site from localStorage 'offline_sites' key
     this.removeSiteFromLocalStorage(id);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('sync_queue_changed'));
   }
 
   async deleteOfflineReading(queueId: string): Promise<void> {
@@ -649,27 +650,39 @@ class OfflineStorageService {
   async deleteScheduleAndChildren(scheduleTempId: string): Promise<void> {
     const strId = String(scheduleTempId);
     try {
-      const childTags = this.getOfflineTags().filter(
-        (t: any) => String(t.inspection_schedule_id) === strId
-      );
-      const childTagIds = new Set(childTags.map((t: any) => String(t.id)));
-
+      const idbTags = await this.getAllTagsFromIDB({ scheduleId: strId, scheduleTempId: strId });
+      const lsTags = this.getOfflineTags().filter((t: any) => String(t.inspection_schedule_id) === strId);
       const queue = await this.getQueue();
+      const childTagIds = new Set<string>();
+      const childSessionIds = new Set<string>();
+      [...idbTags, ...lsTags].forEach((t: any) => {
+        [t.id, t.offline_temp_id].filter(Boolean).forEach((v) => childTagIds.add(String(v)));
+        if (t.session_id) childSessionIds.add(String(t.session_id));
+      });
+      queue.forEach((item) => {
+        const p = item.payload || {};
+        if ((item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG' || item.type === 'DEVICE_TAG') && String(p.inspection_schedule_id) === strId) {
+          [item.tempId, p.offline_temp_id, p.temp_id, p.id].filter(Boolean).forEach((v) => childTagIds.add(String(v)));
+          if (p.session_id) childSessionIds.add(String(p.session_id));
+        }
+      });
+
       const toDelete = queue.filter((item) => {
         const p = item.payload || {};
         const isSchedule =
           (item.type === 'inspection_schedule' || item.type === 'INSPECTION_SCHEDULE') &&
-          (item.tempId === strId || String(item.targetId) === strId || String(p.id) === strId || String(p.temp_id) === strId);
+          (item.tempId === strId || String(item.targetId) === strId || String(p.id) === strId || String(p.temp_id) === strId || String(p.offline_temp_id) === strId);
         const isChildTag =
           (item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG' || item.type === 'DEVICE_TAG') &&
-          (String(p.inspection_schedule_id) === strId || childTagIds.has(String(item.tempId)) || childTagIds.has(String(p.id)));
+          (String(p.inspection_schedule_id) === strId || childTagIds.has(String(item.tempId)) || childTagIds.has(String(p.offline_temp_id)) || childTagIds.has(String(p.id)));
         const isChildReading =
           (item.type === 'sensor_data' || item.type === 'SENSOR_READING') &&
           (String(p.inspection_schedule_id) === strId ||
            childTagIds.has(String(p.inspection_tag_temp_id)) ||
            childTagIds.has(String(item.tempId)) ||
            childTagIds.has(String(p.inspection_tag_id)) ||
-           childTagIds.has(String(p.tag_id)));
+           childTagIds.has(String(p.tag_id)) ||
+           (p.session_id && childSessionIds.has(String(p.session_id))));
         return isSchedule || isChildTag || isChildReading;
       });
 
@@ -812,6 +825,14 @@ class OfflineStorageService {
     const strId = String(tagTempId);
     try {
       const queue = await this.getQueue();
+      const sessionIds = new Set<string>();
+      queue.forEach((item) => {
+        const p = item.payload || {};
+        if ((item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG' || item.type === 'DEVICE_TAG') &&
+            (item.tempId === strId || String(item.targetId) === strId || String(p.id) === strId || String(p.temp_id) === strId || String(p.offline_temp_id) === strId)) {
+          if (p.session_id) sessionIds.add(String(p.session_id));
+        }
+      });
       const toDelete = queue.filter((item) => {
         const p = item.payload || {};
         const isChildReading =
@@ -819,10 +840,11 @@ class OfflineStorageService {
           (p.inspection_tag_temp_id === strId ||
            item.tempId === strId ||
            String(p.inspection_tag_id) === strId ||
-           String(p.tag_id) === strId);
+           String(p.tag_id) === strId ||
+           (p.session_id && sessionIds.has(String(p.session_id))));
         const isTagItem =
           (item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG' || item.type === 'DEVICE_TAG') &&
-          (item.tempId === strId || String(item.targetId) === strId || String(p.id) === strId || String(p.temp_id) === strId);
+          (item.tempId === strId || String(item.targetId) === strId || String(p.id) === strId || String(p.temp_id) === strId || String(p.offline_temp_id) === strId);
         return isChildReading || isTagItem;
       });
 
@@ -868,19 +890,55 @@ class OfflineStorageService {
   /** Purge IndexedDB queue items and photos for a deleted site and all its child schedules/tags. */
   async purgeQueueItemsForSite(siteId: string | number, scheduleIds: string[]): Promise<void> {
     const siteStr = String(siteId);
-    const schedSet = new Set(scheduleIds);
+    const schedSet = new Set(scheduleIds.map(String));
     try {
-      const queue = await this.getQueue();
+      const [idbScheds, idbTags, queue] = await Promise.all([
+        this.getAllSchedulesFromIDB(siteId),
+        this.getAllTagsFromIDB(),
+        this.getQueue(),
+      ]);
+      idbScheds.forEach((s: any) => [s.id, s.offline_temp_id].filter(Boolean).forEach((v) => schedSet.add(String(v))));
+      queue.forEach((item) => {
+        const p = item.payload || {};
+        if ((item.type === 'inspection_schedule' || item.type === 'INSPECTION_SCHEDULE') && String(p.inspection_site_id) === siteStr) {
+          [item.tempId, p.temp_id, p.offline_temp_id, p.id].filter(Boolean).forEach((v) => schedSet.add(String(v)));
+        }
+      });
+      const tagSet = new Set<string>();
+      const sessionSet = new Set<string>();
+      idbTags.forEach((t: any) => {
+        if (String(t.inspection_site_id) === siteStr || schedSet.has(String(t.inspection_schedule_id))) {
+          [t.id, t.offline_temp_id].filter(Boolean).forEach((v) => tagSet.add(String(v)));
+          if (t.session_id) sessionSet.add(String(t.session_id));
+        }
+      });
+      queue.forEach((item) => {
+        const p = item.payload || {};
+        if ((item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG' || item.type === 'DEVICE_TAG') &&
+            (String(p.inspection_site_id) === siteStr || schedSet.has(String(p.inspection_schedule_id)))) {
+          [item.tempId, p.offline_temp_id, p.temp_id, p.id].filter(Boolean).forEach((v) => tagSet.add(String(v)));
+          if (p.session_id) sessionSet.add(String(p.session_id));
+        }
+      });
+
       const toDelete = queue.filter((item) => {
         const p = item.payload || {};
-        const isSite = String(p.temp_id) === siteStr || String(p.offline_temp_id) === siteStr || String(p.id) === siteStr || String(p.inspection_site_id) === siteStr || String(p.site_id) === siteStr;
-        const isSched = schedSet.has(String(p.temp_id)) || schedSet.has(String(p.id)) || schedSet.has(String(p.inspection_schedule_id));
-        return isSite || isSched;
+        const isSite = [p.temp_id, p.offline_temp_id, p.id, p.inspection_site_id, p.site_id, item.tempId].some((v) => String(v) === siteStr);
+        const isSched = [item.tempId, p.temp_id, p.offline_temp_id, p.id, p.inspection_schedule_id].some((v) => schedSet.has(String(v)));
+        const isTag = [item.tempId, p.offline_temp_id, p.temp_id, p.id].some((v) => tagSet.has(String(v)));
+        const isReading = (item.type === 'sensor_data' || item.type === 'SENSOR_READING') &&
+          (tagSet.has(String(p.inspection_tag_temp_id)) || tagSet.has(String(item.tempId)) || (p.session_id && sessionSet.has(String(p.session_id))));
+        return isSite || isSched || isTag || isReading;
       });
 
       for (const item of toDelete) {
         if (item.photoStoreId) await this.removePhoto(item.photoStoreId).catch(() => {});
         await this.removeQueueItem(item.id);
+      }
+      for (const sid of schedSet) await this.deleteScheduleFromIDB(sid).catch(() => {});
+      for (const tid of tagSet) await this.deleteTagFromIDB(tid).catch(() => {});
+      if (typeof window !== 'undefined') {
+        ['tags_updated', 'schedules_updated', 'sync_queue_changed'].forEach((ev) => window.dispatchEvent(new CustomEvent(ev)));
       }
     } catch (e) {
       console.warn('[OfflineStorage] Could not purge queue for deleted site:', e);
