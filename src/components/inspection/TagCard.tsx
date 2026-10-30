@@ -26,7 +26,7 @@ const statusBadgeColor = (status: string) => {
 };
 
 export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => {
-  const photo = tag.photo_thumbnail_url || tag.photo_url;
+  const photo = tag.photo_url;
 
   return (
     <IonCard button={!!onClick} onClick={onClick} style={{ margin: '8px 0', borderRadius: '12px' }}>

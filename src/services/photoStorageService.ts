@@ -26,7 +26,6 @@ export interface UploadedSitePhoto {
 
 export interface UploadedTagPhoto {
   photo_url: string | null;
-  photo_thumbnail_url: string | null;
   photo_storage_path: string | null;
   photo_thumbnail_storage_path: string | null;
 }
@@ -257,7 +256,6 @@ export async function uploadTagPhoto(
 
   return {
     photo_url: photoUrl,
-    photo_thumbnail_url: thumbUrl,
     photo_storage_path: path,
     photo_thumbnail_storage_path: thumbStorePath,
   };

@@ -46,7 +46,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
 
   if (!tag) return null;
 
-  const displayPhoto = newPhotoDataUrl || tag.photo_thumbnail_url || tag.photo_url;
+  const displayPhoto = newPhotoDataUrl || tag.photo_url;
 
   const handleRetakePhoto = async () => {
     setCapturingPhoto(true);
@@ -85,7 +85,6 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
           const uploaded = await uploadTagPhoto(blob, thumbBlob, tag.id, siteId);
 
           updates.photo_url = uploaded.photo_url;
-          updates.photo_thumbnail_url = uploaded.photo_thumbnail_url;
           updates.photo_storage_path = uploaded.photo_storage_path;
           updates.photo_thumbnail_storage_path = uploaded.photo_thumbnail_storage_path;
           // Pass old paths so tagService can delete them from bucket

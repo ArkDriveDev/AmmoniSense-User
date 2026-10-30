@@ -21,7 +21,6 @@ const formatTag = (d: any, isOffline = false): InspectionTag => {
     latitude: parseNum(d.latitude ?? sensor.latitude, 0),
     longitude: parseNum(d.longitude ?? sensor.longitude, 0),
     photo_url: d.photo_url,
-    photo_thumbnail_url: d.photo_thumbnail_url,
     device_uid: d.device_uid || sensor.device_uid || null,
     sensor_data_id: d.sensor_data_id ?? sensor.id ?? null,
     inspection_schedule_id: d.inspection_schedule_id,
@@ -74,10 +73,6 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
         const online = await Promise.all(
           data.map(async (d: any) => {
             const t = formatTag(d, false);
-            if (t.photo_thumbnail_url && !t.photo_thumbnail_url.startsWith('data:')) {
-              const signed = await getSignedPhotoUrl('inspection-thumbnails', t.photo_thumbnail_url);
-              if (signed) t.photo_thumbnail_url = signed;
-            }
             if (t.photo_url && !t.photo_url.startsWith('data:')) {
               const signed = await getSignedPhotoUrl('inspection-photos', t.photo_url);
               if (signed) t.photo_url = signed;
@@ -124,7 +119,6 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     latitude: parseNum(payload.latitude, 0),
     longitude: parseNum(payload.longitude, 0),
     photo_url: payload.photo_url || null,
-    photo_thumbnail_url: payload.photo_thumbnail_url || null,
     photo_storage_path: (payload as any).photo_storage_path || null,
     photo_thumbnail_storage_path: (payload as any).photo_thumbnail_storage_path || null,
     device_uid: payload.device_uid?.trim() || null,
@@ -164,7 +158,6 @@ export async function updateTag(
     tag_name?: string;
     notes?: string;
     photo_url?: string | null;
-    photo_thumbnail_url?: string | null;
     photo_storage_path?: string | null;
     photo_thumbnail_storage_path?: string | null;
     violation_category?: ViolationCategory | null;
@@ -178,7 +171,6 @@ export async function updateTag(
   if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
   if (updates.violation_category !== undefined) clean.violation_category = updates.violation_category;
   if (updates.photo_url !== undefined) clean.photo_url = updates.photo_url;
-  if (updates.photo_thumbnail_url !== undefined) clean.photo_thumbnail_url = updates.photo_thumbnail_url;
   if (updates.photo_storage_path !== undefined) clean.photo_storage_path = updates.photo_storage_path;
   if (updates.photo_thumbnail_storage_path !== undefined) clean.photo_thumbnail_storage_path = updates.photo_thumbnail_storage_path;
 

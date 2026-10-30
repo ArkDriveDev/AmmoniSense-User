@@ -196,7 +196,6 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         latitude: lat ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lat,
         longitude: lng ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lng,
         photo_url: photoDataUrl || null,
-        photo_thumbnail_url: thumbDataUrl || null,
         device_uid: deviceUid,
         inspection_schedule_id: scheduleId,
         inspection_site_id: siteId || undefined,

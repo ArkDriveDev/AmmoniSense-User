@@ -8,7 +8,6 @@ import { GpsSource } from '../types/site';
 export interface InspectionPhotoRecord {
   id?: number | string | null;
   photo_url: string;
-  photo_thumbnail_url?: string | null;
   latitude: number;
   longitude: number;
   dataUrl?: string;
@@ -315,7 +314,6 @@ export const step1_takeAndUploadPhoto = async (
   return {
     id: null,
     photo_url: photoUrlToSave,
-    photo_thumbnail_url: photoUrlToSave,
     latitude,
     longitude,
     dataUrl: finalDataUrl,
@@ -436,7 +434,6 @@ export const captureSitePhoto = async (
   const photoRecord: InspectionPhotoRecord = {
     id: null,
     photo_url: photoUrlToSave,
-    photo_thumbnail_url: photoUrlToSave,
     latitude,
     longitude,
     dataUrl: finalDataUrl,

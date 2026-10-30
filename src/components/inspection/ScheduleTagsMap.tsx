@@ -52,8 +52,8 @@ export const ScheduleTagsMap: React.FC<ScheduleTagsMapProps> = ({ tags, height =
         iconAnchor: [30, 13],
       });
 
-      const photoHtml = (tag.photo_thumbnail_url || tag.photo_url)
-        ? `<div style="margin-top:6px;"><img src="${tag.photo_thumbnail_url || tag.photo_url}" style="width:100%;max-height:100px;object-fit:cover;border-radius:6px;" alt="${tag.tag_name}"/></div>`
+      const photoHtml = tag.photo_url
+        ? `<div style="margin-top:6px;"><img src="${tag.photo_url}" style="width:100%;max-height:100px;object-fit:cover;border-radius:6px;" alt="${tag.tag_name}"/></div>`
         : '';
 
       const popup = `<div style="font-family:sans-serif;min-width:180px;font-size:12px;color:#1E293B;">

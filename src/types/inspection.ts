@@ -82,7 +82,6 @@ export interface InspectionTag {
   latitude: number;
   longitude: number;
   photo_url?: string | null;
-  photo_thumbnail_url?: string | null;
   photo_storage_path?: string | null;
   photo_thumbnail_storage_path?: string | null;
   device_uid?: string | null;
@@ -106,7 +105,6 @@ export interface CreateTagPayload {
   latitude: number;
   longitude: number;
   photo_url?: string | null;
-  photo_thumbnail_url?: string | null;
   photo_storage_path?: string | null;
   photo_thumbnail_storage_path?: string | null;
   device_uid?: string | null;

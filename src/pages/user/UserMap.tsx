@@ -318,7 +318,7 @@ export default function UserMap() {
           longitude: t.longitude || 124.8637,
           device_uid: t.device_uid || 'N/A',
           created_at: t.created_at,
-          photo_url: t.photo_thumbnail_url || t.photo_url,
+          photo_url: t.photo_url,
           tag_name: t.tag_name,
           notes: t.notes,
           is_pending_sync: t.isOffline,
@@ -338,7 +338,7 @@ export default function UserMap() {
     try {
       const allTags = await fetchTags();
       const mappedPhotoTags: PhotoTagMarkerData[] = allTags
-        .filter((t) => Boolean(t.photo_url || t.photo_thumbnail_url))
+        .filter((t) => Boolean(t.photo_url))
         .filter((t) => !t.inspection_site_id || validSiteIds.has(String(t.inspection_site_id)))
         .map((t) => {
           const matchedSite = validSites.find((s) => String(s.id) === String(t.inspection_site_id));
@@ -346,7 +346,7 @@ export default function UserMap() {
             id: `tag_photo_${t.id}`,
             latitude: t.latitude || 8.3683,
             longitude: t.longitude || 124.8637,
-            photo_url: t.photo_url || t.photo_thumbnail_url || '',
+            photo_url: t.photo_url || '',
             site_id: t.inspection_site_id ? Number(t.inspection_site_id) : null,
             site_name: matchedSite?.site_name || t.tag_name || 'Inspection Tag',
             is_used: true,

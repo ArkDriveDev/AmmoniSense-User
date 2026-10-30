@@ -204,7 +204,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       longitude: form.current_longitude,
       photo_url: photoRecord?.photo_url || photoPreview || undefined,
       site_photo_url: photoRecord?.photo_url || photoPreview || undefined,
-      site_photo_thumbnail: photoRecord?.photo_thumbnail_url || photoPreview || undefined,
+      site_photo_thumbnail: photoRecord?.photo_url || photoPreview || undefined,
       gps_source: gpsSource,
     };
 

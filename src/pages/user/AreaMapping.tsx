@@ -223,7 +223,7 @@ export default function AreaMapping() {
                               </div>
                               {tag.photo_url && (
                                 <img
-                                  src={tag.photo_thumbnail_url || tag.photo_url}
+                                  src={tag.photo_url}
                                   alt="tag"
                                   style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', marginLeft: '10px', flexShrink: 0 }}
                                 />

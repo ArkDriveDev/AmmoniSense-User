@@ -633,7 +633,7 @@ class SyncService {
 
     const allowedTagFields = [
       'tag_name', 'inspection_schedule_id', 'latitude', 'longitude',
-      'photo_url', 'photo_thumbnail_url', 'notes', 'violation_category',
+      'photo_url', 'notes', 'violation_category',
       'offline_temp_id', 'created_by',
     ];
 
@@ -768,7 +768,6 @@ class SyncService {
     payload.inspection_site_id = siteId;
 
     let photoData = payload.photo_url;
-    let thumbData = payload.photo_thumbnail_url;
     if (item.photoStoreId && (!photoData || photoData.startsWith('data:'))) {
       const stored = await offlineStorage.getPhoto(item.photoStoreId);
       if (stored?.dataUrl) photoData = stored.dataUrl;
@@ -783,7 +782,6 @@ class SyncService {
       latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
-      photo_thumbnail_url: payload.photo_thumbnail_url || null,
       notes: payload.notes?.toUpperCase() || null,
       violation_category: payload.violation_category || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
@@ -828,11 +826,9 @@ class SyncService {
           derivedSiteId = schedRow?.inspection_site_id ?? null;
         }
         const photoBlob = dataUrlToBlob(photoData);
-        const thumbBlob = thumbData && thumbData.startsWith('data:') ? dataUrlToBlob(thumbData) : null;
-        const uploaded = await uploadTagPhoto(photoBlob, thumbBlob, newTagData.id, derivedSiteId);
+        const uploaded = await uploadTagPhoto(photoBlob, null, newTagData.id, derivedSiteId);
         await supabase.from('inspection_tags').update({
           photo_url: uploaded.photo_url,
-          photo_thumbnail_url: uploaded.photo_thumbnail_url,
         }).eq('id', newTagData.id);
       } catch (uploadErr) {
         console.warn('[SyncService] Post-insert photo upload failed during sync:', uploadErr);
