@@ -310,6 +310,16 @@ export const fetchSites = async (userId?: string): Promise<any[]> => {
  */
 export const fetchSiteById = async (siteId: string | number): Promise<any | null> => {
   const strId = String(siteId);
+  const queue = await offlineStorage.getQueue().catch(() => []);
+  const queuedIds = new Set(
+    queue.flatMap((q) => [q.tempId, q.targetId, q.payload?.temp_id, q.payload?.offline_temp_id, q.payload?.id]).filter(Boolean).map(String)
+  );
+  const withSyncFlag = (s: any) => {
+    if (!s) return null;
+    const hasNumericId = !String(s.id).startsWith('temp_') && !String(s.id).startsWith('queue_') && !isNaN(Number(s.id));
+    const inQueue = queuedIds.has(String(s.id)) || (s.offline_temp_id ? queuedIds.has(String(s.offline_temp_id)) : false);
+    return { ...s, isOffline: !hasNumericId || inQueue };
+  };
 
   if (strId.startsWith('temp_') || strId.startsWith('queue_')) {
     const offlineRecords = await offlineStorage.getOfflineSites();
@@ -325,7 +335,7 @@ export const fetchSiteById = async (siteId: string | number): Promise<any | null
       );
       if (!error && data) {
         offlineStorage.saveCachedSites([data]);
-        return data;
+        return withSyncFlag(data);
       }
     } catch (err) {
       console.warn('[siteService] fetchSiteById offline fallback:', err);
@@ -334,9 +344,9 @@ export const fetchSiteById = async (siteId: string | number): Promise<any | null
 
   const cached = await sitesCacheService.getCachedSites();
   const matchCached = cached.find((s: any) => String(s.id) === strId);
-  if (matchCached) return matchCached;
+  if (matchCached) return withSyncFlag(matchCached);
 
-  return offlineStorage.getCachedSiteById(siteId);
+  return withSyncFlag(offlineStorage.getCachedSiteById(siteId));
 };
 
 

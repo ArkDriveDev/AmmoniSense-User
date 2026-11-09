@@ -29,12 +29,14 @@ export default function UserInspectionSites() {
 
   const handleEditSite = (e: React.MouseEvent, site: any) => {
     e.stopPropagation();
+    if (!site.isOffline) return;
     setEditingSite(site.offlineRecord || site);
     setShowCreate(true);
   };
 
   const handleDeleteSite = (e: React.MouseEvent, site: any) => {
     e.stopPropagation();
+    if (!site.isOffline) return;
     setSiteToDelete(site);
   };
 
@@ -155,6 +157,7 @@ export default function UserInspectionSites() {
                         size="small"
                         fill="clear"
                         color="primary"
+                        disabled={!s.isOffline}
                         onClick={(e) => handleEditSite(e, s)}
                         title="Update site details"
                         style={{ '--padding-start': '6px', '--padding-end': '6px', margin: 0 }}
@@ -165,6 +168,7 @@ export default function UserInspectionSites() {
                         size="small"
                         fill="clear"
                         color="danger"
+                        disabled={!s.isOffline}
                         onClick={(e) => handleDeleteSite(e, s)}
                         title="Delete site"
                         style={{ '--padding-start': '6px', '--padding-end': '6px', margin: 0 }}
