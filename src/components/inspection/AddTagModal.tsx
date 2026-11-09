@@ -97,88 +97,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     }
     setSaving(true);
     setSaveError(null);
-    const isQuotaErr = (e: any) => e?.name === 'QuotaExceededError' || /quota/i.test(String(e?.message || e || ''));
     try {
-      if (captureSource === 'existing' && selectedSession && RECOVERY_MODE) {
-        const recoveryTagTempId = `temp_tag_${generateUUID()}`;
-        let photoStoreId: string | undefined;
-        let finalNotes = toUpperClean(notes);
-        if (photoDataUrl) {
-          try {
-            photoStoreId = await offlineStorage.savePhoto(photoDataUrl);
-          } catch (photoErr) {
-            console.warn('[AddTagModal] Photo save failed in recovery mode, continuing without photo:', photoErr);
-            finalNotes = finalNotes ? `${finalNotes} [PHOTO PENDING]` : '[PHOTO PENDING]';
-          }
-        }
-        const fb = RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length];
-        const tagPayload = {
-          tag_name: toUpperClean(tagName),
-          inspection_schedule_id: scheduleId,
-          violation_category: violationCategory || null,
-          notes: finalNotes,
-          latitude: lat ?? fb.lat,
-          longitude: lng ?? fb.lng,
-          session_id: selectedSession.sessionId,
-          offline_temp_id: recoveryTagTempId,
-        };
-        try {
-          await offlineStorage.upsertTagsToIDB([{
-            ...tagPayload,
-            id: recoveryTagTempId,
-            ammonia: ammonia ?? 0,
-            temperature: temp ?? 0,
-            humidity: hum ?? 0,
-            battery: battery ?? 100,
-            photo_url: photoDataUrl || null,
-            isOffline: true,
-            created_at: new Date().toISOString(),
-          }]);
-          await offlineStorage.enqueueItem('inspection_tag', tagPayload, {
-            tempId: recoveryTagTempId,
-            photoStoreId,
-          });
-        } catch (enqErr: any) {
-          throw new Error(isQuotaErr(enqErr) ? 'IndexedDB is also full. Delete some offline photos before retrying.' : (enqErr?.message || String(enqErr)));
-        }
-        const queue = await offlineStorage.getQueue();
-        const queuedTagIds = new Set(
-          queue
-            .filter((q) => q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG')
-            .flatMap((t) => [t.tempId, t.payload?.offline_temp_id, t.payload?.temp_id])
-            .filter(Boolean).map(String)
-        );
-        for (const item of queue) {
-          if (item.type === 'sensor_data' && item.payload?.session_id === selectedSession.sessionId) {
-            const existingRef = item.payload?.inspection_tag_temp_id ? String(item.payload.inspection_tag_temp_id) : '';
-            const needsRelink = !existingRef || existingRef === recoveryTagTempId || !queuedTagIds.has(existingRef);
-            if (!needsRelink) continue;
-            try {
-              await offlineStorage.updateQueueItemPayload(item.id, {
-                ...item.payload,
-                inspection_tag_temp_id: recoveryTagTempId,
-              });
-            } catch (updErr: any) {
-              throw new Error(isQuotaErr(updErr) ? 'IndexedDB is also full. Delete some offline photos before retrying.' : (updErr?.message || String(updErr)));
-            }
-          }
-        }
-        setRecoveryIndex((prev) => (prev + 1) % RECOVERY_FALLBACKS.length);
-        window.dispatchEvent(new CustomEvent('tags_updated'));
-        window.dispatchEvent(new CustomEvent('sync_queue_changed'));
-        showToast({ message: 'Tag queued for sync (recovery mode)', color: 'success' });
-        setTagName('');
-        setNotes('');
-        setPhotoDataUrl('');
-        setThumbDataUrl('');
-        onCreated?.();
-        onClose();
-        return;
-      }
-
-      const effectiveTempId = captureSource === 'existing'
-        ? `temp_tag_${generateUUID()}`
-        : (tagTempId || `temp_tag_${generateUUID()}`);
+      const effectiveTempId = tagTempId || `temp_tag_${generateUUID()}`;
 
       await createTag({
         tag_name: toUpperClean(tagName),
