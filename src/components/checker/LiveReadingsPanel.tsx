@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonCard, IonCardContent, IonBadge, IonGrid, IonRow, IonCol, IonIcon } from '@ionic/react';
+import { IonCard, IonBadge, IonGrid, IonRow, IonCol, IonIcon } from '@ionic/react';
 import { thermometerOutline, waterOutline, batteryChargingOutline, warningOutline, timeOutline } from 'ionicons/icons';
 import { AmmoniSenseReading } from '../../types/schema';
 import { calculateAmmoniaStatus } from '../../types/inspection';
@@ -35,32 +35,39 @@ export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isSta
       )}
 
       {/* Primary NH3 Card */}
-      <IonCard className="premium-card" style={{ margin: '0 0 12px 0', background: 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', color: '#fff', borderRadius: '14px', padding: '16px' }}>
-        <IonCardContent style={{ padding: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>
-                Ammonia Concentration (NH₃)
-              </span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
-                <span style={{ fontSize: '40px', fontWeight: 900, fontFamily: 'monospace' }}>
-                  {typeof nh3 === 'number' && !isNaN(nh3) ? nh3.toFixed(2) : '—'}
-                </span>
-                <span style={{ fontSize: '18px', fontWeight: 700, opacity: 0.9 }}>ppm</span>
-              </div>
-            </div>
-            <div>{renderBadge()}</div>
-          </div>
-
-          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', opacity: 0.9 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <IonIcon icon={timeOutline} />
-              {lastUpdate ? `Last update: ${lastUpdate.toTimeString().split(' ')[0]}` : 'Waiting for data…'}
+      <div
+        style={{
+          margin: '0 0 12px 0',
+          background: 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)',
+          color: '#FFFFFF',
+          borderRadius: '16px',
+          padding: '18px',
+          boxShadow: '0 8px 24px rgba(15, 60, 92, 0.22)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+              Ammonia Concentration (NH₃)
             </span>
-            <span>Classic SPP (Live)</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+              <span style={{ fontSize: '42px', fontWeight: 900, fontFamily: 'monospace', color: '#FFFFFF', lineHeight: 1.1 }}>
+                {typeof nh3 === 'number' && !isNaN(nh3) ? nh3.toFixed(2) : '—'}
+              </span>
+              <span style={{ fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>ppm</span>
+            </div>
           </div>
-        </IonCardContent>
-      </IonCard>
+          <div>{renderBadge()}</div>
+        </div>
+
+        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.9)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <IonIcon icon={timeOutline} />
+            {lastUpdate ? `Last update: ${lastUpdate.toTimeString().split(' ')[0]}` : 'Waiting for data…'}
+          </span>
+          <span>Classic SPP (Live)</span>
+        </div>
+      </div>
 
       {/* Environmental & Battery Row */}
       <IonGrid style={{ padding: 0 }}>
