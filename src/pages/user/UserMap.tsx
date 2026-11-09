@@ -305,12 +305,20 @@ export default function UserMap() {
     const validSiteIds = new Set(validSites.map((s) => String(s.id)));
 
     try {
-      const allTags = await fetchTags();
+      const [allTags, queue] = await Promise.all([fetchTags(), offlineStorage.getQueue().catch(() => [])]);
+      // Highest queued ppm per offline tag (readings not yet synced to sensor_data)
+      const queuedPeak = new Map<string, number>();
+      queue.forEach((q: any) => {
+        if (q.type !== 'sensor_data' && q.type !== 'SENSOR_READING') return;
+        const key = String(q.payload?.inspection_tag_temp_id || '');
+        const ppm = Number(q.payload?.nh3_ppm ?? q.payload?.ammonia);
+        if (key && !isNaN(ppm)) queuedPeak.set(key, Math.max(queuedPeak.get(key) ?? 0, ppm));
+      });
       const mappedReadings: ReadingMarkerData[] = allTags
         .filter((t) => !t.inspection_site_id || validSiteIds.has(String(t.inspection_site_id)))
         .map((t) => ({
           id: t.id,
-          ammonia: t.ammonia,
+          ammonia: Math.max(t.ammonia || 0, queuedPeak.get(String(t.offline_temp_id || t.id)) ?? 0),
           temperature: t.temperature,
           humidity: t.humidity,
           battery: t.battery,
@@ -779,6 +787,7 @@ export default function UserMap() {
                       >
                         {selectedReading.ammonia.toFixed(1)} PPM
                       </span>
+                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>HIGHEST</span>
                       <IonBadge style={{ background: getAmmoniaColor(selectedReading.ammonia), color: '#ffffff' }}>
                         {getAmmoniaSeverityLabel(selectedReading.ammonia)}
                       </IonBadge>
