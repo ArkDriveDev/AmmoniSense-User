@@ -153,15 +153,17 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
                 No photo
               </div>
             )}
-            <IonButton
-              size="small"
-              color="light"
-              onClick={handleRetakePhoto}
-              disabled={capturingPhoto || saving}
-              style={{ position: 'absolute', bottom: '8px', right: '8px', fontWeight: 700 }}
-            >
-              {capturingPhoto ? <IonSpinner name="crescent" /> : <><IonIcon icon={cameraOutline} slot="start" />{displayPhoto ? 'Retake' : 'Add Photo'}</>}
-            </IonButton>
+            {!displayPhoto && (
+              <IonButton
+                size="small"
+                color="light"
+                onClick={handleRetakePhoto}
+                disabled={capturingPhoto || saving}
+                style={{ position: 'absolute', bottom: '8px', right: '8px', fontWeight: 700 }}
+              >
+                {capturingPhoto ? <IonSpinner name="crescent" /> : <><IonIcon icon={cameraOutline} slot="start" />Capture Photo</>}
+              </IonButton>
+            )}
             {newPhotoDataUrl && (
               <IonBadge style={{ position: 'absolute', top: '8px', left: '8px', background: '#10B981', color: '#fff', fontSize: '10px' }}>
                 New photo — unsaved

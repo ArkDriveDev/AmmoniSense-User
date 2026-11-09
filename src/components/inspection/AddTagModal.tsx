@@ -55,6 +55,10 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   useEffect(() => {
     if (isOpen) {
       setStep(1);
+      setTagName('');
+      setNotes('');
+      setPhotoDataUrl('');
+      setThumbDataUrl('');
       setViolationCategory(null);
       setCaptureSummary(null);
       setTagTempId('');
@@ -78,8 +82,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     }
   }, []);
 
-  const handleCapturePhoto = async (source: CameraSource = CameraSource.Camera) => {
-    const res = await captureInspectionPhoto(source);
+  const handleCapturePhoto = async () => {
+    const res = await captureInspectionPhoto(CameraSource.Camera);
     if (res) {
       setPhotoDataUrl(res.dataUrl);
       setThumbDataUrl(res.thumbnailDataUrl);
@@ -180,8 +184,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         {step === 3 && (
           <TagPhotoStep
             photoDataUrl={photoDataUrl}
-            onCapture={() => handleCapturePhoto(CameraSource.Camera)}
-            onPickGallery={() => handleCapturePhoto(CameraSource.Photos)}
+            onCapture={handleCapturePhoto}
             onBack={() => setStep(2)}
             onNext={() => setStep(4)}
           />
