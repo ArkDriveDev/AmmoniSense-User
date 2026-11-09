@@ -52,7 +52,13 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag, onDelet
         </div>
       ) : (
         filtered.map((tag) => (
-          <TagCard key={tag.id} tag={tag} onClick={() => (onSelectTag ? onSelectTag(tag) : onEditTag?.(tag))} onEdit={onEditTag} onDelete={onDeleteTag} />
+          <TagCard
+            key={tag.id}
+            tag={tag}
+            onClick={onSelectTag ? () => onSelectTag(tag) : tag.isOffline && onEditTag ? () => onEditTag(tag) : undefined}
+            onEdit={onEditTag}
+            onDelete={onDeleteTag}
+          />
         ))
       )}
     </div>

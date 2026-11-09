@@ -79,12 +79,13 @@ export default function InspectionSiteDetail() {
           <IonButtons slot="start"><IonBackButton defaultHref="/inspection-sites" style={{ '--color': '#ffffff' }} /></IonButtons>
           <IonTitle style={{ fontWeight: 700 }}>{site?.site_name || 'Site Detail'}</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={() => setShowEditSite(true)} style={{ '--color': '#ffffff' }} title="Update site details">
+            <IonButton disabled={!site?.isOffline} onClick={() => site?.isOffline && setShowEditSite(true)} style={{ '--color': '#ffffff' }} title="Update site details">
               <IonIcon icon={createOutline} slot="icon-only" />
             </IonButton>
             <IonButton
+              disabled={!site?.isOffline}
               onClick={async () => {
-                if (!site) return;
+                if (!site?.isOffline) return;
                 if (!window.confirm(`Delete "${site.site_name}" and all its schedules, tags, and readings? This cannot be undone.`)) return;
                 try {
                   await deleteSite(site.id);
@@ -128,7 +129,8 @@ export default function InspectionSiteDetail() {
                       size="small"
                       fill="outline"
                       color="primary"
-                      onClick={() => setShowEditSite(true)}
+                      disabled={!site?.isOffline}
+                      onClick={() => site?.isOffline && setShowEditSite(true)}
                       style={{ '--border-radius': '8px', fontSize: '12px', height: '32px' }}
                     >
                       <IonIcon icon={createOutline} slot="start" /> Update

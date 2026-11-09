@@ -213,7 +213,8 @@ export default function UserSites() {
                           size="small"
                           fill="clear"
                           color="primary"
-                          onClick={(e) => handleEditSite(e, s)}
+                          disabled={!s.isOffline}
+                          onClick={(e) => s.isOffline && handleEditSite(e, s)}
                           title="Update site details"
                         >
                           <IonIcon icon={createOutline} slot="icon-only" />
@@ -222,7 +223,8 @@ export default function UserSites() {
                           size="small"
                           fill="clear"
                           color="danger"
-                          onClick={(e) => handleDeleteSite(e, s.id, s.site_name)}
+                          disabled={!s.isOffline}
+                          onClick={(e) => s.isOffline && handleDeleteSite(e, s.id, s.site_name)}
                           title="Delete site"
                         >
                           <IonIcon icon={trashOutline} slot="icon-only" />

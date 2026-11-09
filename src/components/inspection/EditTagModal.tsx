@@ -213,7 +213,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
             <IonButton
               expand="block"
               onClick={handleSave}
-              disabled={saving || deleting}
+              disabled={saving || deleting || !tag.isOffline}
               style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', fontWeight: 700 }}
             >
               {saving ? <IonSpinner name="crescent" /> : <><IonIcon icon={checkmarkCircleOutline} slot="start" />Save Changes</>}
@@ -224,7 +224,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
               color="danger"
               fill="outline"
               onClick={() => setShowDeleteAlert(true)}
-              disabled={saving || deleting}
+              disabled={saving || deleting || !tag.isOffline}
               style={{ fontWeight: 700 }}
             >
               {deleting ? <IonSpinner name="crescent" /> : <><IonIcon icon={trashOutline} slot="start" />Delete Tag</>}

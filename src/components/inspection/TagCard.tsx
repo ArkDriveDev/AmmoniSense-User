@@ -57,9 +57,10 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
                     size="small"
                     fill="clear"
                     color="primary"
+                    disabled={!tag.isOffline}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEdit(tag);
+                      if (tag.isOffline) onEdit(tag);
                     }}
                     title="Update tag details"
                     style={{ margin: 0, height: '24px' }}
@@ -72,9 +73,10 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
                     size="small"
                     fill="clear"
                     color="danger"
+                    disabled={!tag.isOffline}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDelete(tag);
+                      if (tag.isOffline) onDelete(tag);
                     }}
                     title="Delete tag"
                     style={{ margin: 0, height: '24px' }}

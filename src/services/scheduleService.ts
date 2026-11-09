@@ -90,11 +90,21 @@ export async function fetchSchedules(siteId?: number | string): Promise<Inspecti
 }
 
 export async function fetchScheduleById(id: number | string): Promise<InspectionSchedule | null> {
-  const idbAll = await offlineStorage.getAllSchedulesFromIDB();
+  const [idbAll, queue] = await Promise.all([
+    offlineStorage.getAllSchedulesFromIDB(),
+    offlineStorage.getQueue().catch(() => []),
+  ]);
+  const queuedIds = new Set(
+    queue.flatMap((q) => [q.tempId, q.targetId, q.payload?.temp_id, q.payload?.offline_temp_id, q.payload?.id]).filter(Boolean).map(String)
+  );
   const local = idbAll.find(
     (s: any) => String(s.id) === String(id) || (s.offline_temp_id && String(s.offline_temp_id) === String(id))
   );
-  if (local) return formatSched(local, String(local.id).startsWith('temp_'));
+  if (local) {
+    const hasNumericId = !String(local.id).startsWith('temp_') && !isNaN(Number(local.id));
+    const inQueue = queuedIds.has(String(local.id)) || (local.offline_temp_id ? queuedIds.has(String(local.offline_temp_id)) : false);
+    return formatSched(local, !hasNumericId || inQueue);
+  }
   try {
     const { data } = await supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').eq('id', id).maybeSingle();
     if (!data) return null;

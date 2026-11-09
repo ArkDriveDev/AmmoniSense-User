@@ -121,10 +121,10 @@ export default function ScheduleDetail() {
           <IonButtons slot="start"><IonBackButton defaultHref="/schedules" style={{ '--color': '#ffffff' }} /></IonButtons>
           <IonTitle style={{ fontWeight: 700 }}>{schedule?.schedule_name || 'Schedule'}</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={() => setShowEditSchedule(true)} style={{ '--color': '#ffffff' }} title="Update schedule">
+            <IonButton disabled={!schedule?.isOffline} onClick={() => schedule?.isOffline && setShowEditSchedule(true)} style={{ '--color': '#ffffff' }} title="Update schedule">
               <IonIcon icon={createOutline} slot="icon-only" />
             </IonButton>
-            <IonButton onClick={handleDeleteSchedule} disabled={deleting} style={{ '--color': '#ff6b6b' }} title="Delete schedule">
+            <IonButton onClick={handleDeleteSchedule} disabled={deleting || !schedule?.isOffline} style={{ '--color': '#ff6b6b' }} title="Delete schedule">
               <IonIcon icon={trashOutline} slot="icon-only" />
             </IonButton>
             <IonButton onClick={handleResync} disabled={resyncing} style={{ '--color': '#ffffff' }} title="Re-sync data">
@@ -192,7 +192,8 @@ export default function ScheduleDetail() {
                         size="small"
                         fill="outline"
                         color="primary"
-                        onClick={() => setShowEditSchedule(true)}
+                        disabled={!schedule?.isOffline}
+                        onClick={() => schedule?.isOffline && setShowEditSchedule(true)}
                         style={{ '--border-radius': '8px', fontSize: '12px', height: '30px' }}
                       >
                         <IonIcon icon={createOutline} slot="start" /> Update Details

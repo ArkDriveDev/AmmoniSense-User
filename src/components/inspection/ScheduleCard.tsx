@@ -39,6 +39,7 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!schedule.isOffline) return;
     if (!window.confirm(`Delete schedule "${schedule.schedule_name}" and all its inspection tags?`)) return;
     try {
       await deleteSchedule(schedule.id);
@@ -89,7 +90,7 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
               <IonIcon icon={checkmarkDoneOutline} slot="start" /> Mark as Completed
             </IonButton>
           )}
-          <IonButton size="small" fill="clear" color="danger" onClick={handleDelete} style={{ margin: 0, height: '28px' }}>
+          <IonButton size="small" fill="clear" color="danger" disabled={!schedule.isOffline} onClick={handleDelete} style={{ margin: 0, height: '28px' }}>
             <IonIcon icon={trashOutline} slot="icon-only" />
           </IonButton>
           <IonIcon icon={chevronForwardOutline} color="medium" />
