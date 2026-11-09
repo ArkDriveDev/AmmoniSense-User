@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import offlineStorage from './OfflineStorageService';
 import { InspectionTag, CreateTagPayload, ViolationCategory, calculateAmmoniaStatus, toUpperClean } from '../types/inspection';
-import { getSignedPhotoUrl, deleteStorageFiles, uploadTagPhoto } from './photoStorageService';
+import { getSignedPhotoUrl, uploadTagPhoto } from './photoStorageService';
 import { autoRegisterDevice } from './deviceService';
 import { dataUrlToBlob } from '../utils/thumbnailUtils';
 import { recordsChanged } from '../utils/recordSignature';
@@ -179,12 +179,7 @@ export async function updateTag(
     tag_name?: string;
     notes?: string;
     photo_url?: string | null;
-    photo_storage_path?: string | null;
-    photo_thumbnail_storage_path?: string | null;
     violation_category?: ViolationCategory | null;
-    /** Storage paths of the OLD photo to delete from bucket */
-    _old_photo_storage_path?: string | null;
-    _old_photo_thumbnail_storage_path?: string | null;
   }
 ): Promise<void> {
   const clean: any = {};
@@ -192,16 +187,6 @@ export async function updateTag(
   if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
   if (updates.violation_category !== undefined) clean.violation_category = updates.violation_category;
   if (updates.photo_url !== undefined) clean.photo_url = updates.photo_url;
-  if (updates.photo_storage_path !== undefined) clean.photo_storage_path = updates.photo_storage_path;
-  if (updates.photo_thumbnail_storage_path !== undefined) clean.photo_thumbnail_storage_path = updates.photo_thumbnail_storage_path;
-
-  // Delete old photo files from bucket ONLY if the path actually changed (e.g. legacy name-based path)
-  if (updates.photo_storage_path !== undefined && updates._old_photo_storage_path && updates._old_photo_storage_path !== updates.photo_storage_path) {
-    await deleteStorageFiles('inspection-photos', [updates._old_photo_storage_path]);
-  }
-  if (updates.photo_thumbnail_storage_path !== undefined && updates._old_photo_thumbnail_storage_path && updates._old_photo_thumbnail_storage_path !== updates.photo_thumbnail_storage_path) {
-    await deleteStorageFiles('inspection-thumbnails', [updates._old_photo_thumbnail_storage_path]);
-  }
 
   const isOffline = typeof tagId === 'string' && tagId.startsWith('temp_');
   let synced = false;
@@ -247,6 +232,7 @@ export async function updateTag(
   }
 
   window.dispatchEvent(new CustomEvent('tags_updated'));
+  window.dispatchEvent(new CustomEvent('sync_queue_changed'));
 }
 
 export async function deleteTag(tagId: number | string): Promise<void> {
@@ -259,21 +245,9 @@ export async function deleteTag(tagId: number | string): Promise<void> {
     return;
   }
 
-  // 1. Fetch photo storage paths before deleting (online only)
-  let photoStoragePath: string | null = null;
-  let thumbStoragePath: string | null = null;
+  // Synced tag: delete linked sensor_data and tag row from Supabase first
   try {
-    const { data } = await supabase
-      .from('inspection_tags')
-      .select('photo_storage_path, photo_thumbnail_storage_path')
-      .eq('id', tagId)
-      .maybeSingle();
-    photoStoragePath = data?.photo_storage_path ?? null;
-    thumbStoragePath = data?.photo_thumbnail_storage_path ?? null;
-  } catch { /* non-fatal */ }
-
-  // 2. Delete from Supabase first
-  try {
+    await supabase.from('sensor_data').delete().eq('inspection_tag_id', tagId);
     const { error } = await supabase.from('inspection_tags').delete().eq('id', tagId);
     if (error) throw new Error(error.message);
   } catch (err) {
@@ -281,10 +255,6 @@ export async function deleteTag(tagId: number | string): Promise<void> {
     throw err;
   }
 
-  // 3. Best-effort storage cleanup
-  await deleteStorageFiles('inspection-photos', [photoStoragePath]);
-  await deleteStorageFiles('inspection-thumbnails', [thumbStoragePath]);
-
-  // 4. Purge local copies and queued children
+  // Purge local copies and queued children
   await offlineStorage.deleteTagAndChildren(strId);
 }

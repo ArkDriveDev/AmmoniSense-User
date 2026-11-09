@@ -81,15 +81,9 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
           const blob = dataURLtoBlob(newPhotoDataUrl);
           const thumbDataUrl = await createThumbnail(newPhotoDataUrl);
           const thumbBlob = thumbDataUrl ? dataURLtoBlob(thumbDataUrl) : null;
-          const siteId = tag.inspection_site_id ?? 0;
+          const siteId = tag.inspection_site_id ?? null;
           const uploaded = await uploadTagPhoto(blob, thumbBlob, tag.id, siteId);
-
           updates.photo_url = uploaded.photo_url;
-          updates.photo_storage_path = uploaded.photo_storage_path;
-          updates.photo_thumbnail_storage_path = uploaded.photo_thumbnail_storage_path;
-          // Pass old paths so tagService can delete them from bucket
-          updates._old_photo_storage_path = (tag as any).photo_storage_path ?? null;
-          updates._old_photo_thumbnail_storage_path = (tag as any).photo_thumbnail_storage_path ?? null;
         } catch (photoErr) {
           console.warn('[EditTagModal] Photo upload failed, saving other fields only:', photoErr);
         }

@@ -12,7 +12,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchScheduleById, deleteSchedule, updateSchedule } from '../../services/scheduleService';
 import { showToast } from '../../utils/toast';
 import offlineStorage from '../../services/OfflineStorageService';
-import { fetchTags } from '../../services/tagService';
+import { fetchTags, deleteTag } from '../../services/tagService';
 import TagList from '../../components/inspection/TagList';
 import AddTagModal from '../../components/inspection/AddTagModal';
 import EditTagModal from '../../components/inspection/EditTagModal';
@@ -229,7 +229,19 @@ export default function ScheduleDetail() {
             {viewMode === 'map' ? (
               <ScheduleTagsMap tags={tags} height="360px" />
             ) : (
-              <TagList tags={tags} onEditTag={(tag) => setEditingTag(tag)} onDeleteTag={(tag) => setEditingTag(tag)} />
+              <TagList
+                tags={tags}
+                onEditTag={(tag) => setEditingTag(tag)}
+                onDeleteTag={async (tag) => {
+                  if (!window.confirm(`Delete tag "${tag.tag_name}"? This cannot be undone.`)) return;
+                  try {
+                    await deleteTag(tag.id);
+                    showToast({ message: 'Inspection tag deleted successfully!', color: 'success' });
+                  } catch (err: any) {
+                    showToast({ message: err.message || 'Failed to delete tag', color: 'danger' });
+                  }
+                }}
+              />
             )}
           </>
         )}
