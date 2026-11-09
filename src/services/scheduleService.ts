@@ -97,7 +97,10 @@ export async function fetchScheduleById(id: number | string): Promise<Inspection
   if (local) return formatSched(local, String(local.id).startsWith('temp_'));
   try {
     const { data } = await supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').eq('id', id).maybeSingle();
-    return data ? formatSched(data, false) : null;
+    if (!data) return null;
+    const rec = formatSched(data, false);
+    await offlineStorage.upsertSchedulesToIDB([rec]);
+    return rec;
   } catch {
     return null;
   }
@@ -180,6 +183,11 @@ export async function deleteSchedule(scheduleId: string | number): Promise<void>
 
   // Synced schedule: delete from Supabase first
   try {
+    const { data: tagRows } = await supabase.from('inspection_tags').select('id').eq('inspection_schedule_id', scheduleId);
+    const tagIds = (tagRows || []).map((t: any) => t.id);
+    if (tagIds.length > 0) {
+      await supabase.from('sensor_data').delete().in('inspection_tag_id', tagIds);
+    }
     await supabase.from('inspection_tags').delete().eq('inspection_schedule_id', scheduleId);
     const { error } = await supabase.from('inspection_schedules').delete().eq('id', scheduleId);
     if (error) throw new Error(error.message);

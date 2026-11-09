@@ -40,10 +40,10 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
   const [date, setDate] = useState(todayStr);
   const [time, setTime] = useState('09:00');
   const [notes, setNotes] = useState('');
-  const [status, setStatus] = useState('PENDING');
+  const [status, setStatus] = useState('SCHEDULED');
   const [saving, setSaving] = useState(false);
 
-  const isToday = date === getTodayLocalDate();
+  const isToday = !editSchedule && date === getTodayLocalDate();
   const minTimeToday = isToday ? getNext5MinuteSlot() : '00:00';
   const { hour12, minute, ampm } = split24hTo12h(time);
   const minuteOptions = Array.from(new Set([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, minute])).sort((a, b) => a - b);
@@ -78,22 +78,16 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
       const minSlot = getNext5MinuteSlot();
       if (editSchedule) {
         setName(editSchedule.schedule_name || '');
-        const schedDate = editSchedule.scheduled_date || currentToday;
-        const effectiveDate = schedDate < currentToday ? currentToday : schedDate;
-        setDate(effectiveDate);
-        let schedTime = editSchedule.scheduled_time || minSlot;
-        if (effectiveDate === currentToday && schedTime < minSlot) {
-          schedTime = minSlot;
-        }
-        setTime(schedTime);
+        setDate(editSchedule.scheduled_date || currentToday);
+        setTime(editSchedule.scheduled_time || minSlot);
         setNotes(editSchedule.notes || '');
-        setStatus(editSchedule.status || 'PENDING');
+        setStatus(editSchedule.status || 'SCHEDULED');
       } else {
         setName('');
         setDate(currentToday);
         setTime(minSlot);
         setNotes('');
-        setStatus('PENDING');
+        setStatus('SCHEDULED');
       }
     }
   }, [isOpen, editSchedule]);
@@ -104,11 +98,11 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
       return;
     }
     const currentToday = getTodayLocalDate();
-    if (date < currentToday) {
+    if (!editSchedule && date < currentToday) {
       showToast({ message: 'Scheduled date cannot be in the past', color: 'danger' });
       return;
     }
-    if (date === currentToday && time < getNext5MinuteSlot()) {
+    if (!editSchedule && date === currentToday && time < getNext5MinuteSlot()) {
       showToast({ message: 'Scheduled time cannot be in the past for today', color: 'danger' });
       return;
     }
@@ -166,8 +160,8 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           <input
             type="date"
             value={date}
-            min={todayStr}
-            onChange={(e) => handleDateChange(e.target.value)}
+            min={editSchedule ? undefined : todayStr}
+            onChange={(e) => editSchedule ? setDate(e.target.value) : handleDateChange(e.target.value)}
             style={{ width: '100%', padding: '8px 0', border: 'none', background: 'transparent' }}
           />
         </IonItem>
@@ -223,7 +217,7 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           <IonItem lines="inset" style={{ marginTop: '10px' }}>
             <IonLabel position="stacked">STATUS</IonLabel>
             <IonSelect value={status} onIonChange={(e) => setStatus(e.detail.value)}>
-              <IonSelectOption value="PENDING">PENDING</IonSelectOption>
+              <IonSelectOption value="SCHEDULED">SCHEDULED</IonSelectOption>
               <IonSelectOption value="IN_PROGRESS">IN PROGRESS</IonSelectOption>
               <IonSelectOption value="COMPLETED">COMPLETED</IonSelectOption>
               <IonSelectOption value="CANCELLED">CANCELLED</IonSelectOption>

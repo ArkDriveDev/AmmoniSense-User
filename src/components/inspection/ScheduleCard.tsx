@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
-import { calendarOutline, timeOutline, chevronForwardOutline, cloudOfflineOutline, pricetagOutline, checkmarkDoneOutline } from 'ionicons/icons';
+import { calendarOutline, timeOutline, chevronForwardOutline, cloudOfflineOutline, pricetagOutline, checkmarkDoneOutline, trashOutline } from 'ionicons/icons';
 import { InspectionSchedule } from '../../types/inspection';
-import { updateSchedule } from '../../services/scheduleService';
+import { updateSchedule, deleteSchedule } from '../../services/scheduleService';
 import { showToast } from '../../utils/toast';
 import { formatTime12h } from '../../utils/timeUtils';
 
@@ -35,6 +35,17 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
     } catch (err: any) {
       showToast({ message: err?.message || 'Failed to update schedule', color: 'danger' });
     } finally { setCompleting(false); }
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete schedule "${schedule.schedule_name}" and all its inspection tags?`)) return;
+    try {
+      await deleteSchedule(schedule.id);
+      showToast({ message: 'Schedule deleted', color: 'success' });
+    } catch (err: any) {
+      showToast({ message: err?.message || 'Failed to delete schedule', color: 'danger' });
+    }
   };
 
   return (
@@ -78,6 +89,9 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
               <IonIcon icon={checkmarkDoneOutline} slot="start" /> Mark as Completed
             </IonButton>
           )}
+          <IonButton size="small" fill="clear" color="danger" onClick={handleDelete} style={{ margin: 0, height: '28px' }}>
+            <IonIcon icon={trashOutline} slot="icon-only" />
+          </IonButton>
           <IonIcon icon={chevronForwardOutline} color="medium" />
         </div>
       </div>
