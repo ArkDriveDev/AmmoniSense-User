@@ -9,8 +9,15 @@ import { recordsChanged } from '../utils/recordSignature';
 const parseNum = (v: any, fallback: number): number =>
   v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
 
+/** Pick the linked sensor_data reading with the highest ammonia ppm (Supabase returns an array). */
+const pickPeakReading = (raw: any): any => {
+  if (!Array.isArray(raw)) return raw || {};
+  return raw.reduce((best: any, r: any) =>
+    (Number(r?.ammonia) || 0) > (Number(best?.ammonia) || 0) ? r : best, raw[0] || {});
+};
+
 const formatTag = (d: any, isOffline = false): InspectionTag => {
-  const sensor = d.sensor_data || {};
+  const sensor = pickPeakReading(d.sensor_data);
   return {
     id: d.id,
     tag_name: d.tag_name,
