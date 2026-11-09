@@ -12,7 +12,6 @@ import CaptureSummaryView from './CaptureSummaryView';
 import TagLocationStep from './TagLocationStep';
 import TagPhotoStep from './TagPhotoStep';
 import TagFormReview from './TagFormReview';
-import { UntaggedSessionOption } from './UntaggedSessionList';
 import { captureInspectionPhoto } from '../../services/photoStorageService';
 import { createTag } from '../../services/tagService';
 import offlineStorage from '../../services/OfflineStorageService';
@@ -20,9 +19,11 @@ import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { CapturedSessionReading, CaptureSummary } from '../../types/capture';
 import { computeCaptureSummary } from '../../utils/captureSummary';
 import { generateUUID } from '../../hooks/useSensorCaptureLoop';
-import { RECOVERY_MODE, RECOVERY_FALLBACKS } from '../../constants/recovery';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
 import { showToast } from '../../utils/toast';
+
+const DEFAULT_LAT = 8.3683;
+const DEFAULT_LNG = 124.8637;
 
 interface Props {
   isOpen: boolean;
@@ -34,10 +35,8 @@ interface Props {
 
 export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, siteId, onCreated }) => {
   const [step, setStep] = useState<number>(1);
-  const [captureSource, setCaptureSource] = useState<'new' | 'existing'>('new');
-  const [lat, setLat] = useState<number | null>(8.3683);
-  const [lng, setLng] = useState<number | null>(124.8637);
-  const [recoveryIndex, setRecoveryIndex] = useState<number>(0);
+  const [lat, setLat] = useState<number | null>(DEFAULT_LAT);
+  const [lng, setLng] = useState<number | null>(DEFAULT_LNG);
   const [ammonia, setAmmonia] = useState<number | null>(null);
   const [temp, setTemp] = useState<number | null>(null);
   const [hum, setHum] = useState<number | null>(null);
@@ -51,14 +50,11 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [saving, setSaving] = useState<boolean>(false);
   const [captureSummary, setCaptureSummary] = useState<CaptureSummary | null>(null);
   const [tagTempId, setTagTempId] = useState<string>('');
-  const [selectedSession, setSelectedSession] = useState<UntaggedSessionOption | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setStep(1);
-      setCaptureSource('new');
-      setSelectedSession(null);
       setViolationCategory(null);
       setCaptureSummary(null);
       setTagTempId('');
@@ -99,6 +95,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     setSaveError(null);
     try {
       const effectiveTempId = tagTempId || `temp_tag_${generateUUID()}`;
+      const sessionId = captureSummary?.session_id;
 
       await createTag({
         tag_name: toUpperClean(tagName),
@@ -106,8 +103,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         temperature: (temp !== undefined && temp !== null && !isNaN(Number(temp))) ? Number(temp) : undefined,
         humidity: (hum !== undefined && hum !== null && !isNaN(Number(hum))) ? Number(hum) : undefined,
         battery: (battery !== undefined && battery !== null && !isNaN(Number(battery))) ? Number(battery) : undefined,
-        latitude: lat ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lat,
-        longitude: lng ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lng,
+        latitude: lat ?? DEFAULT_LAT,
+        longitude: lng ?? DEFAULT_LNG,
         photo_url: photoDataUrl || null,
         device_uid: deviceUid,
         inspection_schedule_id: scheduleId,
@@ -115,11 +112,10 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         violation_category: violationCategory || null,
         notes: toUpperClean(notes),
         offline_temp_id: effectiveTempId,
-        session_id: captureSource === 'existing' ? selectedSession?.sessionId : captureSummary?.session_id,
+        session_id: sessionId,
       } as any);
 
-      const targetSessionId = captureSource === 'existing' ? selectedSession?.sessionId : captureSummary?.session_id;
-      if (targetSessionId && effectiveTempId) {
+      if (sessionId) {
         const queue = await offlineStorage.getQueue();
         const otherTagIds = new Set(
           queue
@@ -128,7 +124,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             .filter(Boolean).map(String)
         );
         for (const q of queue) {
-          if ((q.type === 'sensor_data' || q.type === 'SENSOR_READING') && q.payload?.session_id === targetSessionId) {
+          if ((q.type === 'sensor_data' || q.type === 'SENSOR_READING') && q.payload?.session_id === sessionId) {
             const existingTagRef = q.payload?.inspection_tag_temp_id ? String(q.payload.inspection_tag_temp_id) : '';
             if (existingTagRef && existingTagRef !== effectiveTempId && otherTagIds.has(existingTagRef)) continue;
             if (existingTagRef !== effectiveTempId) {
@@ -136,7 +132,6 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             }
           }
         }
-        if (captureSource === 'existing') setRecoveryIndex((prev) => (prev + 1) % RECOVERY_FALLBACKS.length);
         window.dispatchEvent(new CustomEvent('tags_updated'));
         window.dispatchEvent(new CustomEvent('sync_queue_changed'));
       }
@@ -163,7 +158,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       </IonHeader>
       <IonContent className="ion-padding">
         {step === 1 && (
-          <TagLocationStep lat={lat ?? 8.3683} lng={lng ?? 124.8637} onChangeLat={setLat} onChangeLng={setLng} onNext={() => setStep(2)} />
+          <TagLocationStep lat={lat ?? DEFAULT_LAT} lng={lng ?? DEFAULT_LNG} onChangeLat={setLat} onChangeLng={setLng} onNext={() => setStep(2)} />
         )}
         {step === 2 && (
           <div>
@@ -195,10 +190,9 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
           <TagFormReview
             tagName={tagName} notes={notes} violationCategory={violationCategory}
             ammonia={ammonia} temperature={temp}
-            lat={lat ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lat}
-            lng={lng ?? RECOVERY_FALLBACKS[recoveryIndex % RECOVERY_FALLBACKS.length].lng}
+            lat={lat ?? DEFAULT_LAT}
+            lng={lng ?? DEFAULT_LNG}
             saving={saving}
-            isRecoveryMode={captureSource === 'existing' && RECOVERY_MODE}
             errorMessage={saveError}
             onChangeTagName={setTagName} onChangeNotes={setNotes}
             onChangeViolationCategory={setViolationCategory}
