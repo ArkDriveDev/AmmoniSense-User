@@ -3,11 +3,11 @@ import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonBackButton,
   IonButtons, IonButton, IonIcon, IonSpinner, IonCard, IonCardContent
 } from '@ionic/react';
-import { addOutline, calendarOutline, pricetagOutline, locationOutline, createOutline } from 'ionicons/icons';
+import { addOutline, calendarOutline, pricetagOutline, locationOutline, createOutline, trashOutline } from 'ionicons/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { fetchSchedules } from '../../services/scheduleService';
-import { fetchSiteById } from '../../services/siteService';
+import { fetchSiteById, deleteSite } from '../../services/siteService';
 import offlineStorage from '../../services/OfflineStorageService';
 import { getSignedPhotoUrl } from '../../services/photoStorageService';
 import ScheduleCard from '../../components/inspection/ScheduleCard';
@@ -42,14 +42,8 @@ export default function InspectionSiteDetail() {
 
       const sched = await fetchSchedules(id);
       setSchedules(sched);
-
-      let count = 0;
-      try {
-        const tagRes = await supabase.from('inspection_tags').select('id', { count: 'exact', head: true }).eq('inspection_site_id', id);
-        count = tagRes.count ?? 0;
-      } catch {}
-      const offlineCount = offlineStorage.getOfflineTags().filter(t => String(t.inspection_site_id) === String(id)).length;
-      setTagCount(count + offlineCount);
+      const totalTags = sched.reduce((acc, s) => acc + (Number(s.tags_count) || 0), 0);
+      setTagCount(totalTags);
     } catch (err) {
       console.warn('[InspectionSiteDetail] fetch error:', err);
     } finally {
@@ -86,7 +80,23 @@ export default function InspectionSiteDetail() {
           <IonTitle style={{ fontWeight: 700 }}>{site?.site_name || 'Site Detail'}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => setShowEditSite(true)} style={{ '--color': '#ffffff' }} title="Update site details">
-              <IonIcon icon={createOutline} slot="start" /> Edit
+              <IonIcon icon={createOutline} slot="icon-only" />
+            </IonButton>
+            <IonButton
+              onClick={async () => {
+                if (!site) return;
+                if (!window.confirm(`Delete "${site.site_name}" and all its schedules, tags, and readings? This cannot be undone.`)) return;
+                try {
+                  await deleteSite(site.id);
+                  navigate('/inspection-sites', { replace: true });
+                } catch (err: any) {
+                  alert(err.message || 'Failed to delete site.');
+                }
+              }}
+              style={{ '--color': '#ff6b6b' }}
+              title="Delete site"
+            >
+              <IonIcon icon={trashOutline} slot="icon-only" />
             </IonButton>
             <IonButton onClick={() => setShowCreateSchedule(true)} style={{ '--color': '#ffffff' }}>
               <IonIcon icon={addOutline} slot="start" /> Schedule

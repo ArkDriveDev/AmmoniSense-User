@@ -163,14 +163,19 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
         .eq('inspection_site_id', siteId);
       const schedIds = (schedRows || []).map((s: any) => s.id);
 
-      // Fetch all child tag photo storage paths
-      let tagPhotoRows: any[] = [];
+      // Fetch child tags under those schedules
+      let tagIds: any[] = [];
       if (schedIds.length > 0) {
         const { data } = await supabase
           .from('inspection_tags')
-          .select('photo_storage_path, photo_thumbnail_storage_path')
+          .select('id')
           .in('inspection_schedule_id', schedIds);
-        tagPhotoRows = data || [];
+        tagIds = (data || []).map((t: any) => t.id);
+      }
+
+      // Delete sensor_data linked to child tags
+      if (tagIds.length > 0) {
+        await supabase.from('sensor_data').delete().in('inspection_tag_id', tagIds);
       }
 
       // Delete inspection_tags under those schedules
@@ -180,9 +185,6 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
 
       // Delete inspection_schedules under this site
       await supabase.from('inspection_schedules').delete().eq('inspection_site_id', siteId);
-
-      // Delete sensor_data directly linked to this site via inspection_site_id (new FK)
-      await supabase.from('sensor_data').delete().eq('inspection_site_id', siteId);
 
       // Finally delete the site record
       const { error: siteErr } = await supabase
@@ -194,14 +196,7 @@ export const deleteSite = async (siteId: string | number): Promise<void> => {
         throw new Error('Failed to delete inspection site from Supabase: ' + siteErr.message);
       }
 
-      // Best-effort: clean up storage bucket files AFTER DB rows are gone
-      // Remove tag photos
-      const tagPhotoPaths = tagPhotoRows.map((r: any) => r.photo_storage_path).filter(Boolean);
-      const tagThumbPaths = tagPhotoRows.map((r: any) => r.photo_thumbnail_storage_path).filter(Boolean);
-      if (tagPhotoPaths.length > 0) await deleteStorageFiles('inspection-photos', tagPhotoPaths);
-      if (tagThumbPaths.length > 0) await deleteStorageFiles('inspection-thumbnails', tagThumbPaths);
-
-      // Remove site photo
+      // Best-effort: remove site photo from storage bucket AFTER DB rows are gone
       await deleteStorageFiles('site-photos', [
         siteRow?.site_photo_storage_path,
         siteRow?.site_photo_thumbnail_storage_path,

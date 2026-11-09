@@ -241,11 +241,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
           current_latitude: form.current_latitude,
           current_longitude: form.current_longitude,
-          ...(Object.keys(updatedPhotoFields).length > 0
-            ? updatedPhotoFields
-            : photoPreview
-              ? { site_photo_url: photoPreview, site_photo_thumbnail: photoPreview }
-              : {}),
+          ...(Object.keys(updatedPhotoFields).length > 0 ? updatedPhotoFields : {}),
         };
 
         let synced = false;
@@ -265,6 +261,15 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
             console.warn('[CreateSiteModal] Network failed during update, queueing offline:', err);
           }
         }
+
+        const mergedSite = {
+          ...editSite,
+          ...siteUpdateData,
+          id: editSite.id,
+          location: siteUpdateData.address,
+        };
+        await offlineStorage.upsertSitesToIDB([mergedSite]);
+        offlineStorage.saveCachedSites([mergedSite]);
 
         if (!synced) {
           await offlineStorage.updateOfflineSite(editSite.id, {
@@ -311,6 +316,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
 
         setShowToast(true);
         window.dispatchEvent(new CustomEvent('site_synced'));
+        window.dispatchEvent(new CustomEvent('sites_updated'));
+        window.dispatchEvent(new CustomEvent('sync_queue_changed'));
 
         if (onSiteCreated) {
           onSiteCreated({ ...editSite, ...sitePayload });
