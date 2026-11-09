@@ -130,7 +130,11 @@ export default function ScheduleDetail() {
             <IonButton onClick={handleResync} disabled={resyncing} style={{ '--color': '#ffffff' }} title="Re-sync data">
               <IonIcon icon={syncOutline} slot="icon-only" style={{ animation: resyncing ? 'spin 1.2s linear infinite' : 'none' }} />
             </IonButton>
-            <IonButton onClick={() => setShowAddTag(true)} style={{ '--color': '#ffffff' }}>
+            <IonButton
+              disabled={schedule?.status === 'COMPLETED' && !!schedule?.confirmed}
+              onClick={() => !(schedule?.status === 'COMPLETED' && schedule?.confirmed) && setShowAddTag(true)}
+              style={{ '--color': '#ffffff' }}
+            >
               <IonIcon icon={addOutline} slot="start" /> Add Tag
             </IonButton>
           </IonButtons>
@@ -221,7 +225,12 @@ export default function ScheduleDetail() {
                     <IonLabel>Map</IonLabel>
                   </IonSegmentButton>
                 </IonSegment>
-                <IonButton size="small" color="success" onClick={() => setShowAddTag(true)}>
+                <IonButton
+                  size="small"
+                  color="success"
+                  disabled={schedule?.status === 'COMPLETED' && !!schedule?.confirmed}
+                  onClick={() => !(schedule?.status === 'COMPLETED' && schedule?.confirmed) && setShowAddTag(true)}
+                >
                   <IonIcon icon={addOutline} slot="start" /> Add Tag
                 </IonButton>
               </div>

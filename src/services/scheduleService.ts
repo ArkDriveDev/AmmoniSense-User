@@ -100,20 +100,24 @@ export async function fetchScheduleById(id: number | string): Promise<Inspection
   const local = idbAll.find(
     (s: any) => String(s.id) === String(id) || (s.offline_temp_id && String(s.offline_temp_id) === String(id))
   );
-  if (local) {
-    const hasNumericId = !String(local.id).startsWith('temp_') && !isNaN(Number(local.id));
-    const inQueue = queuedIds.has(String(local.id)) || (local.offline_temp_id ? queuedIds.has(String(local.offline_temp_id)) : false);
-    return formatSched(local, !hasNumericId || inQueue);
+  const hasNumericId = !String(id).startsWith('temp_') && !isNaN(Number(id));
+  const inQueue = local
+    ? queuedIds.has(String(local.id)) || (local.offline_temp_id ? queuedIds.has(String(local.offline_temp_id)) : false)
+    : queuedIds.has(String(id));
+
+  if (isOnline() && hasNumericId && !inQueue) {
+    try {
+      const { data } = await supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').eq('id', id).maybeSingle();
+      if (data) {
+        const rec = formatSched({ ...local, ...data }, false);
+        await offlineStorage.upsertSchedulesToIDB([rec]);
+        return rec;
+      }
+    } catch { /* fall back to local */ }
   }
-  try {
-    const { data } = await supabase.from('inspection_schedules').select('*, inspection_sites(site_name)').eq('id', id).maybeSingle();
-    if (!data) return null;
-    const rec = formatSched(data, false);
-    await offlineStorage.upsertSchedulesToIDB([rec]);
-    return rec;
-  } catch {
-    return null;
-  }
+
+  if (local) return formatSched(local, !hasNumericId || inQueue);
+  return null;
 }
 
 export async function createSchedule(payload: CreateSchedulePayload): Promise<InspectionSchedule> {
