@@ -20,6 +20,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import offlineStorage from '../services/OfflineStorageService';
 import nativePermissionsService from '../services/nativePermissionsService';
+import { verifyAndRegisterDevice, DeviceApprovalState } from '../services/deviceApprovalService';
+import DeviceApprovalCard from '../components/auth/DeviceApprovalCard';
 import { mailOutline, lockClosedOutline, leafOutline } from 'ionicons/icons';
 
 export default function Login() {
@@ -30,6 +32,8 @@ export default function Login() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'success' | 'danger'>('danger');
+  const [approvalStatus, setApprovalStatus] = useState<Exclude<DeviceApprovalState, 'APPROVED'> | null>(null);
+  const [deviceIdentifier, setDeviceIdentifier] = useState('');
 
   // Clear any stale/corrupt session on mount to prevent 400 race conditions on Android
   useEffect(() => {
@@ -78,6 +82,21 @@ export default function Login() {
         setShowToast(true);
         setLoading(false);
         return;
+      }
+
+      const profileId = data?.session?.user?.id || data?.user?.id;
+      if (profileId) {
+        const deviceCheck = await verifyAndRegisterDevice(profileId);
+        if (deviceCheck.status !== 'APPROVED') {
+          await supabase.auth.signOut();
+          offlineStorage.clearSession();
+          setDeviceIdentifier(deviceCheck.deviceIdentifier);
+          setApprovalStatus(deviceCheck.status);
+          setToastColor('danger');
+          setToastMessage(deviceCheck.status === 'BLOCKED' ? 'Device Blocked.' : 'Waiting for Admin Approval.');
+          setShowToast(true);
+          return;
+        }
       }
 
       // Save persistent offline session
@@ -132,6 +151,18 @@ export default function Login() {
           <IonGrid style={{ maxWidth: '420px', width: '100%' }}>
             <IonRow>
               <IonCol>
+                {approvalStatus ? (
+                  <DeviceApprovalCard
+                    status={approvalStatus}
+                    deviceIdentifier={deviceIdentifier}
+                    onLogout={async () => {
+                      await supabase.auth.signOut().catch(() => {});
+                      offlineStorage.clearSession();
+                      setApprovalStatus(null);
+                      setPassword('');
+                    }}
+                  />
+                ) : (
                 <IonCard className="premium-card" style={{ padding: '8px' }}>
                   <IonCardContent>
                     <div style={{ textAlign: 'center', marginBottom: '28px', marginTop: '12px' }}>
@@ -200,6 +231,7 @@ export default function Login() {
                     </form>
                   </IonCardContent>
                 </IonCard>
+                )}
               </IonCol>
             </IonRow>
           </IonGrid>
