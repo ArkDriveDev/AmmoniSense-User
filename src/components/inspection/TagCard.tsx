@@ -48,8 +48,8 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
-              <h4 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
+              <h4 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#0F172A', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3, flex: '1 1 120px' }}>
                 {tag.tag_name}
               </h4>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -107,7 +107,7 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
               <span><IonIcon icon={batteryChargingOutline} /> {tag.battery !== undefined && tag.battery !== null ? `${Number(tag.battery)}%` : '—'}</span>
             </div>
             {tag.notes && (
-              <div style={{ marginTop: '3px', fontSize: '11px', color: '#475569', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ marginTop: '3px', fontSize: '11px', color: '#475569', fontStyle: 'italic', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.35 }}>
                 "{tag.notes}"
               </div>
             )}

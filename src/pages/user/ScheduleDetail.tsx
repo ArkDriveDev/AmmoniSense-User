@@ -119,7 +119,7 @@ export default function ScheduleDetail() {
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
           <IonButtons slot="start"><IonBackButton defaultHref="/schedules" style={{ '--color': '#ffffff' }} /></IonButtons>
-          <IonTitle style={{ fontWeight: 700 }}>{schedule?.schedule_name || 'Schedule'}</IonTitle>
+          <IonTitle style={{ fontWeight: 700, whiteSpace: 'normal', fontSize: '16px', lineHeight: 1.2 }}>{schedule?.schedule_name || 'Schedule'}</IonTitle>
           <IonButtons slot="end">
             <IonButton disabled={!schedule?.isOffline} onClick={() => schedule?.isOffline && setShowEditSchedule(true)} style={{ '--color': '#ffffff' }} title="Update schedule">
               <IonIcon icon={createOutline} slot="icon-only" />
@@ -150,9 +150,9 @@ export default function ScheduleDetail() {
             {schedule && (
               <IonCard style={{ margin: '0 0 16px 0', borderRadius: '14px' }}>
                 <IonCardContent style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <h2 style={{ margin: '0 0 6px 0', fontWeight: 800, fontSize: '18px', color: '#0F172A' }}>{schedule.schedule_name}</h2>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+                      <h2 style={{ margin: '0 0 6px 0', fontWeight: 800, fontSize: '18px', color: '#0F172A', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3 }}>{schedule.schedule_name}</h2>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#64748B', flexWrap: 'wrap' }}>
                         <span><IonIcon icon={calendarOutline} /> {schedule.scheduled_date}</span>
                         <span><IonIcon icon={timeOutline} /> {formatTime12h(schedule.scheduled_time) || '09:00 AM'}</span>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonButton, IonCard, IonCardContent, IonIcon, IonText, IonTitle } from '@ionic/react';
+import { IonButton, IonCard, IonCardContent, IonIcon, IonText } from '@ionic/react';
 import { timeOutline, banOutline, logOutOutline } from 'ionicons/icons';
 import { DeviceApprovalState } from '../../services/deviceApprovalService';
 
@@ -33,9 +33,9 @@ export const DeviceApprovalCard: React.FC<Props> = ({ status, deviceIdentifier, 
           />
         </div>
 
-        <IonTitle style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', padding: 0 }}>
+        <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: 0, whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3 }}>
           {isBlocked ? 'Device Blocked.' : 'Waiting for Admin Approval.'}
-        </IonTitle>
+        </h2>
 
         <IonText color="medium">
           <p style={{ margin: '10px 0 0 0', fontSize: '14px', lineHeight: 1.5, color: '#475569' }}>

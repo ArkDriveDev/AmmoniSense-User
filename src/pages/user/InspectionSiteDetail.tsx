@@ -77,7 +77,7 @@ export default function InspectionSiteDetail() {
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
           <IonButtons slot="start"><IonBackButton defaultHref="/inspection-sites" style={{ '--color': '#ffffff' }} /></IonButtons>
-          <IonTitle style={{ fontWeight: 700 }}>{site?.site_name || 'Site Detail'}</IonTitle>
+          <IonTitle style={{ fontWeight: 700, whiteSpace: 'normal', fontSize: '16px', lineHeight: 1.2 }}>{site?.site_name || 'Site Detail'}</IonTitle>
           <IonButtons slot="end">
             <IonButton disabled={!site?.isOffline} onClick={() => site?.isOffline && setShowEditSite(true)} style={{ '--color': '#ffffff' }} title="Update site details">
               <IonIcon icon={createOutline} slot="icon-only" />
@@ -118,9 +118,9 @@ export default function InspectionSiteDetail() {
                   {site.display_photo && (
                     <img src={site.display_photo} alt="Site" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '10px', marginBottom: '12px' }} />
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                    <div>
-                      <h2 style={{ margin: '0 0 4px 0', fontWeight: 800, fontSize: '20px', color: '#0F172A' }}>{site.site_name}</h2>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+                      <h2 style={{ margin: '0 0 4px 0', fontWeight: 800, fontSize: '20px', color: '#0F172A', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3 }}>{site.site_name}</h2>
                       <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <IonIcon icon={locationOutline} color="primary" /> {site.address || 'No address'}
                       </p>

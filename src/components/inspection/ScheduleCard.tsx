@@ -52,9 +52,9 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
   return (
   <IonCard button={!!onClick} onClick={onClick} style={{ margin: '8px 0', borderRadius: '12px' }}>
     <IonCardContent style={{ padding: '14px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h3 style={{ margin: '0 0 6px 0', fontWeight: 700, fontSize: '16px', color: '#0F172A' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+          <h3 style={{ margin: '0 0 6px 0', fontWeight: 700, fontSize: '16px', color: '#0F172A', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3 }}>
             {schedule.schedule_name}
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748B' }}>

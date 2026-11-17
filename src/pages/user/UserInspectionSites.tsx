@@ -130,10 +130,10 @@ export default function UserInspectionSites() {
             {sites.map((s) => (
               <IonCard key={s.id} button onClick={() => navigate(`/inspection-sites/${s.id}`)} style={{ margin: 0, borderRadius: '14px' }}>
                 <IonCardContent style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>{s.site_name}</h2>
+                        <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3 }}>{s.site_name}</h2>
                         {s.isOffline && <PendingSyncBadge label="Offline — not synced" />}
                         <SiteTypeBadge siteType={s.site_type} />
                         {s.poultry_type && (
