@@ -528,18 +528,24 @@ export default function UserMap() {
               padding: '0 4px',
             }}
           />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px 2px 6px', gap: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#E2E8F0', whiteSpace: 'nowrap' }}>Sort Tags:</span>
-            <select
-              value={tagSort}
-              onChange={(e) => handleTagSortChange(e.target.value as TagSortOption)}
-              aria-label="Sort tags by schedule"
-              style={{ flex: 1, maxWidth: '220px', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255, 255, 255, 0.95)', color: '#0F172A', fontSize: '12px', fontWeight: 700 }}
-            >
-              <option value="recent">Recent</option>
-              <option value="oldest">Oldest</option>
-              <option value="schedule_name">By Schedule Name</option>
-            </select>
+          <div className="map-sort-bar" role="group" aria-label="Sort tags by schedule">
+            <span className="map-sort-label">Sort Tags:</span>
+            <div className="map-sort-group">
+              {([
+                { value: 'recent', label: 'Recent' },
+                { value: 'oldest', label: 'Oldest' },
+                { value: 'schedule_name', label: 'By Schedule Name' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`map-sort-btn${tagSort === opt.value ? ' active' : ''}`}
+                  onClick={() => handleTagSortChange(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </IonToolbar>
       </IonHeader>
