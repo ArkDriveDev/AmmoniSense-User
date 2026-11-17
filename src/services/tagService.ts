@@ -9,28 +9,62 @@ import { recordsChanged } from '../utils/recordSignature';
 const parseNum = (v: any, fallback: number): number =>
   v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : fallback;
 
-/** Pick the linked sensor_data reading with the highest ammonia ppm (Supabase returns an array). */
-const pickPeakReading = (raw: any): any => {
-  if (!Array.isArray(raw)) return raw || {};
-  return raw.reduce((best: any, r: any) =>
-    (Number(r?.ammonia) || 0) > (Number(best?.ammonia) || 0) ? r : best, raw[0] || {});
-};
+const tagAvgCache = new Map<string, number | null>();
 
-const formatTag = (d: any, isOffline = false): InspectionTag => {
-  const sensor = pickPeakReading(d.sensor_data);
+/** Compute the average ammonia ppm across readings linked to a tag (or return null if none). */
+export function getTagAveragePpm(tag: any, readings?: any[]): number | null {
+  const source = readings ?? (Array.isArray(tag?.sensor_data) ? tag.sensor_data : tag?.sensor_data ? [tag.sensor_data] : []);
+  const tagId = String(tag?.id ?? '');
+  const tempId = String(tag?.offline_temp_id ?? tag?.id ?? '');
+  const sessId = tag?.session_id ? String(tag.session_id) : '';
+
+  const matched = Array.isArray(readings)
+    ? source.filter((r: any) => {
+        const p = r?.payload ?? r;
+        if (tagId && p?.inspection_tag_id !== undefined && String(p.inspection_tag_id) === tagId) return true;
+        if (tempId && p?.inspection_tag_temp_id && String(p.inspection_tag_temp_id) === tempId) return true;
+        if (sessId && p?.session_id && String(p.session_id) === sessId) return true;
+        return !p?.inspection_tag_id && !p?.inspection_tag_temp_id && !p?.session_id;
+      })
+    : source;
+
+  const nums = matched
+    .map((r: any) => Number((r?.payload ?? r)?.ammonia ?? (r?.payload ?? r)?.nh3_ppm))
+    .filter((n: number) => !isNaN(n));
+
+  if (nums.length > 0) {
+    const avg = nums.reduce((sum: number, n: number) => sum + n, 0) / nums.length;
+    if (tagId) tagAvgCache.set(tagId, avg);
+    return avg;
+  }
+  if (typeof tag?.avg_ppm === 'number' && !isNaN(tag.avg_ppm)) return tag.avg_ppm;
+  if (tagId && tagAvgCache.has(tagId)) return tagAvgCache.get(tagId) ?? null;
+  return null;
+}
+
+const formatTag = (d: any, isOffline = false, matchedReadings?: any[]): InspectionTag => {
+  const rows = matchedReadings ?? (Array.isArray(d.sensor_data) ? d.sensor_data : d.sensor_data ? [d.sensor_data] : []);
+  const last = rows[rows.length - 1] || {};
+  const avgPpm = getTagAveragePpm(d, rows.length > 0 ? rows : undefined);
+  const maxPpm = rows.length > 0 ? Math.max(...rows.map((r: any) => Number((r?.payload ?? r)?.ammonia ?? (r?.payload ?? r)?.nh3_ppm) || 0)) : (d.max_ppm ?? null);
+  const effectivePpm = avgPpm ?? (d.ammonia !== undefined && d.ammonia !== null && !isNaN(Number(d.ammonia)) && isOffline ? Number(d.ammonia) : null);
+  if (d.id) tagAvgCache.set(String(d.id), effectivePpm);
   return {
     id: d.id,
     tag_name: d.tag_name,
-    ammonia: parseNum(sensor.ammonia ?? d.ammonia, 0),
-    temperature: parseNum(sensor.temperature ?? d.temperature, 0),
-    humidity: parseNum(sensor.humidity ?? d.humidity, 0),
-    battery: parseNum(sensor.battery ?? d.battery, 100),
-    status: sensor.status || d.status || calculateAmmoniaStatus(sensor.ammonia ?? d.ammonia ?? 0),
-    latitude: parseNum(d.latitude ?? sensor.latitude, 0),
-    longitude: parseNum(d.longitude ?? sensor.longitude, 0),
+    ammonia: effectivePpm ?? 0,
+    avg_ppm: effectivePpm,
+    max_ppm: maxPpm,
+    session_id: d.session_id ?? null,
+    temperature: parseNum(last.temperature ?? d.temperature, 0),
+    humidity: parseNum(last.humidity ?? d.humidity, 0),
+    battery: parseNum(last.battery ?? d.battery, 100),
+    status: calculateAmmoniaStatus(effectivePpm ?? 0),
+    latitude: parseNum(d.latitude ?? last.latitude, 0),
+    longitude: parseNum(d.longitude ?? last.longitude, 0),
     photo_url: d.photo_url,
-    device_uid: d.device_uid || sensor.device_uid || null,
-    sensor_data_id: d.sensor_data_id ?? sensor.id ?? null,
+    device_uid: d.device_uid || last.device_uid || null,
+    sensor_data_id: d.sensor_data_id ?? last.id ?? null,
     inspection_schedule_id: d.inspection_schedule_id,
     inspection_site_id: d.inspection_site_id ?? null,
     notes: d.notes,
@@ -54,6 +88,15 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
     idbTags.filter((t: any) => !isNaN(Number(t.id)) && t.offline_temp_id).map((t: any) => String(t.offline_temp_id))
   );
 
+  const queuedReadings = queue.filter((q: any) => q.type === 'sensor_data' || q.type === 'SENSOR_READING');
+  const tagSessByTempId = new Map<string, string>();
+  queue.forEach((q: any) => {
+    if ((q.type === 'inspection_tag' || q.type === 'INSPECTION_TAG') && q.payload?.session_id) {
+      const k = String(q.tempId || q.payload?.offline_temp_id || '');
+      if (k) tagSessByTempId.set(k, String(q.payload.session_id));
+    }
+  });
+
   const formatList = (raw: any[]) =>
     raw
       .filter((d: any) => !(isNaN(Number(d.id)) && syncedOfflineTempIds.has(String(d.id))))
@@ -61,7 +104,8 @@ export async function fetchTags(filter?: { scheduleId?: number | string; siteId?
         const hasNumericId = !String(d.id).startsWith('temp_') && !isNaN(Number(d.id));
         const inQueue = queuedIds.has(String(d.id)) || (d.offline_temp_id ? queuedIds.has(String(d.offline_temp_id)) : false);
         const isOffline = !hasNumericId || inQueue;
-        return formatTag(d, isOffline);
+        const sessId = d.session_id || tagSessByTempId.get(String(d.offline_temp_id || d.id));
+        return formatTag({ ...d, session_id: sessId }, isOffline, isOffline ? queuedReadings : undefined);
       });
 
   (async () => {

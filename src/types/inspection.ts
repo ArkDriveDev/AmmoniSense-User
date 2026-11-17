@@ -17,9 +17,8 @@ export const AMMONIA_THRESHOLDS: AmmoniaThresholdConfig[] = [
 
 export function calculateAmmoniaStatus(ppm: number): AmmoniaStatus {
   const value = Number(ppm) || 0;
-  if (value <= 5.0) return 'NORMAL';
-  if (value <= 10.0) return 'WARNING';
-  if (value <= 20.0) return 'HIGH';
+  if (value < 5.0) return 'NORMAL';
+  if (value < 25.0) return 'WARNING';
   return 'CRITICAL';
 }
 
@@ -74,6 +73,9 @@ export interface InspectionTag {
   id: number | string;
   tag_name: string;
   ammonia: number;
+  avg_ppm?: number | null;
+  max_ppm?: number | null;
+  session_id?: string | null;
   temperature: number;
   humidity: number;
   battery: number;
