@@ -62,7 +62,7 @@ export const TagFormReview: React.FC<Props> = ({
     </IonItem>
     <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', marginTop: '12px', fontSize: '13px' }}>
       <div>
-        <strong>NH3:</strong> {ammonia !== null && ammonia !== undefined ? `${ammonia.toFixed(2)} PPM` : '—'} |{' '}
+        <strong>Avg NH₃:</strong> {ammonia !== null && ammonia !== undefined ? `${ammonia.toFixed(2)} ppm` : '—'} |{' '}
         <strong>Temp:</strong> {temperature !== null && temperature !== undefined ? `${temperature.toFixed(1)}°C` : '—'}
       </div>
       <div><strong>GPS:</strong> {lat.toFixed(4)}, {lng.toFixed(4)}</div>

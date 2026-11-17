@@ -8,9 +8,9 @@ import {
   closeOutline, checkmarkCircleOutline, thermometerOutline, waterOutline,
   batteryChargingOutline, locationOutline, cameraOutline, trashOutline
 } from 'ionicons/icons';
-import { updateTag, deleteTag } from '../../services/tagService';
+import { updateTag, deleteTag, getTagAveragePpm } from '../../services/tagService';
 import offlineStorage from '../../services/OfflineStorageService';
-import { InspectionTag, ViolationCategory, toUpperClean } from '../../types/inspection';
+import { InspectionTag, ViolationCategory, toUpperClean, calculateAmmoniaStatus } from '../../types/inspection';
 import { VIOLATION_CATEGORIES } from '../../constants/violationCategories';
 import { captureImageWithCameraOrFallback, dataURLtoBlob } from '../../utils/photoUtils';
 import { uploadTagPhoto } from '../../services/photoStorageService';
@@ -47,6 +47,9 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
   if (!tag) return null;
 
   const displayPhoto = newPhotoDataUrl || tag.photo_url;
+  const avg = getTagAveragePpm(tag);
+  const status = avg !== null ? calculateAmmoniaStatus(avg) : null;
+  const statusLabel = status === 'NORMAL' ? 'SAFE' : status;
 
   const handleRetakePhoto = async () => {
     setCapturingPhoto(true);
@@ -167,7 +170,11 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
 
           {/* Sensor readings (read-only) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px', background: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '12px', color: '#475569' }}>
-            <IonBadge color="primary">{(Number(tag.ammonia) || 0).toFixed(2)} PPM ({tag.status})</IonBadge>
+            <IonBadge color={status === 'NORMAL' ? 'success' : status === 'WARNING' ? 'warning' : status ? 'danger' : 'medium'}>
+              {avg !== null
+                ? `Avg NH₃: ${avg.toFixed(2)} ppm${tag.max_ppm !== null && tag.max_ppm !== undefined ? ` · Max ${tag.max_ppm.toFixed(2)}` : ''} (${statusLabel})`
+                : 'No readings'}
+            </IonBadge>
             <span><IonIcon icon={thermometerOutline} /> {(Number(tag.temperature) || 0).toFixed(1)}°C</span>
             <span><IonIcon icon={waterOutline} /> {(Number(tag.humidity) || 0).toFixed(1)}%</span>
             <span><IonIcon icon={batteryChargingOutline} /> {tag.battery ?? 100}%</span>

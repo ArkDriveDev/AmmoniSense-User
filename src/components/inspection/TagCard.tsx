@@ -5,7 +5,8 @@ import {
   locationOutline, cloudOfflineOutline, createOutline, trashOutline,
   alertCircleOutline
 } from 'ionicons/icons';
-import { InspectionTag } from '../../types/inspection';
+import { InspectionTag, calculateAmmoniaStatus } from '../../types/inspection';
+import { getTagAveragePpm } from '../../services/tagService';
 import { getViolationCategoryLabel, getViolationCategoryBadgeColor } from '../../constants/violationCategories';
 
 interface Props {
@@ -27,6 +28,9 @@ const statusBadgeColor = (status: string) => {
 
 export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => {
   const photo = tag.photo_url;
+  const avg = getTagAveragePpm(tag);
+  const status = avg !== null ? calculateAmmoniaStatus(avg) : null;
+  const statusLabel = status === 'NORMAL' ? 'SAFE' : status;
 
   return (
     <IonCard button={!!onClick} onClick={onClick} style={{ margin: '8px 0', borderRadius: '12px' }}>
@@ -49,8 +53,8 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
                 {tag.tag_name}
               </h4>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <IonBadge color={statusBadgeColor(tag.status)}>
-                  {(Number(tag.ammonia) || 0).toFixed(2)} PPM ({tag.status || 'NORMAL'})
+                <IonBadge color={status ? statusBadgeColor(status) : 'medium'}>
+                  {avg !== null ? `Avg NH₃: ${avg.toFixed(2)} ppm (${statusLabel})` : 'No readings'}
                 </IonBadge>
                 {onEdit && (
                   <IonButton
