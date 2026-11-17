@@ -57,7 +57,7 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
           <h3 style={{ margin: '0 0 6px 0', fontWeight: 700, fontSize: '16px', color: '#0F172A', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3 }}>
             {schedule.schedule_name}
           </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748B' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748B', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <IonIcon icon={calendarOutline} /> {schedule.scheduled_date}
             </span>
@@ -80,11 +80,11 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9', gap: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9', gap: '8px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '12px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
           <IonIcon icon={pricetagOutline} color="primary" /> {tagCount ?? schedule.tags_count ?? 0} Tag{(tagCount ?? schedule.tags_count ?? 0) === 1 ? '' : 's'}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {schedule.status !== 'COMPLETED' && (
             <IonButton size="small" color="success" disabled={completing} onClick={handleMarkCompleted} style={{ '--border-radius': '8px', fontSize: '11px', height: '28px', margin: 0 }}>
               <IonIcon icon={checkmarkDoneOutline} slot="start" /> Mark as Completed

@@ -342,3 +342,37 @@ ion-button.btn-ammoni,
     gap: 4px;
   }
 }
+
+/* Portrait & Small-Screen Overflow Protection */
+ion-page,
+ion-content {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+ion-toolbar ion-title {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  font-size: 16px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+ion-card,
+.premium-card,
+ion-card-content {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+ion-badge {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.25;
+}

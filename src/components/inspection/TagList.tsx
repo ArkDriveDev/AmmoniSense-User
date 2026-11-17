@@ -31,7 +31,7 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag, onDelet
   return (
     <div>
       {tags.length > 0 && (
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', padding: '10px 14px', background: '#F8FAFC', borderRadius: '10px', fontSize: '13px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', padding: '10px 14px', background: '#F8FAFC', borderRadius: '10px', fontSize: '13px' }}>
           <span><strong>Total:</strong> {tags.length}</span>
           <span>•</span>
           <span><strong>Avg NH₃:</strong> {stats.avg !== null ? `${stats.avg.toFixed(2)} ppm` : '—'}</span>
