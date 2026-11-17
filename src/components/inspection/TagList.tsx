@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { IonSearchbar } from '@ionic/react';
 import { InspectionTag } from '../../types/inspection';
+import { getTagAveragePpm } from '../../services/tagService';
 import TagCard from './TagCard';
 
 interface Props {
@@ -20,9 +21,10 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag, onDelet
   }, [tags, search]);
 
   const stats = useMemo(() => {
-    if (tags.length === 0) return { max: 0, avg: 0 };
-    const max = Math.max(...tags.map((t) => t.ammonia));
-    const avg = tags.reduce((acc, t) => acc + t.ammonia, 0) / tags.length;
+    const avgs = tags.map((t) => getTagAveragePpm(t)).filter((v): v is number => v !== null && !isNaN(v));
+    if (avgs.length === 0) return { max: null as number | null, avg: null as number | null };
+    const max = Math.max(...avgs);
+    const avg = avgs.reduce((acc, v) => acc + v, 0) / avgs.length;
     return { max, avg };
   }, [tags]);
 
@@ -32,9 +34,9 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag, onDelet
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', padding: '10px 14px', background: '#F8FAFC', borderRadius: '10px', fontSize: '13px' }}>
           <span><strong>Total:</strong> {tags.length}</span>
           <span>•</span>
-          <span><strong>Avg NH3:</strong> {stats.avg.toFixed(2)} PPM</span>
+          <span><strong>Avg NH₃:</strong> {stats.avg !== null ? `${stats.avg.toFixed(2)} ppm` : '—'}</span>
           <span>•</span>
-          <span><strong>Max:</strong> {stats.max.toFixed(2)} PPM</span>
+          <span><strong>Max Avg:</strong> {stats.max !== null ? `${stats.max.toFixed(2)} ppm` : '—'}</span>
         </div>
       )}
       {tags.length > 3 && (
