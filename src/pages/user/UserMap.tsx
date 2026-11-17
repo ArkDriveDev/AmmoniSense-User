@@ -58,6 +58,15 @@ const IS_IN_MANOLO_FORTICH = (lat?: number, lng?: number): boolean => {
 };
 
 type TagSortOption = 'recent' | 'oldest' | 'schedule_name';
+const MAP_TAG_SORT_KEY = 'ammonisense_map_tag_sort';
+
+const readSavedTagSort = (): TagSortOption => {
+  try {
+    const val = localStorage.getItem(MAP_TAG_SORT_KEY);
+    if (val === 'recent' || val === 'oldest' || val === 'schedule_name') return val;
+  } catch { /* ignore */ }
+  return 'recent';
+};
 
 const sortTagItems = <T extends { scheduled_date?: string | null; schedule_name?: string | null; created_at?: string; uploaded_at?: string }>(items: T[], sortBy: TagSortOption): T[] =>
   [...items].sort((a, b) => {
@@ -84,7 +93,14 @@ export default function UserMap() {
 
   // Search input
   const [searchText, setSearchText] = useState<string>('');
-  const [tagSort, setTagSort] = useState<TagSortOption>('recent');
+  const [tagSort, setTagSort] = useState<TagSortOption>(readSavedTagSort);
+
+  const handleTagSortChange = (nextSort: TagSortOption) => {
+    setTagSort(nextSort);
+    try {
+      localStorage.setItem(MAP_TAG_SORT_KEY, nextSort);
+    } catch { /* ignore */ }
+  };
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
@@ -519,7 +535,7 @@ export default function UserMap() {
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#E2E8F0', whiteSpace: 'nowrap' }}>Sort Tags:</span>
             <select
               value={tagSort}
-              onChange={(e) => setTagSort(e.target.value as TagSortOption)}
+              onChange={(e) => handleTagSortChange(e.target.value as TagSortOption)}
               aria-label="Sort tags by schedule"
               style={{ flex: 1, maxWidth: '220px', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255, 255, 255, 0.95)', color: '#0F172A', fontSize: '12px', fontWeight: 700 }}
             >
