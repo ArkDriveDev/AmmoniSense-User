@@ -33,6 +33,9 @@ export interface ReadingMarkerData {
   photo_url?: string;
   tag_name?: string;
   notes?: string;
+  inspection_schedule_id?: string | number | null;
+  scheduled_date?: string | null;
+  schedule_name?: string | null;
   is_pending_sync?: boolean;
 }
 
@@ -43,6 +46,9 @@ export interface PhotoTagMarkerData {
   photo_url: string;
   site_id?: number | null;
   site_name?: string;
+  inspection_schedule_id?: string | number | null;
+  scheduled_date?: string | null;
+  schedule_name?: string | null;
   is_used?: boolean;
   uploaded_at?: string;
   is_pending_sync?: boolean;
@@ -423,7 +429,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
 
     if (!showReadingsLayer) return;
 
-    readings.forEach((reading) => {
+    readings.forEach((reading, idx) => {
       const color = getAmmoniaColor(reading.ammonia);
       const isPending = reading.is_pending_sync;
 
@@ -468,7 +474,7 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
 
       const marker = L.marker([reading.latitude, reading.longitude], {
         icon: readingIcon,
-        zIndexOffset: 1000,
+        zIndexOffset: 1000 + (readings.length - idx),
       });
 
       marker.on('click', () => {

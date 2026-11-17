@@ -32,6 +32,7 @@ import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
 import { deleteSite, deleteReading } from '../../services/siteService';
 import { fetchTags } from '../../services/tagService';
+import { fetchSchedules } from '../../services/scheduleService';
 import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
 import { getSiteTypeLabel, getPoultryTypeLabel, getChickenTypeLabel } from '../../constants/siteTypes';
 import FullMapView, {
@@ -56,6 +57,21 @@ const IS_IN_MANOLO_FORTICH = (lat?: number, lng?: number): boolean => {
   return lat >= 8.2200 && lat <= 8.5000 && lng >= 124.7000 && lng <= 125.0200;
 };
 
+type TagSortOption = 'recent' | 'oldest' | 'schedule_name';
+
+const sortTagItems = <T extends { scheduled_date?: string | null; schedule_name?: string | null; created_at?: string; uploaded_at?: string }>(items: T[], sortBy: TagSortOption): T[] =>
+  [...items].sort((a, b) => {
+    const aHas = Boolean(a.scheduled_date || a.schedule_name), bHas = Boolean(b.scheduled_date || b.schedule_name);
+    if (aHas !== bHas) return aHas ? -1 : 1;
+    if (aHas && bHas) {
+      const cmp = sortBy === 'schedule_name'
+        ? (a.schedule_name || '').localeCompare(b.schedule_name || '', undefined, { sensitivity: 'base' })
+        : sortBy === 'oldest' ? (a.scheduled_date || '').localeCompare(b.scheduled_date || '') : (b.scheduled_date || '').localeCompare(a.scheduled_date || '');
+      if (cmp !== 0) return cmp;
+    }
+    return (new Date(b.created_at || b.uploaded_at || 0).getTime() || 0) - (new Date(a.created_at || a.uploaded_at || 0).getTime() || 0);
+  });
+
 export default function UserMap() {
   const navigate = useNavigate();
 
@@ -68,6 +84,7 @@ export default function UserMap() {
 
   // Search input
   const [searchText, setSearchText] = useState<string>('');
+  const [tagSort, setTagSort] = useState<TagSortOption>('recent');
 
   // Layer Toggles
   const [showSitesLayer, setShowSitesLayer] = useState<boolean>(true);
@@ -305,7 +322,8 @@ export default function UserMap() {
     const validSiteIds = new Set(validSites.map((s) => String(s.id)));
 
     try {
-      const [allTags, queue] = await Promise.all([fetchTags(), offlineStorage.getQueue().catch(() => [])]);
+      const [allTags, allSchedules, queue] = await Promise.all([fetchTags(), fetchSchedules().catch(() => []), offlineStorage.getQueue().catch(() => [])]);
+      const schedById = new Map(allSchedules.flatMap((s) => [[String(s.id), s], ...(s.offline_temp_id ? [[String(s.offline_temp_id), s]] : [])] as [string, typeof s][]));
       // Highest queued ppm per offline tag (readings not yet synced to sensor_data)
       const queuedPeak = new Map<string, number>();
       queue.forEach((q: any) => {
@@ -329,6 +347,9 @@ export default function UserMap() {
           photo_url: t.photo_url,
           tag_name: t.tag_name,
           notes: t.notes,
+          inspection_schedule_id: t.inspection_schedule_id ?? null,
+          scheduled_date: t.inspection_schedule_id ? schedById.get(String(t.inspection_schedule_id))?.scheduled_date ?? null : null,
+          schedule_name: t.inspection_schedule_id ? schedById.get(String(t.inspection_schedule_id))?.schedule_name ?? null : null,
           is_pending_sync: t.isOffline,
         }))
         .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
@@ -344,12 +365,14 @@ export default function UserMap() {
     const validSiteIds = new Set(validSites.map((s) => String(s.id)));
 
     try {
-      const allTags = await fetchTags();
+      const [allTags, allSchedules] = await Promise.all([fetchTags(), fetchSchedules().catch(() => [])]);
+      const schedById = new Map(allSchedules.flatMap((s) => [[String(s.id), s], ...(s.offline_temp_id ? [[String(s.offline_temp_id), s]] : [])] as [string, typeof s][]));
       const mappedPhotoTags: PhotoTagMarkerData[] = allTags
         .filter((t) => Boolean(t.photo_url))
         .filter((t) => !t.inspection_site_id || validSiteIds.has(String(t.inspection_site_id)))
         .map((t) => {
           const matchedSite = validSites.find((s) => String(s.id) === String(t.inspection_site_id));
+          const sched = t.inspection_schedule_id ? schedById.get(String(t.inspection_schedule_id)) : undefined;
           return {
             id: `tag_photo_${t.id}`,
             latitude: t.latitude || 8.3683,
@@ -357,6 +380,9 @@ export default function UserMap() {
             photo_url: t.photo_url || '',
             site_id: t.inspection_site_id ? Number(t.inspection_site_id) : null,
             site_name: matchedSite?.site_name || t.tag_name || 'Inspection Tag',
+            inspection_schedule_id: t.inspection_schedule_id ?? null,
+            scheduled_date: sched?.scheduled_date ?? null,
+            schedule_name: sched?.schedule_name ?? null,
             is_used: true,
             uploaded_at: t.created_at,
             is_pending_sync: t.isOffline,
@@ -371,14 +397,14 @@ export default function UserMap() {
   };
 
   // Filter photo tags by search query
-  const filteredPhotoTags = useMemo(() => photoTags.filter((tag) => {
+  const filteredPhotoTags = useMemo(() => sortTagItems(photoTags.filter((tag) => {
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     return (
       tag.site_name?.toLowerCase().includes(query) ||
       tag.id.toString().includes(query)
     );
-  }), [photoTags, searchText]);
+  }), tagSort), [photoTags, searchText, tagSort]);
 
   // Filter sites by search query
   const filteredSites = useMemo(() => sites.filter((site) => {
@@ -393,7 +419,7 @@ export default function UserMap() {
   }), [sites, searchText]);
 
   // Filter readings by search query
-  const filteredReadings = useMemo(() => readings.filter((reading) => {
+  const filteredReadings = useMemo(() => sortTagItems(readings.filter((reading) => {
     if (!searchText.trim()) return true;
     const query = searchText.toLowerCase();
     const severity = getAmmoniaSeverityLabel(reading.ammonia).toLowerCase();
@@ -402,7 +428,7 @@ export default function UserMap() {
       reading.ammonia.toString().includes(query) ||
       severity.includes(query)
     );
-  }), [readings, searchText]);
+  }), tagSort), [readings, searchText, tagSort]);
 
   // Locate User GPS
   const handleLocateUser = async () => {
@@ -489,6 +515,19 @@ export default function UserMap() {
               padding: '0 4px',
             }}
           />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px 2px 6px', gap: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#E2E8F0', whiteSpace: 'nowrap' }}>Sort Tags:</span>
+            <select
+              value={tagSort}
+              onChange={(e) => setTagSort(e.target.value as TagSortOption)}
+              aria-label="Sort tags by schedule"
+              style={{ flex: 1, maxWidth: '220px', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255, 255, 255, 0.95)', color: '#0F172A', fontSize: '12px', fontWeight: 700 }}
+            >
+              <option value="recent">Recent</option>
+              <option value="oldest">Oldest</option>
+              <option value="schedule_name">By Schedule Name</option>
+            </select>
+          </div>
         </IonToolbar>
       </IonHeader>
 
@@ -821,6 +860,12 @@ export default function UserMap() {
                     <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Recorded At</span>
                     <strong style={{ color: '#0f172a' }}>{new Date(selectedReading.created_at).toLocaleString()}</strong>
                   </div>
+                  {(selectedReading.schedule_name || selectedReading.scheduled_date) && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Schedule</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedReading.schedule_name || 'Schedule'}{selectedReading.scheduled_date ? ` (${selectedReading.scheduled_date})` : ''}</strong>
+                    </div>
+                  )}
                 </div>
 
                 {selectedReading.notes && (
