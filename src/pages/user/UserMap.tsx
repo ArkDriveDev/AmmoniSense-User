@@ -31,7 +31,7 @@ import {
 import { supabase } from '../../services/supabase';
 import offlineStorage from '../../services/OfflineStorageService';
 import { deleteSite, deleteReading } from '../../services/siteService';
-import { fetchTags } from '../../services/tagService';
+import { fetchTags, getTagAveragePpm } from '../../services/tagService';
 import { fetchSchedules } from '../../services/scheduleService';
 import SiteTypeBadge from '../../components/sites/SiteTypeBadge';
 import { getSiteTypeLabel, getPoultryTypeLabel, getChickenTypeLabel } from '../../constants/siteTypes';
@@ -338,22 +338,18 @@ export default function UserMap() {
     const validSiteIds = new Set(validSites.map((s) => String(s.id)));
 
     try {
-      const [allTags, allSchedules, queue] = await Promise.all([fetchTags(), fetchSchedules().catch(() => []), offlineStorage.getQueue().catch(() => [])]);
+      const [allTags, allSchedules] = await Promise.all([fetchTags(), fetchSchedules().catch(() => [])]);
       const schedById = new Map(allSchedules.flatMap((s) => [[String(s.id), s], ...(s.offline_temp_id ? [[String(s.offline_temp_id), s]] : [])] as [string, typeof s][]));
-      // Highest queued ppm per offline tag (readings not yet synced to sensor_data)
-      const queuedPeak = new Map<string, number>();
-      queue.forEach((q: any) => {
-        if (q.type !== 'sensor_data' && q.type !== 'SENSOR_READING') return;
-        const key = String(q.payload?.inspection_tag_temp_id || '');
-        const ppm = Number(q.payload?.nh3_ppm ?? q.payload?.ammonia);
-        if (key && !isNaN(ppm)) queuedPeak.set(key, Math.max(queuedPeak.get(key) ?? 0, ppm));
-      });
       const mappedReadings: ReadingMarkerData[] = allTags
         .filter((t) => !t.inspection_site_id || validSiteIds.has(String(t.inspection_site_id)))
-        .map((t) => ({
-          id: t.id,
-          ammonia: Math.max(t.ammonia || 0, queuedPeak.get(String(t.offline_temp_id || t.id)) ?? 0),
-          temperature: t.temperature,
+        .map((t) => {
+          const avg = getTagAveragePpm(t);
+          return {
+            id: t.id,
+            ammonia: avg ?? 0,
+            avg_ppm: avg,
+            max_ppm: t.max_ppm ?? null,
+            temperature: t.temperature,
           humidity: t.humidity,
           battery: t.battery,
           latitude: t.latitude || 8.3683,
@@ -367,7 +363,8 @@ export default function UserMap() {
           scheduled_date: t.inspection_schedule_id ? schedById.get(String(t.inspection_schedule_id))?.scheduled_date ?? null : null,
           schedule_name: t.inspection_schedule_id ? schedById.get(String(t.inspection_schedule_id))?.schedule_name ?? null : null,
           is_pending_sync: t.isOffline,
-        }))
+          };
+        })
         .filter((r) => IS_IN_MANOLO_FORTICH(r.latitude, r.longitude));
 
       setReadings((prev) => (JSON.stringify(prev) === JSON.stringify(mappedReadings) ? prev : mappedReadings));
@@ -620,7 +617,7 @@ export default function UserMap() {
                   >
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '14px', color: getAmmoniaColor(r.ammonia) }}>
-                        💨 {r.ammonia.toFixed(1)} PPM
+                        💨 {r.avg_ppm !== null && r.avg_ppm !== undefined ? `Avg NH₃: ${r.avg_ppm.toFixed(2)} ppm` : 'No readings'}
                       </div>
                       <div style={{ fontSize: '12px', color: '#64748B' }}>
                         Device: {r.device_uid || 'N/A'}
@@ -835,14 +832,15 @@ export default function UserMap() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                       <span
                         style={{
-                          fontSize: '22px',
+                          fontSize: '20px',
                           fontWeight: 800,
                           color: getAmmoniaColor(selectedReading.ammonia),
                         }}
                       >
-                        {selectedReading.ammonia.toFixed(1)} PPM
+                        {selectedReading.avg_ppm !== null && selectedReading.avg_ppm !== undefined
+                          ? `Avg NH₃: ${selectedReading.avg_ppm.toFixed(2)} ppm${selectedReading.max_ppm !== null && selectedReading.max_ppm !== undefined ? ` · Max ${selectedReading.max_ppm.toFixed(2)}` : ''}`
+                          : 'No readings'}
                       </span>
-                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>HIGHEST</span>
                       <IonBadge style={{ background: getAmmoniaColor(selectedReading.ammonia), color: '#ffffff' }}>
                         {getAmmoniaSeverityLabel(selectedReading.ammonia)}
                       </IonBadge>

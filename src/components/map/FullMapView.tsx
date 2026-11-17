@@ -23,6 +23,8 @@ export interface SiteMarkerData {
 export interface ReadingMarkerData {
   id: string | number;
   ammonia: number;
+  avg_ppm?: number | null;
+  max_ppm?: number | null;
   temperature?: number;
   humidity?: number;
   battery?: number;
@@ -106,17 +108,15 @@ export const SITE_BRAND_COLOR = '#1D5D9B';
 export const PHOTO_TAG_BRAND_COLOR = '#8b5cf6';
 
 export const getAmmoniaColor = (ammonia: number): string => {
-  if (ammonia > 20) return '#ef4444'; // Critical Red (>20 PPM)
-  if (ammonia > 10) return '#f97316'; // High Orange (10-20 PPM)
-  if (ammonia > 5) return '#eab308'; // Warning Yellow (5-10 PPM)
-  return '#22c55e'; // Normal Green (0-5 PPM)
+  if (ammonia >= 25) return '#ef4444'; // Critical Red (>= 25 PPM)
+  if (ammonia >= 5) return '#eab308'; // Warning Yellow (5 - <25 PPM)
+  return '#22c55e'; // Safe Green (< 5 PPM)
 };
 
 export const getAmmoniaSeverityLabel = (ammonia: number): string => {
-  if (ammonia > 20) return 'Critical';
-  if (ammonia > 10) return 'High';
-  if (ammonia > 5) return 'Warning';
-  return 'Normal';
+  if (ammonia >= 25) return 'CRITICAL';
+  if (ammonia >= 5) return 'WARNING';
+  return 'SAFE';
 };
 
 export const FullMapView: React.FC<FullMapViewProps> = ({
@@ -430,8 +430,11 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
     if (!showReadingsLayer) return;
 
     readings.forEach((reading, idx) => {
-      const color = getAmmoniaColor(reading.ammonia);
+      const hasAvg = reading.avg_ppm !== null && reading.avg_ppm !== undefined && !isNaN(reading.avg_ppm);
+      const avgVal = hasAvg ? Number(reading.avg_ppm) : reading.ammonia;
+      const color = getAmmoniaColor(avgVal);
       const isPending = reading.is_pending_sync;
+      const pillLabel = hasAvg ? `Avg ${avgVal.toFixed(2)}` : '—';
 
       const readingIcon = L.divIcon({
         className: 'custom-reading-marker',
@@ -452,8 +455,8 @@ export const FullMapView: React.FC<FullMapViewProps> = ({
             align-items: center;
             gap: 3px;
           ">
-            <span>📍 ${reading.ammonia.toFixed(1)}</span>
-            <span style="font-size: 8px; opacity: 0.9;">PPM</span>
+            <span>📍 ${pillLabel}</span>
+            ${hasAvg ? '<span style="font-size: 8px; opacity: 0.9;">PPM</span>' : ''}
             ${isPending ? `
               <span style="
                 position: absolute;
