@@ -245,7 +245,7 @@ class BLECentralService {
       try {
         const isAvail = await BluetoothLowEnergy.isAvailable();
         if (!isAvail.available) {
-          return { available: false, enabled: false, errorMsg: 'Bluetooth Low Energy hardware not available on this device.' };
+          return { available: false, enabled: false, errorMsg: 'Bluetooth Classic hardware not available on this device.' };
         }
 
         const isEn = await BluetoothLowEnergy.isEnabled();
@@ -260,7 +260,7 @@ class BLECentralService {
 
         return { available: true, enabled: true };
       } catch (err: any) {
-        return { available: false, enabled: false, errorMsg: err?.message || 'BLE Init error' };
+        return { available: false, enabled: false, errorMsg: err?.message || 'Bluetooth Init error' };
       }
     }
 
@@ -328,8 +328,8 @@ class BLECentralService {
 
     if (typeof window !== 'undefined') {
       alert(
-        '⚠️ BLE & Location Permissions Required\n\n' +
-          'To scan for nearby BLE sensor nodes:\n' +
+        '⚠️ Bluetooth & Location Permissions Required\n\n' +
+          'To scan for nearby Bluetooth Classic sensor nodes:\n' +
           '1. Open device Settings > Apps > AmmoniSense.\n' +
           '2. Tap Permissions.\n' +
           '3. Enable Nearby Devices (Bluetooth) & Location (Fine Location).'
@@ -345,7 +345,7 @@ class BLECentralService {
     if (!permStatus.canScan) {
       console.warn('BLE scan prevented by permission/hardware check:', permStatus.errorMsg);
       this.setState('disconnected');
-      throw new Error(permStatus.errorMsg || 'BLE permissions or hardware disabled.');
+      throw new Error(permStatus.errorMsg || 'Bluetooth permissions or hardware disabled.');
     }
 
     this.setState('scanning');

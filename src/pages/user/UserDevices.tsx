@@ -50,7 +50,7 @@ export default function UserDevices() {
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700 }}>My BLE Devices</IonTitle>
+          <IonTitle style={{ fontWeight: 700 }}>My Bluetooth Devices</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => loadDevices()} style={{ color: '#ffffff' }}>
               <IonIcon icon={refreshOutline} />
@@ -87,7 +87,7 @@ export default function UserDevices() {
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>No Devices Found</h3>
                 <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>
-                  Connect your first BLE sensor and it will auto-register here instantly.
+                  Connect your first Bluetooth Classic sensor and it will auto-register here instantly.
                 </p>
               </IonCardContent>
             </IonCard>

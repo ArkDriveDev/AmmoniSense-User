@@ -159,7 +159,7 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
           <IonTitle style={{ fontWeight: 700, fontSize: '16px' }}>
             <IonIcon icon={bluetoothOutline} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
-            BLE Central Scanner
+            Bluetooth Classic Scanner
           </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onClose} style={{ color: '#ffffff' }}>
@@ -185,7 +185,7 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8 }}>
-                ROLE: BLE CENTRAL SCANNER
+                ROLE: BLUETOOTH CLASSIC SCANNER
               </span>
               <h3 style={{ margin: '2px 0 0 0', fontWeight: 800, fontSize: '16px' }}>GATT Service Reader</h3>
             </div>
@@ -221,7 +221,7 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
               }}
             >
               <IonIcon icon={bluetoothOutline} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-              BLE Hardware: {permStatus?.bluetoothEnabled ? 'Enabled' : 'Disabled / Restricted'}
+              Bluetooth Hardware: {permStatus?.bluetoothEnabled ? 'Enabled' : 'Disabled / Restricted'}
             </IonBadge>
 
             <IonBadge
@@ -274,12 +274,12 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
           {scanning ? (
             <>
               <IonSpinner name="crescent" />
-              &nbsp;Scanning BLE Central Devices...
+              &nbsp;Searching for Bluetooth Classic device...
             </>
           ) : (
             <>
               <IonIcon icon={searchOutline} slot="start" />
-              Scan for BLE Sensor Devices
+              Scan for Bluetooth Classic Devices
             </>
           )}
         </IonButton>
@@ -296,7 +296,7 @@ export const BLEScanner: React.FC<BLEScannerProps> = ({
             <IonCardContent>
               <IonIcon icon={bluetoothOutline} style={{ fontSize: '42px', color: '#94A3B8', marginBottom: '8px' }} />
               <p style={{ margin: 0, color: '#64748B', fontWeight: 600, fontSize: '13px' }}>
-                No BLE devices found. Tap <b>Scan for BLE Sensor Devices</b> to discover nearby ESP32 nodes.
+                No Bluetooth Classic device found. Tap <b>Scan for Bluetooth Classic Devices</b> to discover nearby ESP32 nodes.
               </p>
             </IonCardContent>
           </IonCard>

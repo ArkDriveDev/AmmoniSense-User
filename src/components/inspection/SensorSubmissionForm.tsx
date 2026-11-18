@@ -505,7 +505,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
         <IonRow>
           {[
             { num: 1, title: 'STEP 1: GPS Photo', icon: cameraOutline },
-            { num: 2, title: 'STEP 2: BLE Sensor', icon: bluetoothOutline },
+            { num: 2, title: 'STEP 2: Bluetooth Classic Sensor', icon: bluetoothOutline },
             { num: 3, title: 'STEP 3: Submit All', icon: cloudUploadOutline },
           ].map(s => {
             const isActive = currentStep === s.num;
@@ -619,7 +619,7 @@ export const SensorSubmissionForm: React.FC<SensorSubmissionFormProps> = ({ onSu
 
             {photoRecord && (
               <IonButton expand="block" color="primary" onClick={() => setCurrentStep(2)} style={{ marginTop: '16px' }}>
-                Proceed to STEP 2: BLE Sensor ➔
+                Proceed to STEP 2: Bluetooth Classic Sensor ➔
               </IonButton>
             )}
           </IonCardContent>

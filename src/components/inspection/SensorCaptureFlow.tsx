@@ -88,7 +88,7 @@ export const SensorCaptureFlow: React.FC<Props> = ({ isConnected, onComplete }) 
           </div>
           {bleDrop && (
             <div style={{ padding: '8px', background: '#FEF2F2', color: '#991B1B', borderRadius: '6px', fontSize: '12px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <IonIcon icon={alertCircleOutline} /> BLE connection dropped. Reconnect and resume.
+              <IonIcon icon={alertCircleOutline} /> Bluetooth Classic connection dropped. Reconnect and resume.
             </div>
           )}
           <div style={{ display: 'flex', gap: '8px' }}>
