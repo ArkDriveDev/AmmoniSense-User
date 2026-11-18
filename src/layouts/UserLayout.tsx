@@ -232,7 +232,7 @@ export default function UserLayout({ children }: any) {
                 style={isActive('/devices') || isActive('/my-devices') ? { borderLeft: '4px solid #1D5D9B', fontWeight: 'bold' } : {}}
               >
                 <IonIcon icon={hardwareChipOutline} slot="start" color={isActive('/devices') || isActive('/my-devices') ? 'light' : 'primary'} />
-                <IonLabel>Devices</IonLabel>
+                <IonLabel>Bluetooth Devices</IonLabel>
               </IonItem>
             </IonMenuToggle>
 
