@@ -544,6 +544,64 @@ class OfflineStorageService {
     }
   }
 
+  private startupCleanupPromise: Promise<number> | null = null;
+
+  public ensureStartupOrphanCleanup(): Promise<number> {
+    if (!this.startupCleanupPromise) {
+      this.startupCleanupPromise = this.cleanupOrphanedSensorData();
+    }
+    return this.startupCleanupPromise;
+  }
+
+  /**
+   * Silently delete queued sensor_data items whose session_id does not match any queued inspection_tag's session_id.
+   */
+  public async cleanupOrphanedSensorData(abandonedSessionId?: string): Promise<number> {
+    try {
+      const queue = await this.getQueue();
+      const validSessionIds = new Set<string>();
+      queue.forEach((item) => {
+        if (item.type === 'inspection_tag' || item.type === 'INSPECTION_TAG') {
+          const sid = item.payload?.session_id;
+          if (sid) validSessionIds.add(String(sid));
+        }
+      });
+
+      const bySession = new Map<string, QueueItem[]>();
+      queue.forEach((item) => {
+        if (item.type === 'sensor_data' || item.type === 'SENSOR_READING') {
+          const sid = String(item.payload?.session_id || '');
+          const list = bySession.get(sid) || [];
+          list.push(item);
+          bySession.set(sid, list);
+        }
+      });
+
+      let deletedCount = 0;
+      for (const [sid, items] of bySession.entries()) {
+        const isAbandoned = Boolean(abandonedSessionId && sid === String(abandonedSessionId));
+        const isOrphaned = !sid || !validSessionIds.has(sid) || isAbandoned;
+        if (isOrphaned) {
+          for (const item of items) {
+            if (item.photoStoreId) {
+              await this.removePhoto(item.photoStoreId).catch(() => {});
+            }
+            await this.deleteOfflineReading(item.id);
+            deletedCount++;
+          }
+        }
+      }
+
+      if (deletedCount > 0 && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sync_queue_changed'));
+      }
+      return deletedCount;
+    } catch (e) {
+      console.warn('[OfflineStorage] Orphan sensor_data cleanup notice:', e);
+      return 0;
+    }
+  }
+
   public removeSiteFromLocalStorage(id: string): void {
     try {
       const lsStr = localStorage.getItem('offline_sites');

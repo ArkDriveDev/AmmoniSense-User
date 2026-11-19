@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { IonApp, setupIonicReact } from '@ionic/react';
 import { BrowserRouter as Router } from 'react-router-dom';
 
@@ -15,10 +16,15 @@ import 'leaflet/dist/leaflet.css';
 import './theme/variables.css';
 
 import AppRouter from './AppRouter';
+import offlineStorage from './services/OfflineStorageService';
 
 setupIonicReact();
 
 function App() {
+  useEffect(() => {
+    offlineStorage.ensureStartupOrphanCleanup();
+  }, []);
+
   return (
     <IonApp>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
