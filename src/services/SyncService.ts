@@ -108,6 +108,7 @@ class SyncService {
 
   public async getPendingCount(): Promise<number> {
     try {
+      await offlineStorage.ensureStartupOrphanCleanup();
       const queue = await offlineStorage.getQueue();
       return queue.filter((item) => item.status !== 'failed').length;
     } catch {
@@ -122,6 +123,7 @@ class SyncService {
   public async resync(): Promise<{ success: number; failed: number }> {
     if (!this.onlineStatus) return { success: 0, failed: 0 };
     try {
+      await offlineStorage.cleanupOrphanedSensorData();
       const queue = await offlineStorage.getQueue();
       for (const item of queue) {
         if (item.status === 'failed') {
@@ -146,6 +148,7 @@ class SyncService {
     const syncedTypes = new Set<'site' | 'schedule' | 'tag'>();
 
     try {
+      await offlineStorage.cleanupOrphanedSensorData();
       const queue = await offlineStorage.getQueue();
       const typeOrder: Record<string, number> = {
         'inspection_site': 1,
