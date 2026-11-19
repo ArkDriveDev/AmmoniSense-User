@@ -3,6 +3,7 @@ import offlineStorage from './OfflineStorageService';
 import { InspectionSchedule, CreateSchedulePayload, toUpperClean } from '../types/inspection';
 import { isOnline, withTimeout } from '../utils/networkUtils';
 import { recordsChanged } from '../utils/recordSignature';
+import { showToast } from '../utils/toast';
 
 const formatSched = (d: any, isOffline = false): InspectionSchedule => ({
   id: d.id,
@@ -187,6 +188,12 @@ export async function createSchedule(payload: CreateSchedulePayload): Promise<In
 
 export async function deleteSchedule(scheduleId: string | number): Promise<void> {
   const strId = String(scheduleId);
+  const idbAll = await offlineStorage.getAllSchedulesFromIDB();
+  const idbTarget = idbAll.find((s: any) => String(s.id) === strId || (s.offline_temp_id && String(s.offline_temp_id) === strId));
+  if (idbTarget?.confirmed === true) {
+    showToast({ message: 'Cannot modify a confirmed schedule.', color: 'danger' });
+    throw new Error('Cannot modify a confirmed schedule.');
+  }
   const isTemp = strId.startsWith('temp_sched_') || strId.startsWith('temp_');
 
   // Offline schedule: purge local copies and queued items without Supabase call
@@ -215,6 +222,16 @@ export async function deleteSchedule(scheduleId: string | number): Promise<void>
 }
 
 export async function updateSchedule(scheduleId: number | string, updates: Partial<CreateSchedulePayload>): Promise<void> {
+  const idbAll = await offlineStorage.getAllSchedulesFromIDB();
+  const idbTarget = idbAll.find((s: any) => String(s.id) === String(scheduleId) || (s.offline_temp_id && String(s.offline_temp_id) === String(scheduleId)));
+  if (idbTarget?.confirmed === true) {
+    showToast({ message: 'Cannot modify a confirmed schedule.', color: 'danger' });
+    throw new Error('Cannot modify a confirmed schedule.');
+  }
+  if (idbTarget?.status === 'COMPLETED' && updates.status === 'SCHEDULED') {
+    throw new Error('Cannot revert a completed schedule back to SCHEDULED.');
+  }
+
   const clean: any = {};
   if (updates.schedule_name !== undefined) clean.schedule_name = toUpperClean(updates.schedule_name);
   if (updates.scheduled_date !== undefined) clean.scheduled_date = updates.scheduled_date;
@@ -242,8 +259,6 @@ export async function updateSchedule(scheduleId: number | string, updates: Parti
     Object.assign(target, clean);
     offlineStorage.saveOfflineSchedule(target);
   }
-  const idbAll = await offlineStorage.getAllSchedulesFromIDB();
-  const idbTarget = idbAll.find((s: any) => String(s.id) === String(scheduleId) || (s.offline_temp_id && String(s.offline_temp_id) === String(scheduleId)));
   if (idbTarget) {
     await offlineStorage.upsertSchedulesToIDB([{ ...idbTarget, ...clean }]);
   }

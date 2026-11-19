@@ -93,6 +93,10 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
   }, [isOpen, editSchedule]);
 
   const handleSave = async () => {
+    if (editSchedule?.confirmed) {
+      showToast({ message: 'Cannot modify a confirmed schedule.', color: 'danger' });
+      return;
+    }
     if (!name.trim()) {
       showToast({ message: 'Please enter a schedule name', color: 'danger' });
       return;

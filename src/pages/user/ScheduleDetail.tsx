@@ -11,7 +11,6 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchScheduleById, deleteSchedule, updateSchedule } from '../../services/scheduleService';
 import { showToast } from '../../utils/toast';
-import offlineStorage from '../../services/OfflineStorageService';
 import { fetchTags, deleteTag } from '../../services/tagService';
 import TagList from '../../components/inspection/TagList';
 import AddTagModal from '../../components/inspection/AddTagModal';
@@ -73,6 +72,10 @@ export default function ScheduleDetail() {
 
   const handleDeleteSchedule = async () => {
     if (!schedule) return;
+    if (schedule.confirmed) {
+      showToast({ message: 'Cannot modify a confirmed schedule.', color: 'danger' });
+      return;
+    }
     const isOffline = String(schedule.id).startsWith('temp_') || (schedule as any).isOffline;
     const confirmed = window.confirm(
       isOffline
@@ -82,14 +85,10 @@ export default function ScheduleDetail() {
     if (!confirmed) return;
     setDeleting(true);
     try {
-      if (isOffline) {
-        await offlineStorage.deleteScheduleAndChildren(String(schedule.id));
-      } else {
-        await deleteSchedule(schedule.id);
-      }
+      await deleteSchedule(schedule.id);
       navigate(-1);
     } catch (err: any) {
-      alert(err.message || 'Failed to delete schedule.');
+      showToast({ message: err.message || 'Failed to delete schedule.', color: 'danger' });
     } finally {
       setDeleting(false);
     }
