@@ -217,7 +217,9 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           <IonItem lines="inset" style={{ marginTop: '10px' }}>
             <IonLabel position="stacked">STATUS</IonLabel>
             <IonSelect value={status} onIonChange={(e) => setStatus(e.detail.value)}>
-              <IonSelectOption value="SCHEDULED">SCHEDULED</IonSelectOption>
+              {editSchedule.status !== 'COMPLETED' && (
+                <IonSelectOption value="SCHEDULED">SCHEDULED</IonSelectOption>
+              )}
               <IonSelectOption value="IN_PROGRESS">IN PROGRESS</IonSelectOption>
               <IonSelectOption value="COMPLETED">COMPLETED</IonSelectOption>
               <IonSelectOption value="CANCELLED">CANCELLED</IonSelectOption>

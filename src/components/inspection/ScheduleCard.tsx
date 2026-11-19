@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
-import { calendarOutline, timeOutline, chevronForwardOutline, cloudOfflineOutline, pricetagOutline, checkmarkDoneOutline, trashOutline } from 'ionicons/icons';
+import { calendarOutline, timeOutline, chevronForwardOutline, cloudOfflineOutline, pricetagOutline, checkmarkDoneOutline, trashOutline, createOutline } from 'ionicons/icons';
 import { InspectionSchedule } from '../../types/inspection';
 import { updateSchedule, deleteSchedule } from '../../services/scheduleService';
+import CreateScheduleModal from './CreateScheduleModal';
 import { showToast } from '../../utils/toast';
 import { formatTime12h } from '../../utils/timeUtils';
 
@@ -23,6 +24,7 @@ const statusColor = (s: string) => {
 
 export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) => {
   const [completing, setCompleting] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   const handleMarkCompleted = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,7 +41,10 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!schedule.isOffline) return;
+    if (schedule.confirmed) {
+      showToast({ message: 'Cannot modify a confirmed schedule.', color: 'danger' });
+      return;
+    }
     if (!window.confirm(`Delete schedule "${schedule.schedule_name}" and all its inspection tags?`)) return;
     try {
       await deleteSchedule(schedule.id);
@@ -47,6 +52,15 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
     } catch (err: any) {
       showToast({ message: err?.message || 'Failed to delete schedule', color: 'danger' });
     }
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (schedule.confirmed) {
+      showToast({ message: 'Cannot modify a confirmed schedule.', color: 'danger' });
+      return;
+    }
+    setShowEdit(true);
   };
 
   return (
@@ -90,13 +104,26 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
               <IonIcon icon={checkmarkDoneOutline} slot="start" /> Mark as Completed
             </IonButton>
           )}
-          <IonButton size="small" fill="clear" color="danger" disabled={!schedule.isOffline} onClick={handleDelete} style={{ margin: 0, height: '28px' }}>
-            <IonIcon icon={trashOutline} slot="icon-only" />
-          </IonButton>
+          {!schedule.confirmed && (
+            <>
+              <IonButton size="small" fill="clear" color="primary" onClick={handleEdit} style={{ margin: 0, height: '28px' }} title="Update schedule">
+                <IonIcon icon={createOutline} slot="icon-only" />
+              </IonButton>
+              <IonButton size="small" fill="clear" color="danger" onClick={handleDelete} style={{ margin: 0, height: '28px' }} title="Delete schedule">
+                <IonIcon icon={trashOutline} slot="icon-only" />
+              </IonButton>
+            </>
+          )}
           <IonIcon icon={chevronForwardOutline} color="medium" />
         </div>
       </div>
     </IonCardContent>
+    <CreateScheduleModal
+      isOpen={showEdit}
+      onClose={() => setShowEdit(false)}
+      siteId={schedule.inspection_site_id}
+      editSchedule={schedule}
+    />
   </IonCard>
   );
 };
