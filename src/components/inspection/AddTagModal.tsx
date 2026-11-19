@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonIcon
@@ -51,9 +51,26 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   const [captureSummary, setCaptureSummary] = useState<CaptureSummary | null>(null);
   const [tagTempId, setTagTempId] = useState<string>('');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const activeSessionRef = useRef<string>('');
+  const tagSavedRef = useRef<boolean>(false);
+
+  const cleanupAbandonedCapture = useCallback(() => {
+    if (!tagSavedRef.current) {
+      const abandonedId = activeSessionRef.current || undefined;
+      activeSessionRef.current = '';
+      offlineStorage.cleanupOrphanedSensorData(abandonedId);
+    }
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    cleanupAbandonedCapture();
+    onClose();
+  }, [cleanupAbandonedCapture, onClose]);
 
   useEffect(() => {
     if (isOpen) {
+      tagSavedRef.current = false;
+      activeSessionRef.current = '';
       setStep(1);
       setTagName('');
       setNotes('');
@@ -66,10 +83,15 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
       Geolocation.getCurrentPosition({ enableHighAccuracy: true })
         .then((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); })
         .catch(() => {});
+    } else {
+      cleanupAbandonedCapture();
     }
-  }, [isOpen]);
+  }, [isOpen, cleanupAbandonedCapture]);
+
+  useEffect(() => () => cleanupAbandonedCapture(), [cleanupAbandonedCapture]);
 
   const handleCaptureComplete = useCallback((readings: CapturedSessionReading[], sessionId: string, tempId: string) => {
+    activeSessionRef.current = sessionId;
     const sum = computeCaptureSummary(readings, sessionId, tempId);
     setCaptureSummary(sum);
     setTagTempId(tempId);
@@ -140,6 +162,8 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         window.dispatchEvent(new CustomEvent('sync_queue_changed'));
       }
 
+      tagSavedRef.current = true;
+      activeSessionRef.current = '';
       onCreated?.();
       showToast({ message: 'Inspection tag saved successfully!', color: 'success' });
       onClose();
@@ -153,11 +177,11 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
   };
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose}>
+    <IonModal isOpen={isOpen} onDidDismiss={handleCloseModal}>
       <IonHeader>
         <IonToolbar color="primary">
           <IonTitle>Add Inspection Tag (Step {step}/4)</IonTitle>
-          <IonButtons slot="end"><IonButton onClick={onClose}><IonIcon icon={closeOutline} /></IonButton></IonButtons>
+          <IonButtons slot="end"><IonButton onClick={handleCloseModal}><IonIcon icon={closeOutline} /></IonButton></IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
@@ -169,7 +193,11 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             <h4 style={{ margin: '0 0 12px 0' }}>Step 2: AmmoniSense Sensor Reading</h4>
             <BLEConnectPanel onReadingCaptured={(r) => { if (!captureSummary) { setAmmonia(r.ammonia); setTemp(r.temperature); setHum(r.humidity); setBattery(r.battery); } if (r.device_uid) setDeviceUid(r.device_uid); }} />
             {!captureSummary ? (
-              <SensorCaptureFlow isConnected={bluetoothClassicService.getStatus() === 'connected'} onComplete={handleCaptureComplete} />
+              <SensorCaptureFlow
+                isConnected={bluetoothClassicService.getStatus() === 'connected'}
+                onSessionStart={(sid) => { activeSessionRef.current = sid; }}
+                onComplete={handleCaptureComplete}
+              />
             ) : (
               <CaptureSummaryView summary={captureSummary} />
             )}

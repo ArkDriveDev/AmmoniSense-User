@@ -3,6 +3,7 @@ import { IonButton, IonIcon, IonBadge, IonProgressBar } from '@ionic/react';
 import { playOutline, pauseOutline, stopOutline, alertCircleOutline, refreshOutline } from 'ionicons/icons';
 import { useSensorCaptureLoop, MAX_CAPTURE_READINGS } from '../../hooks/useSensorCaptureLoop';
 import { persistCaptureReading } from '../../services/captureStorageService';
+import offlineStorage from '../../services/OfflineStorageService';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
 import SensorStabilization from './SensorStabilization';
 import { CapturedSessionReading } from '../../types/capture';
@@ -12,9 +13,10 @@ import { showToast } from '../../utils/toast';
 interface Props {
   isConnected: boolean;
   onComplete: (readings: CapturedSessionReading[], sessionId: string, tagTempId: string) => void;
+  onSessionStart?: (sessionId: string) => void;
 }
 
-export const SensorCaptureFlow: React.FC<Props> = ({ isConnected, onComplete }) => {
+export const SensorCaptureFlow: React.FC<Props> = ({ isConnected, onComplete, onSessionStart }) => {
   const [isStabilized, setIsStabilized] = useState(false);
   const [bleDrop, setBleDrop] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -30,6 +32,18 @@ export const SensorCaptureFlow: React.FC<Props> = ({ isConnected, onComplete }) 
       }
     });
   }, [status, pause]);
+
+  useEffect(() => {
+    if (sessionId) onSessionStart?.(sessionId);
+  }, [sessionId, onSessionStart]);
+
+  useEffect(() => {
+    return () => {
+      if (!hasReportedRef.current) {
+        offlineStorage.cleanupOrphanedSensorData();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasReportedRef.current && (status === 'completed' || status === 'stopped') && readings.length > 0) {
