@@ -216,16 +216,17 @@ export default function ScheduleDetail() {
               <h3 style={{ margin: 0, fontWeight: 700, fontSize: '16px', color: '#0F172A' }}>Inspection Tags</h3>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <IonSegment
+                  className="responsive-tab-segment"
                   value={viewMode}
                   onIonChange={(e) => setViewMode((e.detail.value as 'list' | 'map') || 'list')}
-                  style={{ width: '150px', height: '32px' }}
+                  style={{ minWidth: '164px', height: '36px' }}
                 >
-                  <IonSegmentButton value="list" style={{ minHeight: '32px', fontSize: '12px' }}>
-                    <IonIcon icon={listOutline} style={{ fontSize: '13px', marginRight: '3px' }} />
+                  <IonSegmentButton value="list" style={{ minHeight: '36px', fontSize: '12px', paddingInline: '8px' }}>
+                    <IonIcon icon={listOutline} style={{ fontSize: '13px', marginRight: '4px' }} />
                     <IonLabel>List</IonLabel>
                   </IonSegmentButton>
-                  <IonSegmentButton value="map" style={{ minHeight: '32px', fontSize: '12px' }}>
-                    <IonIcon icon={mapOutline} style={{ fontSize: '13px', marginRight: '3px' }} />
+                  <IonSegmentButton value="map" style={{ minHeight: '36px', fontSize: '12px', paddingInline: '8px' }}>
+                    <IonIcon icon={mapOutline} style={{ fontSize: '13px', marginRight: '4px' }} />
                     <IonLabel>Map</IonLabel>
                   </IonSegmentButton>
                 </IonSegment>

@@ -534,7 +534,7 @@ export default function UserMap() {
               {([
                 { value: 'recent', label: 'Recent' },
                 { value: 'oldest', label: 'Oldest' },
-                { value: 'schedule_name', label: 'By Schedule Name' },
+                { value: 'schedule_name', label: 'Schedule' },
               ] as const).map((opt) => (
                 <button
                   key={opt.value}
