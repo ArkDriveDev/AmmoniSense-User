@@ -131,7 +131,7 @@ export default function UserLayout({ children }: any) {
       <IonMenu menuId="user-menu" contentId="user-main" type="overlay" side="start">
         <IonHeader>
           <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-            <IonTitle style={{ fontSize: '17px', fontWeight: 'bold', color: '#ffffff' }}>
+            <IonTitle className="main-app-title" style={{ fontSize: 'clamp(1rem, 4vw, 1.15rem)', fontWeight: 'bold', color: '#ffffff', whiteSpace: 'nowrap' }}>
               AmmoniSense
             </IonTitle>
             <IonButtons slot="end">
@@ -271,8 +271,8 @@ export default function UserLayout({ children }: any) {
                 <IonIcon icon={menuOutline} />
               </IonMenuButton>
             </IonButtons>
-            <IonTitle style={{ fontWeight: 700, color: '#ffffff' }}>AmmoniSense</IonTitle>
-            <IonButtons slot="end" style={{ paddingRight: '12px' }}>
+            <IonTitle className="main-app-title" style={{ fontWeight: 700, color: '#ffffff', fontSize: 'clamp(0.95rem, 3.8vw, 1.2rem)', whiteSpace: 'nowrap', paddingInline: '2px' }}>AmmoniSense</IonTitle>
+            <IonButtons slot="end" style={{ paddingRight: '6px' }}>
               <SyncStatusBanner />
             </IonButtons>
           </IonToolbar>

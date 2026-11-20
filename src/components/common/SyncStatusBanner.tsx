@@ -83,13 +83,14 @@ export const SyncStatusBanner: React.FC = () => {
   return (
     <>
     <div
+      className="sync-status-pill"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '8px',
-        fontSize: '12px',
+        gap: '5px',
+        fontSize: '11px',
         fontWeight: 600,
-        padding: '4px 10px',
+        padding: '3px 7px',
         borderRadius: '20px',
         backgroundColor: !isOnline
           ? '#fff7ed'
@@ -127,11 +128,11 @@ export const SyncStatusBanner: React.FC = () => {
         }}
       />
 
-      <span>
+      <span style={{ whiteSpace: 'nowrap' }}>
         {!isOnline
-          ? `Offline Mode ${pendingCount > 0 ? `(${pendingCount} pending)` : ''}`
+          ? `Offline${pendingCount > 0 ? ` (${pendingCount})` : ''}`
           : syncing
-          ? statusMsg || 'Syncing...'
+          ? 'Syncing...'
           : pendingCount > 0
           ? `${pendingCount} queued`
           : 'Online'}
@@ -145,8 +146,8 @@ export const SyncStatusBanner: React.FC = () => {
         style={{
           height: '24px',
           fontSize: '11px',
-          margin: '0 0 0 4px',
-          padding: '0 8px',
+          margin: '0 0 0 2px',
+          padding: '0 6px',
           '--background': '#ffffff',
           '--color': '#0F3C5C',
           fontWeight: 700,
@@ -157,13 +158,13 @@ export const SyncStatusBanner: React.FC = () => {
       >
         {syncing ? (
           <>
-            <IonSpinner name="crescent" style={{ width: '12px', height: '12px', marginRight: '4px' }} />
-            Syncing...
+            <IonSpinner name="crescent" style={{ width: '12px', height: '12px', marginRight: '3px' }} />
+            Sync
           </>
         ) : (
           <>
-            <IonIcon icon={syncOutline} slot="start" style={{ fontSize: '13px', marginRight: '3px' }} />
-            {pendingCount > 0 ? `Sync Now (${pendingCount})` : 'Sync Now'}
+            <IonIcon icon={syncOutline} slot="start" style={{ fontSize: '12px', marginRight: '2px' }} />
+            {pendingCount > 0 ? `Sync (${pendingCount})` : 'Sync'}
           </>
         )}
       </IonButton>

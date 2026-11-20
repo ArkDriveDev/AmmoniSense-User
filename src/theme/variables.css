@@ -354,12 +354,18 @@ ion-toolbar ion-title {
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: unset !important;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  line-height: 1.25;
-  font-size: 16px;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 1.2;
+  font-size: clamp(0.92rem, 3.7vw, 1.12rem);
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+ion-toolbar ion-title.main-app-title {
+  white-space: nowrap !important;
+  font-size: clamp(0.95rem, 3.8vw, 1.2rem) !important;
+  letter-spacing: -0.01em;
 }
 
 ion-card,
