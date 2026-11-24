@@ -337,7 +337,7 @@ ion-button.btn-ammoni,
 
 /* Responsive Tab Bar & Segment Button Labels */
 ion-tab-bar {
-  max-width: 100vw;
+  max-width: 100%;
   overflow-x: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -372,10 +372,19 @@ ion-segment-button ion-label {
 }
 
 /* Portrait & Small-Screen Overflow Protection */
+html,
+body,
+#root,
+ion-app,
 ion-page,
 ion-content {
-  max-width: 100vw;
+  max-width: 100%;
   overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+ion-header ion-toolbar:first-of-type {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 ion-toolbar ion-title {

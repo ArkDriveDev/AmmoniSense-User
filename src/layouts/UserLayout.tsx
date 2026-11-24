@@ -277,7 +277,7 @@ export default function UserLayout({ children }: any) {
             </IonButtons>
           </IonToolbar>
         </IonHeader>
-        <IonContent style={{ '--background': '#F8FAFC' }}>
+        <IonContent style={{ '--background': '#F8FAFC', '--padding-bottom': 'env(safe-area-inset-bottom, 0px)' }}>
           {children}
         </IonContent>
 
