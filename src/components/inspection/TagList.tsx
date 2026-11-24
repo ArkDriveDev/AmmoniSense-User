@@ -40,12 +40,14 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag, onDelet
         </div>
       )}
       {tags.length > 3 && (
-        <IonSearchbar
-          value={search}
-          placeholder="SEARCH TAGS..."
-          onIonInput={(e) => setSearch(e.detail.value!)}
-          style={{ padding: '0 0 8px 0' }}
-        />
+        <div style={{ width: '100%', maxWidth: '420px' }}>
+          <IonSearchbar
+            value={search}
+            placeholder="SEARCH TAGS..."
+            onIonInput={(e) => setSearch(e.detail.value!)}
+            style={{ padding: '0 0 8px 0', width: '100%' }}
+          />
+        </div>
       )}
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '30px 16px', color: '#64748B' }}>

@@ -514,37 +514,41 @@ export default function UserMap() {
           </IonButtons>
         </IonToolbar>
         <IonToolbar style={{ '--background': '#0F3C5C', padding: '0 8px 6px 8px' }}>
-          <IonSearchbar
-            value={searchText}
-            onIonInput={(e) => setSearchText(e.detail.value || '')}
-            placeholder="Search site name, code, address, or PPM..."
-            showClearButton="always"
-            style={{
-              '--background': 'rgba(255, 255, 255, 0.95)',
-              '--color': '#0F172A',
-              '--placeholder-color': '#64748B',
-              '--icon-color': '#0F3C5C',
-              '--border-radius': '12px',
-              padding: '0 4px',
-            }}
-          />
-          <div className="map-sort-bar" role="group" aria-label="Sort tags by schedule">
-            <span className="map-sort-label">Sort Tags:</span>
-            <div className="map-sort-group">
-              {([
-                { value: 'recent', label: 'Recent' },
-                { value: 'oldest', label: 'Oldest' },
-                { value: 'schedule_name', label: 'Schedule' },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`map-sort-btn${tagSort === opt.value ? ' active' : ''}`}
-                  onClick={() => handleTagSortChange(opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          <div className="map-search-container">
+            <IonSearchbar
+              value={searchText}
+              onIonInput={(e) => setSearchText(e.detail.value || '')}
+              placeholder="Search site name, code, address, or PPM..."
+              showClearButton="always"
+              style={{
+                '--background': 'rgba(255, 255, 255, 0.95)',
+                '--color': '#0F172A',
+                '--placeholder-color': '#64748B',
+                '--icon-color': '#0F3C5C',
+                '--border-radius': '12px',
+                padding: '0',
+                width: '100%',
+                maxWidth: '420px',
+              }}
+            />
+            <div className="map-sort-bar" role="group" aria-label="Sort tags by schedule">
+              <span className="map-sort-label">Sort Tags:</span>
+              <div className="map-sort-group">
+                {([
+                  { value: 'recent', label: 'Recent' },
+                  { value: 'oldest', label: 'Oldest' },
+                  { value: 'schedule_name', label: 'Schedule' },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`map-sort-btn${tagSort === opt.value ? ' active' : ''}`}
+                    onClick={() => handleTagSortChange(opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </IonToolbar>
@@ -559,6 +563,8 @@ export default function UserMap() {
               top: '8px',
               left: '12px',
               right: '12px',
+              maxWidth: '420px',
+              margin: '0 auto',
               zIndex: 1200,
               background: '#ffffff',
               borderRadius: '12px',

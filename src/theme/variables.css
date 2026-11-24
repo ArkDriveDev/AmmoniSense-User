@@ -346,6 +346,14 @@ ion-button.btn-ammoni,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+.map-search-container {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
 /* Responsive Tab Bar & Segment Button Labels */
 ion-tab-bar {
   max-width: 100%;
