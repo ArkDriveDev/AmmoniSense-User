@@ -12,7 +12,7 @@ interface ScheduleTagsMapProps {
   onSelectTag?: (tag: InspectionTag) => void;
 }
 
-export const ScheduleTagsMap: React.FC<ScheduleTagsMapProps> = ({ tags, height = '360px', onSelectTag }) => {
+export const ScheduleTagsMap: React.FC<ScheduleTagsMapProps> = ({ tags, height = '50vh', onSelectTag }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -79,8 +79,8 @@ export const ScheduleTagsMap: React.FC<ScheduleTagsMapProps> = ({ tags, height =
   }, [tags, onSelectTag]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height, borderRadius: '14px', overflow: 'hidden', border: '1px solid #CBD5E1', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+    <div className="responsive-map-container" style={{ position: 'relative', width: '100%', height, minHeight: '360px', borderRadius: '14px', overflow: 'hidden', border: '1px solid #CBD5E1', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+      <div ref={mapContainerRef} style={{ width: '100%', height: '100%', minHeight: '360px' }} />
       {tags.length === 0 && (
         <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(255,255,255,0.95)', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, color: '#64748B', boxShadow: '0 2px 6px rgba(0,0,0,0.15)', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 1000 }}>
           No tags recorded yet on this schedule

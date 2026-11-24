@@ -242,7 +242,7 @@ export default function ScheduleDetail() {
             </div>
 
             {viewMode === 'map' ? (
-              <ScheduleTagsMap tags={tags} height="360px" />
+              <ScheduleTagsMap tags={tags} height="50vh" />
             ) : (
               <TagList
                 tags={tags}

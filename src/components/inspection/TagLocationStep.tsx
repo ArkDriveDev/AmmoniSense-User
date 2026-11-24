@@ -70,7 +70,7 @@ export const TagLocationStep: React.FC<Props> = ({ lat, lng, onChangeLat, onChan
     <div>
       <h4 style={{ margin: '0 0 4px 0', fontWeight: 700 }}>Step 1: Tag Location</h4>
       <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B' }}>Drag marker or tap map to position tag.</p>
-      <div ref={mapContainerRef} style={{ height: '180px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #CBD5E1', marginBottom: '10px' }} />
+      <div ref={mapContainerRef} style={{ height: '240px', minHeight: '220px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #CBD5E1', marginBottom: '10px' }} />
       <IonItem lines="inset">
         <IonLabel position="stacked">LATITUDE</IonLabel>
         <IonInput type="number" value={lat} onIonInput={(e) => onChangeLat(Number(e.detail.value))} />

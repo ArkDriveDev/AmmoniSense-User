@@ -554,7 +554,7 @@ export default function UserMap() {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen style={{ '--overflow': 'hidden', position: 'relative', width: '100%', height: '100%' }}>
+      <IonContent fullscreen style={{ position: 'relative', width: '100%', height: '100%', minHeight: '400px' }}>
         {/* Interactive Search Suggestions Dropdown Overlay */}
         {searchText.trim().length > 0 && (
           <div

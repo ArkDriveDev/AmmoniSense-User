@@ -354,6 +354,19 @@ ion-button.btn-ammoni,
   box-sizing: border-box;
 }
 
+.responsive-map-container {
+  width: 100%;
+  min-height: 360px;
+  height: 50vh;
+}
+
+@media (min-width: 768px) {
+  .responsive-map-container {
+    height: 60vh;
+    min-height: 400px;
+  }
+}
+
 /* Responsive Tab Bar & Segment Button Labels */
 ion-tab-bar {
   max-width: 100%;
