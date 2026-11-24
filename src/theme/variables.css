@@ -453,8 +453,9 @@ ion-toolbar ion-title {
 
 ion-toolbar ion-title.main-app-title {
   white-space: nowrap !important;
-  font-size: clamp(0.95rem, 3.8vw, 1.2rem) !important;
+  font-size: clamp(0.9rem, 3.6vw, 1.2rem) !important;
   letter-spacing: -0.01em;
+  padding-inline: 0 !important;
 }
 
 ion-card,

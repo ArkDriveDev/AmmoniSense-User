@@ -4,7 +4,6 @@ import {
   IonContent, 
   IonInput, 
   IonButton, 
-  IonTitle, 
   IonText, 
   IonItem, 
   IonIcon, 
@@ -132,25 +131,21 @@ export default function Login() {
   return (
     <IonPage>
       <IonContent 
-        className="ion-padding" 
         style={{ 
           '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 50%, #008B74 100%)',
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          minHeight: '100vh'
         }}
       >
         <div style={{
-          minHeight: '100vh',
+          minHeight: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '16px'
+          padding: 'calc(16px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px)) 12px',
+          boxSizing: 'border-box',
         }}>
-          <IonGrid style={{ maxWidth: '420px', width: '100%' }}>
+          <IonGrid style={{ maxWidth: '420px', width: '100%', padding: 0, margin: '0 auto' }}>
             <IonRow>
-              <IonCol>
+              <IonCol style={{ padding: 0 }}>
                 {approvalStatus ? (
                   <DeviceApprovalCard
                     status={approvalStatus}
@@ -163,27 +158,27 @@ export default function Login() {
                     }}
                   />
                 ) : (
-                <IonCard className="premium-card" style={{ padding: '8px' }}>
-                  <IonCardContent>
-                    <div style={{ textAlign: 'center', marginBottom: '28px', marginTop: '12px' }}>
+                <IonCard className="premium-card" style={{ margin: 0, width: '100%', padding: '4px' }}>
+                  <IonCardContent style={{ padding: 'clamp(16px, 5vw, 24px)' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '24px', marginTop: '4px' }}>
                       <div style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '20px',
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '18px',
                         background: 'linear-gradient(135deg, #1D5D9B 0%, #008B74 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 16px auto',
+                        margin: '0 auto 14px auto',
                         boxShadow: '0 8px 24px rgba(29, 93, 155, 0.3)'
                       }}>
-                        <IonIcon icon={leafOutline} style={{ fontSize: '32px', color: '#FFFFFF' }} />
+                        <IonIcon icon={leafOutline} style={{ fontSize: '30px', color: '#FFFFFF' }} />
                       </div>
-                      <IonTitle style={{ fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.02em' }}>
+                      <h1 style={{ margin: 0, fontSize: 'clamp(1.35rem, 6vw, 1.65rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1.2, whiteSpace: 'normal', overflowWrap: 'break-word' }}>
                         AmmoniSense
-                      </IonTitle>
+                      </h1>
                       <IonText color="medium">
-                        <p style={{ margin: '6px 0 0 0', fontSize: '14px', fontWeight: '500' }}>
+                        <p style={{ margin: '6px 0 0 0', fontSize: 'clamp(12.5px, 3.5vw, 14px)', fontWeight: 500, lineHeight: 1.35 }}>
                           Environmental Ammonia Monitoring
                         </p>
                       </IonText>

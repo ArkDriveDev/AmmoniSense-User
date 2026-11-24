@@ -13,8 +13,8 @@ export const DeviceApprovalCard: React.FC<Props> = ({ status, deviceIdentifier, 
   const isBlocked = status === 'BLOCKED';
 
   return (
-    <IonCard className="premium-card" style={{ padding: '12px' }}>
-      <IonCardContent style={{ textAlign: 'center' }}>
+    <IonCard className="premium-card" style={{ margin: 0, width: '100%', padding: '8px' }}>
+      <IonCardContent style={{ textAlign: 'center', padding: 'clamp(16px, 5vw, 24px)' }}>
         <div
           style={{
             width: '64px',
