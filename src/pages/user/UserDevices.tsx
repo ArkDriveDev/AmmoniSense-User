@@ -99,9 +99,9 @@ export default function UserDevices() {
               return (
                 <IonCard key={d.id} className="premium-card" style={{ margin: 0 }}>
                   <IonCardContent style={{ padding: '18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', minWidth: 0 }}>
                           <div style={{
                             width: '38px',
                             height: '38px',
@@ -109,21 +109,22 @@ export default function UserDevices() {
                             background: isRecentlySeen ? 'rgba(5, 150, 105, 0.12)' : 'rgba(100, 116, 139, 0.12)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            flexShrink: 0
                           }}>
                             <IonIcon icon={hardwareChipOutline} style={{ color: isRecentlySeen ? '#059669' : '#64748B', fontSize: '20px' }} />
                           </div>
-                          <div>
-                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A', fontFamily: 'monospace', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                               {d.device_name || d.device_uid}
                             </h3>
-                            <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'monospace' }}>
+                            <span style={{ fontSize: '12px', color: '#94A3B8', fontFamily: 'monospace', wordBreak: 'break-word', overflowWrap: 'anywhere', display: 'block' }}>
                               UID: {d.device_uid}
                             </span>
                           </div>
                         </div>
 
-                        <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
+                        <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
                           <IonIcon icon={timeOutline} style={{ color: '#94A3B8' }} />
                           First seen: {d.first_seen_at ? new Date(d.first_seen_at).toLocaleDateString() : 'Unknown'}
                           {d.last_seen_at && (
@@ -135,7 +136,7 @@ export default function UserDevices() {
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                        <IonBadge style={{ background: '#E2E8F0', color: '#475569', fontSize: '10px', fontWeight: 700 }}>
+                        <IonBadge style={{ background: '#E2E8F0', color: '#475569', fontSize: '12px', fontWeight: 700 }}>
                           {d.status || 'ACTIVE'}
                         </IonBadge>
                       </div>

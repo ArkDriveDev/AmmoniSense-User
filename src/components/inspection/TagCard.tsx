@@ -94,7 +94,7 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
               <div style={{ marginTop: '3px' }}>
                 <IonBadge
                   color={getViolationCategoryBadgeColor(tag.findings)}
-                  style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px' }}
+                  style={{ fontSize: '12px', fontWeight: 700, padding: '2px 6px' }}
                 >
                   <IonIcon icon={alertCircleOutline} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
                   {getViolationCategoryLabel(tag.findings)}
@@ -107,13 +107,13 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
               <span><IonIcon icon={batteryChargingOutline} /> {tag.battery !== undefined && tag.battery !== null ? `${Number(tag.battery)}%` : '—'}</span>
             </div>
             {tag.notes && (
-              <div style={{ marginTop: '3px', fontSize: '11px', color: '#475569', fontStyle: 'italic', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.35 }}>
+              <div style={{ marginTop: '3px', fontSize: '12px', color: '#475569', fontStyle: 'italic', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.35 }}>
                 "{tag.notes}"
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '11px', color: '#94A3B8' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px', marginTop: '4px', fontSize: '12px', color: '#94A3B8' }}>
               <span><IonIcon icon={locationOutline} /> {(Number(tag.latitude) || 0).toFixed(4)}, {(Number(tag.longitude) || 0).toFixed(4)}</span>
-              {tag.isOffline && <IonBadge color="warning" style={{ fontSize: '9px' }}><IonIcon icon={cloudOfflineOutline} /> Offline — not synced</IonBadge>}
+              {tag.isOffline && <IonBadge color="warning" style={{ fontSize: '12px' }}><IonIcon icon={cloudOfflineOutline} /> Offline — not synced</IonBadge>}
             </div>
           </div>
         </div>

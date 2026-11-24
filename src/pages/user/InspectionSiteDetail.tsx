@@ -139,12 +139,12 @@ export default function InspectionSiteDetail() {
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <SiteTypeBadge siteType={site.site_type} />
                     {site.poultry_type && (
-                      <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
                         {getPoultryTypeLabel(site.poultry_type)}
                       </span>
                     )}
                     {site.chicken_type && (
-                      <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
                         {getChickenTypeLabel(site.chicken_type)}
                       </span>
                     )}

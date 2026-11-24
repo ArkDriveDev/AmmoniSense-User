@@ -63,10 +63,10 @@ export default function UserDashboard() {
           <IonRefresherContent />
         </IonRefresher>
 
-        <IonGrid>
+        <IonGrid style={{ padding: 0 }}>
           {/* Stats Cards Section */}
           <IonRow>
-            <IonCol size="6" size-md="4">
+            <IonCol size="12" sizeSm="6" sizeMd="4">
               <StatsCard
                 title="Monitoring Sites"
                 value={stats.siteCount}
@@ -74,7 +74,7 @@ export default function UserDashboard() {
                 color="primary"
               />
             </IonCol>
-            <IonCol size="6" size-md="4">
+            <IonCol size="12" sizeSm="6" sizeMd="4">
               <StatsCard
                 title="Devices"
                 value={stats.deviceCount}
@@ -82,7 +82,7 @@ export default function UserDashboard() {
                 color="secondary"
               />
             </IonCol>
-            <IonCol size="12" size-md="4">
+            <IonCol size="12" sizeMd="4">
               <StatsCard
                 title="Active Telemetry"
                 value={stats.activeDevices}

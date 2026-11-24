@@ -63,7 +63,7 @@ export default function StatsCard({ title, value, icon, color = 'primary', subti
           {title}
         </p>
         {subtitle && (
-          <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: '500' }}>
+          <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94A3B8', fontWeight: '500' }}>
             {subtitle}
           </p>
         )}

@@ -115,9 +115,9 @@ export default function SensorCheckerPage() {
         <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: 0 }}>
           {/* Bluetooth Header & Connect Button */}
           <div style={{ background: '#FFFFFF', borderRadius: '14px', padding: '16px', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
                   Bluetooth: {!isBtEnabled ? 'Off' : isConnected ? 'Connected' : 'On'}
                 </div>
                 <h3 style={{ margin: '4px 0 0 0', fontWeight: 700, fontSize: '17px', color: '#0F172A' }}>AmmoniSense Sensor</h3>

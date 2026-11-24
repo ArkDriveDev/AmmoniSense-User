@@ -62,13 +62,13 @@ export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isSta
           boxShadow: '0 8px 24px rgba(15, 60, 92, 0.22)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
               Ammonia Concentration (NH₃)
             </span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
-              <span style={{ fontSize: '42px', fontWeight: 900, fontFamily: 'monospace', color: '#FFFFFF', lineHeight: 1.1 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 'clamp(32px, 9vw, 42px)', fontWeight: 900, fontFamily: 'monospace', color: '#FFFFFF', lineHeight: 1.1 }}>
                 {typeof nh3 === 'number' && !isNaN(nh3) ? nh3.toFixed(2) : '—'}
               </span>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>ppm</span>
@@ -77,7 +77,7 @@ export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isSta
           <div>{renderBadge()}</div>
         </div>
 
-        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.9)' }}>
+        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px', color: 'rgba(255,255,255,0.9)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <IonIcon icon={timeOutline} />
             {lastUpdate ? `Last update: ${lastUpdate.toTimeString().split(' ')[0]}` : 'Waiting for data…'}
@@ -89,28 +89,28 @@ export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isSta
       {/* Environmental & Battery Row */}
       <IonGrid style={{ padding: 0 }}>
         <IonRow>
-          <IonCol size="4">
+          <IonCol size="12" sizeSm="4">
             <IonCard style={{ margin: 0, padding: '12px', textAlign: 'center', borderRadius: '12px', height: '100%' }}>
               <IonIcon icon={thermometerOutline} style={{ color: '#F97316', fontSize: '20px' }} />
-              <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 700, marginTop: '2px' }}>TEMP</div>
+              <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 700, marginTop: '2px' }}>TEMP</div>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginTop: '4px', fontFamily: 'monospace' }}>
                 {typeof temp === 'number' && !isNaN(temp) ? `${temp.toFixed(1)}°C` : '—'}
               </div>
             </IonCard>
           </IonCol>
-          <IonCol size="4">
+          <IonCol size="12" sizeSm="4">
             <IonCard style={{ margin: 0, padding: '12px', textAlign: 'center', borderRadius: '12px', height: '100%' }}>
               <IonIcon icon={waterOutline} style={{ color: '#3B82F6', fontSize: '20px' }} />
-              <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 700, marginTop: '2px' }}>HUMIDITY</div>
+              <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 700, marginTop: '2px' }}>HUMIDITY</div>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginTop: '4px', fontFamily: 'monospace' }}>
                 {typeof hum === 'number' && !isNaN(hum) ? `${hum.toFixed(1)}%` : '—'}
               </div>
             </IonCard>
           </IonCol>
-          <IonCol size="4">
+          <IonCol size="12" sizeSm="4">
             <IonCard style={{ margin: 0, padding: '12px', textAlign: 'center', borderRadius: '12px', height: '100%' }}>
               <IonIcon icon={batteryChargingOutline} style={{ color: '#10B981', fontSize: '20px' }} />
-              <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 700, marginTop: '2px' }}>BATTERY</div>
+              <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 700, marginTop: '2px' }}>BATTERY</div>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginTop: '4px', fontFamily: 'monospace' }}>
                 {typeof batt === 'number' && !isNaN(batt) ? `${batt}%` : '—'}
               </div>

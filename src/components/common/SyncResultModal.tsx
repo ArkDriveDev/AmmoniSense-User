@@ -41,9 +41,9 @@ export const SyncResultModal: React.FC<SyncResultModalProps> = ({ isOpen, onClos
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {failedItems.map((item) => (
             <div key={item.id} style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
                 <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b', textTransform: 'uppercase' }}>{item.type}</span>
-                <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{getEffectiveTempId(item)}</span>
+                <span style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{getEffectiveTempId(item)}</span>
               </div>
               <div style={{ fontSize: '12px', color: '#b91c1c', background: '#fef2f2', padding: '8px', borderRadius: '6px', wordBreak: 'break-word', fontFamily: 'monospace' }}>
                 {item.errorMsg || 'Unknown synchronization error'}

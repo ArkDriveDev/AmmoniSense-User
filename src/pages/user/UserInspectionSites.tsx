@@ -137,12 +137,12 @@ export default function UserInspectionSites() {
                         {s.isOffline && <PendingSyncBadge label="Offline — not synced" />}
                         <SiteTypeBadge siteType={s.site_type} />
                         {s.poultry_type && (
-                          <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
                             {getPoultryTypeLabel(s.poultry_type)}
                           </span>
                         )}
                         {s.chicken_type && (
-                          <span style={{ fontSize: '11px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
                             {getChickenTypeLabel(s.chicken_type)}
                           </span>
                         )}
