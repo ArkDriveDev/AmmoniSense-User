@@ -9,13 +9,15 @@ interface Props {
   isConnected: boolean;
   isStale?: boolean;
   lastUpdate?: Date | null;
+  onCalibrateClick?: () => void;
 }
 
-export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isStale, lastUpdate }) => {
+export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isStale, lastUpdate, onCalibrateClick }) => {
   const nh3 = reading?.nh3_ppm ?? null;
   const temp = reading?.temperature ?? null;
   const hum = reading?.humidity ?? null;
   const batt = reading?.battery_percent ?? null;
+  const isUnverified = Boolean(reading?.ppm_unverified || reading?.raw_line?.includes('[PPM UNVERIFIED]'));
 
   const renderBadge = () => {
     if (nh3 === null || isNaN(nh3)) return null;
@@ -31,6 +33,21 @@ export const LiveReadingsPanel: React.FC<Props> = ({ reading, isConnected, isSta
         <div style={{ marginBottom: '12px', padding: '8px 12px', borderRadius: '8px', background: '#FEF3C7', color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <IonIcon icon={warningOutline} style={{ flexShrink: 0 }} />
           <span>No data — check connection.</span>
+        </div>
+      )}
+
+      {isUnverified && (
+        <div
+          onClick={onCalibrateClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onCalibrateClick?.(); }}
+          style={{ marginBottom: '12px', padding: '10px 12px', borderRadius: '8px', background: '#FEF3C7', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: onCalibrateClick ? 'pointer' : 'default' }}
+        >
+          <IonIcon icon={warningOutline} style={{ flexShrink: 0, fontSize: '16px' }} />
+          <span style={{ textDecoration: onCalibrateClick ? 'underline' : 'none' }}>
+            Curve is placeholder — PPM not lab-verified. Calibrate A/B to clear.
+          </span>
         </div>
       )}
 
