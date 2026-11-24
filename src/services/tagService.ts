@@ -178,7 +178,7 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     sensor_data_id: payload.sensor_data_id ? Number(payload.sensor_data_id) : null,
     inspection_schedule_id: payload.inspection_schedule_id,
     inspection_site_id: resolvedSiteId,
-    notes: toUpperClean(payload.notes),
+    notes: (payload.notes || '').trim(),
     findings: payload.findings || null,
     offline_temp_id: payload.offline_temp_id || null,
   };
@@ -228,7 +228,7 @@ export async function updateTag(
 ): Promise<void> {
   const clean: any = {};
   if (updates.tag_name !== undefined) clean.tag_name = toUpperClean(updates.tag_name);
-  if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
+  if (updates.notes !== undefined) clean.notes = (updates.notes || '').trim();
   if (updates.findings !== undefined) clean.findings = updates.findings;
   if (updates.photo_url !== undefined) clean.photo_url = updates.photo_url;
 

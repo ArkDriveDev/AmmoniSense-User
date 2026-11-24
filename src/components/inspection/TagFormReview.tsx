@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonItem, IonLabel, IonInput, IonTextarea, IonButton, IonIcon, IonSpinner } from '@ionic/react';
+import { IonItem, IonLabel, IonInput, IonButton, IonIcon, IonSpinner } from '@ionic/react';
 import { arrowBackOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { VIOLATION_CATEGORIES } from '../../constants/violationCategories';
@@ -25,7 +25,7 @@ interface Props {
 export const TagFormReview: React.FC<Props> = ({
   tagName, notes, violationCategory, ammonia, temperature, lat, lng, saving,
   isRecoveryMode, errorMessage,
-  onChangeTagName, onChangeNotes, onBack, onSave
+  onChangeTagName, onBack, onSave
 }) => (
   <div>
     <h4 style={{ margin: '0 0 12px 0' }}>Step 4: Tag Name & Review</h4>
@@ -44,15 +44,10 @@ export const TagFormReview: React.FC<Props> = ({
       </div>
     </IonItem>
     <IonItem lines="inset" style={{ marginTop: '8px' }}>
-      <IonLabel position="stacked">
-        {violationCategory === 'OTHERS' ? 'NOTES * (REQUIRED FOR "OTHERS")' : 'NOTES (AUTO-UPPERCASE)'}
-      </IonLabel>
-      <IonTextarea
-        rows={2}
-        value={notes}
-        placeholder={violationCategory === 'OTHERS' ? 'SPECIFY VIOLATION DETAILS *' : 'OBSERVATIONS'}
-        onIonInput={(e) => onChangeNotes(toUpperClean(e.detail.value!))}
-      />
+      <IonLabel position="stacked">Notes</IonLabel>
+      <p style={{ margin: '8px 0 6px 0', fontSize: '14px', color: '#1E293B', lineHeight: 1.4 }}>
+        {notes || 'No foul odor detected.'}
+      </p>
     </IonItem>
     <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', marginTop: '12px', fontSize: '13px' }}>
       <div>

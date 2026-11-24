@@ -785,7 +785,7 @@ class SyncService {
       latitude: payload.latitude !== undefined && payload.latitude !== null ? Number(payload.latitude) : null,
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
-      notes: payload.notes?.toUpperCase() || null,
+      notes: payload.notes?.trim() || null,
       findings: payload.findings || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
       created_by: payload.created_by || user.user?.id || null,
