@@ -90,14 +90,14 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
                 )}
               </div>
             </div>
-            {tag.violation_category && (
+            {tag.findings && (
               <div style={{ marginTop: '3px' }}>
                 <IonBadge
-                  color={getViolationCategoryBadgeColor(tag.violation_category)}
+                  color={getViolationCategoryBadgeColor(tag.findings)}
                   style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px' }}
                 >
                   <IonIcon icon={alertCircleOutline} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
-                  {getViolationCategoryLabel(tag.violation_category)}
+                  {getViolationCategoryLabel(tag.findings)}
                 </IonBadge>
               </div>
             )}

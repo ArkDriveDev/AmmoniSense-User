@@ -188,9 +188,9 @@ export default function AreaMapping() {
                                   <IonBadge style={{ background: statusColor, color: '#ffffff', fontSize: '10px', fontWeight: 800 }}>
                                     {tag.status}
                                   </IonBadge>
-                                  {tag.violation_category && (
-                                    <IonBadge color={getViolationCategoryBadgeColor(tag.violation_category)} style={{ fontSize: '10px', fontWeight: 700 }}>
-                                      ⚠️ {getViolationCategoryLabel(tag.violation_category)}
+                                  {tag.findings && (
+                                    <IonBadge color={getViolationCategoryBadgeColor(tag.findings)} style={{ fontSize: '10px', fontWeight: 700 }}>
+                                      ⚠️ {getViolationCategoryLabel(tag.findings)}
                                     </IonBadge>
                                   )}
                                   {tag.isOffline && (
