@@ -239,8 +239,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
             lng={lng ?? DEFAULT_LNG}
             saving={saving}
             errorMessage={saveError}
-            onChangeTagName={setTagName} onChangeNotes={setNotes}
-            onChangeViolationCategory={setViolationCategory}
+            onChangeTagName={setTagName}
             onBack={() => setStep(3)} onSave={handleSave}
           />
         )}

@@ -1,8 +1,7 @@
 import React from 'react';
-import { IonItem, IonLabel, IonInput, IonButton, IonIcon, IonSpinner } from '@ionic/react';
+import { IonItem, IonLabel, IonInput, IonButton, IonIcon, IonSpinner, IonBadge } from '@ionic/react';
 import { arrowBackOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { ViolationCategory, toUpperClean } from '../../types/inspection';
-import { VIOLATION_CATEGORIES } from '../../constants/violationCategories';
 
 interface Props {
   tagName: string;
@@ -16,8 +15,6 @@ interface Props {
   isRecoveryMode?: boolean;
   errorMessage?: string | null;
   onChangeTagName: (v: string) => void;
-  onChangeNotes: (v: string) => void;
-  onChangeViolationCategory: (v: ViolationCategory | null) => void;
   onBack: () => void;
   onSave: () => void;
 }
@@ -35,12 +32,16 @@ export const TagFormReview: React.FC<Props> = ({
     </IonItem>
     <IonItem lines="inset" style={{ marginTop: '8px' }}>
       <IonLabel position="stacked">Findings</IonLabel>
-      <div style={{ padding: '8px 0 4px 0', fontWeight: 700, fontSize: '14px', color: (Number(ammonia) || 0) >= 25 || violationCategory ? '#DC2626' : '#059669' }}>
-        {(Number(ammonia) || 0) >= 25 || violationCategory === 'FOUL_ODOR'
-          ? 'FOUL ODOR VIOLATION'
-          : violationCategory
-          ? VIOLATION_CATEGORIES.find((c) => c.value === violationCategory)?.label || violationCategory
-          : 'No Violation'}
+      <div style={{ padding: '8px 0 6px 0' }}>
+        {violationCategory === 'FOUL_ODOR' || (Number(ammonia) || 0) >= 25 ? (
+          <IonBadge color="danger" style={{ fontSize: '12px', fontWeight: 700, padding: '6px 10px' }}>
+            FOUL ODOR VIOLATION
+          </IonBadge>
+        ) : (
+          <IonBadge color="medium" style={{ fontSize: '12px', fontWeight: 700, padding: '6px 10px' }}>
+            No Violation
+          </IonBadge>
+        )}
       </div>
     </IonItem>
     <IonItem lines="inset" style={{ marginTop: '8px' }}>
