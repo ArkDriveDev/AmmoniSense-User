@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonGrid, IonButton, IonBadge, IonSpinner, IonIcon, useIonViewWillLeave } from '@ionic/react';
 import { bluetoothOutline, closeCircleOutline, alertCircleOutline } from 'ionicons/icons';
 import bluetoothClassicService from '../../services/bluetoothClassicService';
 import LiveReadingsPanel from '../../components/checker/LiveReadingsPanel';
 import RawStreamDisclosure from '../../components/checker/RawStreamDisclosure';
+import CalibrationPanel from '../../components/checker/CalibrationPanel';
 import { AmmoniSenseReading, BluetoothConnectionStatus } from '../../types/schema';
 
 export default function SensorCheckerPage() {
@@ -17,6 +18,8 @@ export default function SensorCheckerPage() {
   const [isBtEnabled, setIsBtEnabled] = useState<boolean>(true);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [commandOutput, setCommandOutput] = useState<string[]>([]);
+  const calibrationSectionRef = useRef<HTMLDivElement>(null);
 
   const checkBt = useCallback(async () => {
     setIsBtEnabled(await bluetoothClassicService.checkLiveBluetoothEnabled());
@@ -46,10 +49,14 @@ export default function SensorCheckerPage() {
       setLastUpdate(new Date(r.timestamp || Date.now()));
       setIsStale(false);
     });
+    const unsubReply = bluetoothClassicService.onCommandReply((line) => {
+      setCommandOutput((prev) => [...prev, line].slice(-20));
+    });
     return () => {
       window.removeEventListener('focus', handleResume);
       unsub();
       unsubReading();
+      unsubReply();
       bluetoothClassicService.disconnect();
     };
   }, [checkBt]);
@@ -86,6 +93,15 @@ export default function SensorCheckerPage() {
   };
 
   const isConnected = status === 'connected';
+
+  const handleSendCommand = useCallback(async (cmd: string): Promise<boolean> => {
+    setCommandOutput((prev) => [...prev, `> ${cmd}`].slice(-20));
+    const ok = await bluetoothClassicService.writeCommand(cmd);
+    if (!ok) {
+      setCommandOutput((prev) => [...prev, 'ERROR: Failed to send command over Classic SPP.'].slice(-20));
+    }
+    return ok;
+  }, []);
 
   return (
     <IonPage>
@@ -135,7 +151,21 @@ export default function SensorCheckerPage() {
           </div>
 
           {/* Live Readings Panel */}
-          <LiveReadingsPanel reading={reading} isConnected={isConnected} isStale={isStale} lastUpdate={lastUpdate} />
+          <LiveReadingsPanel
+            reading={reading}
+            isConnected={isConnected}
+            isStale={isStale}
+            lastUpdate={lastUpdate}
+            onCalibrateClick={() => calibrationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          />
+
+          {/* Calibration & Sensor Commands */}
+          <CalibrationPanel
+            isConnected={isConnected}
+            onSendCommand={handleSendCommand}
+            outputLines={commandOutput}
+            sectionRef={calibrationSectionRef}
+          />
 
           {/* Raw serial stream disclosure */}
           <RawStreamDisclosure rawLine={reading?.raw_line} />

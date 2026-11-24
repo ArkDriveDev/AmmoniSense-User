@@ -12,6 +12,7 @@ import { parseAmmoniSenseLine, SerialStreamBuffer } from '../utils/serialParser'
 export type { BluetoothDevice };
 export type ReadingListener = (reading: AmmoniSenseReading) => void;
 export type StatusListener = (status: BluetoothConnectionStatus, message?: string) => void;
+export type CommandReplyListener = (line: string) => void;
 
 class BluetoothClassicService {
   public static readonly TARGET_DEVICE_NAME = 'AmmoniSense';
@@ -29,6 +30,7 @@ class BluetoothClassicService {
   private streamBuffer = new SerialStreamBuffer();
   private readingListeners: ReadingListener[] = [];
   private statusListeners: StatusListener[] = [];
+  private commandReplyListeners: CommandReplyListener[] = [];
   private broadcastChannel: BroadcastChannel | null = null;
 
   private connectTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
@@ -117,6 +119,27 @@ class BluetoothClassicService {
   public onStatusChange(listener: StatusListener): () => void {
     this.statusListeners.push(listener);
     return () => { this.statusListeners = this.statusListeners.filter(l => l !== listener); };
+  }
+
+  public onCommandReply(listener: CommandReplyListener): () => void {
+    this.commandReplyListeners.push(listener);
+    return () => { this.commandReplyListeners = this.commandReplyListeners.filter(l => l !== listener); };
+  }
+
+  private notifyCommandReplyListeners(line: string) {
+    this.commandReplyListeners.forEach(fn => fn(line));
+  }
+
+  public async writeCommand(command: string): Promise<boolean> {
+    if (!this.connectedAddress || this.status !== 'connected') return false;
+    try {
+      const value = command.endsWith('\n') ? command : `${command}\n`;
+      await BluetoothSerial.write({ address: this.connectedAddress, value });
+      return true;
+    } catch (err) {
+      console.warn('[BT] writeCommand failed:', err);
+      return false;
+    }
   }
 
   private notifyReadingListeners(reading: AmmoniSenseReading) {
@@ -370,11 +393,17 @@ class BluetoothClassicService {
           if (!raw) return;
           const lines = this.streamBuffer.append(raw.includes('\n') ? raw : `${raw}\n`);
           for (const line of lines) {
-            const reading = parseAmmoniSenseLine(line);
-            if (reading) {
-              this.latestReading = reading;
-              this.notifyReadingListeners(reading);
-              this.broadcastReading(reading);
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            if (trimmed.startsWith('Temp:')) {
+              const reading = parseAmmoniSenseLine(trimmed);
+              if (reading) {
+                this.latestReading = reading;
+                this.notifyReadingListeners(reading);
+                this.broadcastReading(reading);
+              }
+            } else {
+              this.notifyCommandReplyListeners(trimmed);
             }
           }
         }
