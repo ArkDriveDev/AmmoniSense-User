@@ -68,7 +68,7 @@ const formatTag = (d: any, isOffline = false, matchedReadings?: any[]): Inspecti
     inspection_schedule_id: d.inspection_schedule_id,
     inspection_site_id: d.inspection_site_id ?? null,
     notes: d.notes,
-    violation_category: d.violation_category || null,
+    findings: d.findings || null,
     offline_temp_id: d.offline_temp_id ?? null,
     created_by: d.created_by,
     created_at: d.created_at,
@@ -179,7 +179,7 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
     inspection_schedule_id: payload.inspection_schedule_id,
     inspection_site_id: resolvedSiteId,
     notes: toUpperClean(payload.notes),
-    violation_category: payload.violation_category || null,
+    findings: payload.findings || null,
     offline_temp_id: payload.offline_temp_id || null,
   };
 
@@ -201,7 +201,7 @@ export async function createTag(payload: CreateTagPayload): Promise<InspectionTa
   const queuePayload = {
     tag_name: clean.tag_name,
     inspection_schedule_id: clean.inspection_schedule_id,
-    violation_category: clean.violation_category,
+    findings: clean.findings,
     notes: clean.notes,
     latitude: clean.latitude,
     longitude: clean.longitude,
@@ -223,13 +223,13 @@ export async function updateTag(
     tag_name?: string;
     notes?: string;
     photo_url?: string | null;
-    violation_category?: ViolationCategory | null;
+    findings?: ViolationCategory | null;
   }
 ): Promise<void> {
   const clean: any = {};
   if (updates.tag_name !== undefined) clean.tag_name = toUpperClean(updates.tag_name);
   if (updates.notes !== undefined) clean.notes = toUpperClean(updates.notes);
-  if (updates.violation_category !== undefined) clean.violation_category = updates.violation_category;
+  if (updates.findings !== undefined) clean.findings = updates.findings;
   if (updates.photo_url !== undefined) clean.photo_url = updates.photo_url;
 
   const isOffline = typeof tagId === 'string' && tagId.startsWith('temp_');

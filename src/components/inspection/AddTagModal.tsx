@@ -96,6 +96,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     setCaptureSummary(sum);
     setTagTempId(tempId);
     setAmmonia(sum.avg_ppm);
+    setViolationCategory(sum.avg_ppm >= 25 ? 'FOUL_ODOR' : null);
     if (readings.length > 0) {
       const last = readings[readings.length - 1];
       if (last.temperature !== null) setTemp(last.temperature);
@@ -122,10 +123,12 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
     try {
       const effectiveTempId = tagTempId || `temp_tag_${generateUUID()}`;
       const sessionId = captureSummary?.session_id;
+      const effectiveAmmonia = (ammonia !== undefined && ammonia !== null && !isNaN(Number(ammonia))) ? Number(ammonia) : 0;
+      const resolvedFindings: ViolationCategory | null = violationCategory || (effectiveAmmonia >= 25 ? 'FOUL_ODOR' : null);
 
       await createTag({
         tag_name: toUpperClean(tagName),
-        ammonia: (ammonia !== undefined && ammonia !== null && !isNaN(Number(ammonia))) ? Number(ammonia) : 0,
+        ammonia: effectiveAmmonia,
         temperature: (temp !== undefined && temp !== null && !isNaN(Number(temp))) ? Number(temp) : undefined,
         humidity: (hum !== undefined && hum !== null && !isNaN(Number(hum))) ? Number(hum) : undefined,
         battery: (battery !== undefined && battery !== null && !isNaN(Number(battery))) ? Number(battery) : undefined,
@@ -135,7 +138,7 @@ export const AddTagModal: React.FC<Props> = ({ isOpen, onClose, scheduleId, site
         device_uid: deviceUid,
         inspection_schedule_id: scheduleId,
         inspection_site_id: siteId || undefined,
-        violation_category: violationCategory || null,
+        findings: resolvedFindings,
         notes: toUpperClean(notes),
         offline_temp_id: effectiveTempId,
         session_id: sessionId,

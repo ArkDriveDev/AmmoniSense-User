@@ -636,7 +636,7 @@ class SyncService {
 
     const allowedTagFields = [
       'tag_name', 'inspection_schedule_id', 'latitude', 'longitude',
-      'photo_url', 'notes', 'violation_category',
+      'photo_url', 'notes', 'findings',
       'offline_temp_id', 'created_by',
     ];
 
@@ -786,7 +786,7 @@ class SyncService {
       longitude: payload.longitude !== undefined && payload.longitude !== null ? Number(payload.longitude) : null,
       photo_url: payload.photo_url || null,
       notes: payload.notes?.toUpperCase() || null,
-      violation_category: payload.violation_category || null,
+      findings: payload.findings || null,
       offline_temp_id: temp_id || payload.offline_temp_id || null,
       created_by: payload.created_by || user.user?.id || null,
     };
