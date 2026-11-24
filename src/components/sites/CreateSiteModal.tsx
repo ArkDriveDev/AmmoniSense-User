@@ -621,7 +621,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           </div>
 
           <IonRow>
-            <IonCol size="6">
+            <IonCol size="12" sizeSm="6">
               <IonItem className="premium-input-item" lines="none">
                 <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Latitude</IonLabel>
                 <IonInput
@@ -634,7 +634,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
                 />
               </IonItem>
             </IonCol>
-            <IonCol size="6">
+            <IonCol size="12" sizeSm="6">
               <IonItem className="premium-input-item" lines="none">
                 <IonLabel position="stacked" style={{ fontWeight: 700, color: '#0F172A' }}>Longitude</IonLabel>
                 <IonInput

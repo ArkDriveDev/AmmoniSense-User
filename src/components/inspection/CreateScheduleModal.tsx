@@ -25,11 +25,12 @@ const getTodayLocalDate = (): string => {
 };
 
 const selectStyle: React.CSSProperties = {
-  padding: '6px 10px',
+  padding: '8px 10px',
+  minHeight: '42px',
   borderRadius: '8px',
   border: '1px solid #CBD5E1',
   background: '#FFFFFF',
-  fontSize: '15px',
+  fontSize: '16px',
   fontWeight: 600,
   color: '#0F172A',
 };
@@ -166,7 +167,7 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
             value={date}
             min={editSchedule ? undefined : todayStr}
             onChange={(e) => editSchedule ? setDate(e.target.value) : handleDateChange(e.target.value)}
-            style={{ width: '100%', padding: '8px 0', border: 'none', background: 'transparent' }}
+            style={{ width: '100%', padding: '8px 0', minHeight: '42px', fontSize: '16px', border: 'none', background: 'transparent' }}
           />
         </IonItem>
         <IonItem lines="inset" style={{ marginTop: '10px' }}>

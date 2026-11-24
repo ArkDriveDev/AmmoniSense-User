@@ -54,25 +54,25 @@ export const CalibrationPanel: React.FC<Props> = ({ isConnected, onSendCommand, 
   return (
     <div ref={sectionRef} style={{ marginTop: '12px', border: '1px solid #E2E8F0', borderRadius: '14px', background: '#FFFFFF', padding: '14px' }}>
       <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>Calibration & Sensor Commands</h4>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Curve A (&gt; 0)</label>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 140px', minWidth: 0 }}>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Curve A (&gt; 0)</label>
           <IonInput
             type="number"
             step="any"
             value={valA}
             onIonInput={(e) => { setValA(e.detail.value ?? ''); setValidationError(null); }}
-            style={{ border: '1px solid #CBD5E1', borderRadius: '8px', '--padding-start': '10px', '--padding-end': '10px', fontSize: '14px', fontFamily: 'monospace' }}
+            style={{ border: '1px solid #CBD5E1', borderRadius: '8px', '--padding-start': '10px', '--padding-end': '10px', fontSize: '16px', fontFamily: 'monospace' }}
           />
         </div>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Curve B (&lt; 0)</label>
+        <div style={{ flex: '1 1 140px', minWidth: 0 }}>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Curve B (&lt; 0)</label>
           <IonInput
             type="number"
             step="any"
             value={valB}
             onIonInput={(e) => { setValB(e.detail.value ?? ''); setValidationError(null); }}
-            style={{ border: '1px solid #CBD5E1', borderRadius: '8px', '--padding-start': '10px', '--padding-end': '10px', fontSize: '14px', fontFamily: 'monospace' }}
+            style={{ border: '1px solid #CBD5E1', borderRadius: '8px', '--padding-start': '10px', '--padding-end': '10px', fontSize: '16px', fontFamily: 'monospace' }}
           />
         </div>
       </div>
@@ -109,7 +109,7 @@ export const CalibrationPanel: React.FC<Props> = ({ isConnected, onSendCommand, 
         </div>
       )}
 
-      <div style={{ marginTop: '10px', padding: '10px 12px', background: '#0F172A', color: '#E2E8F0', borderRadius: '8px', fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.45, maxHeight: '160px', overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+      <div style={{ marginTop: '10px', padding: '10px 12px', background: '#0F172A', color: '#E2E8F0', borderRadius: '8px', fontFamily: 'monospace', fontSize: '12px', lineHeight: 1.45, maxHeight: '160px', overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
         {outputLines.length > 0 ? outputLines.join('\n') : 'Command output will appear here…'}
       </div>
     </div>

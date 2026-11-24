@@ -170,6 +170,17 @@ ion-item.premium-input-item:focus-within {
   box-shadow: 0 0 0 3px rgba(29, 93, 155, 0.15);
 }
 
+input,
+select,
+textarea,
+ion-input,
+ion-textarea,
+ion-select {
+  font-size: 16px !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 /* Premium List Items */
 ion-list.glass-list {
   background: transparent !important;
