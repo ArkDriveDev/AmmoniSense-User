@@ -135,15 +135,15 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
         <IonContent className="ion-padding" style={{ '--background': '#F8FAFC' }}>
 
           {/* Photo Section */}
-          <div style={{ position: 'relative', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', background: '#E2E8F0', height: '170px' }}>
+          <div style={{ position: 'relative', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', background: '#E2E8F0', height: 'clamp(120px, 28vh, 170px)' }}>
             {displayPhoto ? (
               <img
                 src={displayPhoto}
                 alt={tag.tag_name}
-                style={{ width: '100%', height: '170px', objectFit: 'cover' }}
+                style={{ width: '100%', maxWidth: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
-              <div style={{ height: '170px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: '13px', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: '13px', flexDirection: 'column', gap: '6px' }}>
                 <IonIcon icon={cameraOutline} style={{ fontSize: '32px' }} />
                 No photo
               </div>

@@ -453,7 +453,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
                   <img
                     src={photoPreview}
                     alt="Captured Site"
-                    style={{ width: '100%', height: '190px', objectFit: 'cover' }}
+                    style={{ width: '100%', maxWidth: '100%', height: 'clamp(130px, 28vh, 190px)', objectFit: 'cover' }}
                   />
                   <IonButton
                     size="small"

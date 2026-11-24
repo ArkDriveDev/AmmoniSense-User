@@ -116,7 +116,7 @@ export default function InspectionSiteDetail() {
               <IonCard style={{ margin: '0 0 16px 0', borderRadius: '14px' }}>
                 <IonCardContent style={{ padding: '16px' }}>
                   {site.display_photo && (
-                    <img src={site.display_photo} alt="Site" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '10px', marginBottom: '12px' }} />
+                    <img src={site.display_photo} alt="Site" style={{ width: '100%', maxWidth: '100%', height: 'clamp(130px, 28vh, 170px)', objectFit: 'cover', borderRadius: '10px', marginBottom: '12px' }} />
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
                     <div style={{ flex: '1 1 180px', minWidth: 0 }}>

@@ -471,3 +471,9 @@ ion-badge {
   word-break: break-word;
   line-height: 1.25;
 }
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
