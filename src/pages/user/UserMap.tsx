@@ -716,6 +716,7 @@ export default function UserMap() {
         {/* BOTTOM SHEET DETAIL DRAWER */}
         {(selectedSite || selectedReading || selectedPhotoTag) && (
           <div
+            className="map-bottom-sheet"
             style={{
               position: 'absolute',
               bottom: 0,
@@ -727,6 +728,7 @@ export default function UserMap() {
               borderTopRightRadius: '24px',
               boxShadow: '0 -8px 30px rgba(15, 60, 92, 0.25)',
               padding: '20px',
+              paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
               maxHeight: '75vh',
               overflowY: 'auto',
             }}
@@ -734,7 +736,7 @@ export default function UserMap() {
             {/* Drawer Header Handle & Close Button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={{ width: '40px', height: '4px', background: '#cbd5e1', borderRadius: '2px', margin: '0 auto' }}></div>
-              <IonButton fill="clear" size="small" onClick={closeBottomSheet} style={{ position: 'absolute', right: '12px', top: '12px', color: '#64748b' }}>
+              <IonButton fill="clear" onClick={closeBottomSheet} style={{ position: 'absolute', right: '8px', top: '8px', color: '#64748b', minWidth: '44px', minHeight: '44px' }}>
                 <IonIcon icon={closeOutline} style={{ fontSize: '24px' }} />
               </IonButton>
             </div>
@@ -1055,10 +1057,10 @@ export default function UserMap() {
 
         {/* LEGEND MODAL */}
         <IonModal isOpen={showLegend} onDidDismiss={() => setShowLegend(false)}>
-          <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+          <div style={{ padding: '20px', paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', height: '100%', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
-              <IonButton fill="clear" onClick={() => setShowLegend(false)}>
+              <IonButton fill="clear" onClick={() => setShowLegend(false)} style={{ minWidth: '44px', minHeight: '44px' }}>
                 <IonIcon icon={closeOutline} />
               </IonButton>
             </div>
@@ -1147,7 +1149,7 @@ export default function UserMap() {
 
         {/* PHOTO MODAL */}
         <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
-          <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+          <div style={{ padding: '20px', paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', height: '100%', overflowY: 'auto' }}>
             <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>Inspection Photo</h2>
             {(selectedReading?.photo_url || selectedPhotoTag?.photo_url) && (
               <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>

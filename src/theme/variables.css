@@ -367,6 +367,20 @@ ion-button.btn-ammoni,
   }
 }
 
+@media (max-width: 767px) {
+  ion-modal {
+    --width: 100%;
+    --height: 100%;
+    --border-radius: 0;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .map-bottom-sheet {
+    max-height: 55vh !important;
+  }
+}
+
 /* Responsive Tab Bar & Segment Button Labels */
 ion-tab-bar {
   max-width: 100%;
