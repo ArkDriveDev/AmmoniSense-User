@@ -9,9 +9,20 @@ interface Props {
   sectionRef?: React.RefObject<HTMLDivElement>;
 }
 
+const CURVE_A_KEY = 'checker_curve_a';
+const CURVE_B_KEY = 'checker_curve_b';
+
+const readSavedParam = (key: string, fallback: string): string => {
+  try {
+    const val = localStorage.getItem(key);
+    if (val !== null && val.trim() !== '' && Number.isFinite(Number(val))) return val.trim();
+  } catch { /* ignore */ }
+  return fallback;
+};
+
 export const CalibrationPanel: React.FC<Props> = ({ isConnected, onSendCommand, outputLines, sectionRef }) => {
-  const [valA, setValA] = useState<string>('40.0');
-  const [valB, setValB] = useState<string>('-2.5');
+  const [valA, setValA] = useState<string>(() => readSavedParam(CURVE_A_KEY, '40.0'));
+  const [valB, setValB] = useState<string>(() => readSavedParam(CURVE_B_KEY, '-2.5'));
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showForceConfirm, setShowForceConfirm] = useState<boolean>(false);
 
@@ -31,7 +42,13 @@ export const CalibrationPanel: React.FC<Props> = ({ isConnected, onSendCommand, 
       return;
     }
     setValidationError(null);
-    await onSendCommand(`curve ${a} ${b}`);
+    const ok = await onSendCommand(`curve ${a} ${b}`);
+    if (ok) {
+      try {
+        localStorage.setItem(CURVE_A_KEY, String(a));
+        localStorage.setItem(CURVE_B_KEY, String(b));
+      } catch { /* ignore */ }
+    }
   };
 
   return (
