@@ -88,9 +88,10 @@ export const SyncStatusBanner: React.FC = () => {
         display: 'inline-flex',
         alignItems: 'center',
         gap: '5px',
-        fontSize: '11px',
+        fontSize: '12px',
         fontWeight: 600,
-        padding: '3px 7px',
+        padding: '4px 8px',
+        minHeight: '40px',
         borderRadius: '20px',
         backgroundColor: !isOnline
           ? '#fff7ed'
@@ -144,8 +145,8 @@ export const SyncStatusBanner: React.FC = () => {
         onClick={handleResync}
         disabled={syncing || !isOnline}
         style={{
-          height: '24px',
-          fontSize: '11px',
+          minHeight: '32px',
+          fontSize: '12px',
           margin: '0 0 0 2px',
           padding: '0 6px',
           '--background': '#ffffff',

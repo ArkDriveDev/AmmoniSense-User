@@ -345,17 +345,23 @@ ion-tab-bar {
 ion-tab-button,
 ion-segment-button {
   min-width: 0;
+  min-height: 40px;
   padding-inline: 6px;
 }
 
 ion-tab-button ion-label,
 ion-segment-button ion-label {
-  font-size: clamp(11px, 3vw, 12.5px);
+  font-size: clamp(12px, 3vw, 13px);
   line-height: 1.2;
   white-space: nowrap;
   overflow: visible;
   text-overflow: unset;
   padding-inline: 2px;
+}
+
+ion-toolbar ion-buttons ion-button {
+  min-width: 40px;
+  min-height: 40px;
 }
 
 @media (max-width: 480px) {

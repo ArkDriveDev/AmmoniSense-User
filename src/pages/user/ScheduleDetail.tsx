@@ -219,13 +219,13 @@ export default function ScheduleDetail() {
                   className="responsive-tab-segment"
                   value={viewMode}
                   onIonChange={(e) => setViewMode((e.detail.value as 'list' | 'map') || 'list')}
-                  style={{ minWidth: '164px', height: '36px' }}
+                  style={{ minWidth: '164px', minHeight: '40px' }}
                 >
-                  <IonSegmentButton value="list" style={{ minHeight: '36px', fontSize: '12px', paddingInline: '8px' }}>
+                  <IonSegmentButton value="list" style={{ minHeight: '40px', fontSize: '12px', paddingInline: '8px' }}>
                     <IonIcon icon={listOutline} style={{ fontSize: '13px', marginRight: '4px' }} />
                     <IonLabel>List</IonLabel>
                   </IonSegmentButton>
-                  <IonSegmentButton value="map" style={{ minHeight: '36px', fontSize: '12px', paddingInline: '8px' }}>
+                  <IonSegmentButton value="map" style={{ minHeight: '40px', fontSize: '12px', paddingInline: '8px' }}>
                     <IonIcon icon={mapOutline} style={{ fontSize: '13px', marginRight: '4px' }} />
                     <IonLabel>Map</IonLabel>
                   </IonSegmentButton>

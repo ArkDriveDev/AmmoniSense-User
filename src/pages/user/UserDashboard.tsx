@@ -49,9 +49,9 @@ export default function UserDashboard() {
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', '--color': '#ffffff' }}>
-          <IonTitle style={{ fontWeight: 700, letterSpacing: '0.02em' }}>AMMONISENSE DASHBOARD</IonTitle>
+          <IonTitle style={{ fontWeight: 700, letterSpacing: '0.02em' }}>DASHBOARD</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={refresh} style={{ color: '#ffffff' }}>
+            <IonButton onClick={refresh} style={{ color: '#ffffff', minWidth: '40px', minHeight: '40px' }}>
               <IonIcon icon={refreshOutline} />
             </IonButton>
           </IonButtons>
