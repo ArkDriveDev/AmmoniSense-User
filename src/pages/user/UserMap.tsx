@@ -798,11 +798,11 @@ export default function UserMap() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   <IonButton
                     expand="block"
                     className="btn-ammoni btn-primary"
-                    style={{ flex: 1 }}
+                    style={{ flex: '1 1 180px' }}
                     onClick={() => {
                       closeBottomSheet();
                       navigate(`/devices?site=${selectedSite.id}`);
@@ -903,12 +903,12 @@ export default function UserMap() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   {selectedReading.photo_url && (
                     <IonButton
                       expand="block"
                       fill="outline"
-                      style={{ flex: 1 }}
+                      style={{ flex: '1 1 160px' }}
                       onClick={() => setShowPhotoModal(true)}
                     >
                       <IonIcon icon={eyeOutline} slot="start" /> View Photo
@@ -967,11 +967,11 @@ export default function UserMap() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   <IonButton
                     expand="block"
                     fill="outline"
-                    style={{ flex: 1 }}
+                    style={{ flex: '1 1 160px' }}
                     onClick={() => {
                       setShowPhotoModal(true);
                     }}
@@ -981,7 +981,7 @@ export default function UserMap() {
                   <IonButton
                     expand="block"
                     className="btn-ammoni btn-primary"
-                    style={{ flex: 1 }}
+                    style={{ flex: '1 1 180px' }}
                     onClick={() => {
                       closeBottomSheet();
                       navigate('/schedules');

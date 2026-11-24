@@ -85,16 +85,16 @@ export const CalibrationPanel: React.FC<Props> = ({ isConnected, onSendCommand, 
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        <IonButton size="small" color="primary" disabled={!isConnected} onClick={handleSendCurve} style={{ flex: '1 1 130px', margin: 0 }}>
+        <IonButton size="small" color="primary" disabled={!isConnected} onClick={handleSendCurve} style={{ flex: '1 1 130px', minHeight: '40px', margin: 0 }}>
           <IonIcon icon={sendOutline} slot="start" /> Send Curve
         </IonButton>
-        <IonButton size="small" fill="outline" color="primary" disabled={!isConnected} onClick={() => onSendCommand('curve?')} style={{ flex: '1 1 150px', margin: 0 }}>
+        <IonButton size="small" fill="outline" color="primary" disabled={!isConnected} onClick={() => onSendCommand('curve?')} style={{ flex: '1 1 150px', minHeight: '40px', margin: 0 }}>
           <IonIcon icon={helpCircleOutline} slot="start" /> Show Current Curve
         </IonButton>
-        <IonButton size="small" fill="outline" color="warning" disabled={!isConnected} onClick={() => onSendCommand('x')} style={{ flex: '1 1 160px', margin: 0 }}>
+        <IonButton size="small" fill="outline" color="warning" disabled={!isConnected} onClick={() => onSendCommand('x')} style={{ flex: '1 1 160px', minHeight: '40px', margin: 0 }}>
           <IonIcon icon={refreshOutline} slot="start" /> Revert to Lab Defaults
         </IonButton>
-        <IonButton size="small" fill="outline" color="secondary" disabled={!isConnected} onClick={() => { onSendCommand('c'); setShowForceConfirm(true); }} style={{ flex: '1 1 130px', margin: 0 }}>
+        <IonButton size="small" fill="outline" color="secondary" disabled={!isConnected} onClick={() => { onSendCommand('c'); setShowForceConfirm(true); }} style={{ flex: '1 1 130px', minHeight: '40px', margin: 0 }}>
           <IonIcon icon={flaskOutline} slot="start" /> Calibrate R0
         </IonButton>
       </div>
@@ -102,9 +102,9 @@ export const CalibrationPanel: React.FC<Props> = ({ isConnected, onSendCommand, 
       {showForceConfirm && isConnected && (
         <div style={{ marginTop: '8px', padding: '8px 10px', borderRadius: '8px', background: '#FFFBEB', border: '1px solid #FDE68A', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12px', color: '#92400E' }}>
           <span>Force R0 calibration now (bypass warmup check)?</span>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <IonButton size="small" color="warning" onClick={() => { onSendCommand('c force'); setShowForceConfirm(false); }} style={{ margin: 0, height: '26px', fontSize: '11px' }}>Send c force</IonButton>
-            <IonButton size="small" fill="clear" color="medium" onClick={() => setShowForceConfirm(false)} style={{ margin: 0, height: '26px', fontSize: '11px' }}>Cancel</IonButton>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <IonButton size="small" color="warning" onClick={() => { onSendCommand('c force'); setShowForceConfirm(false); }} style={{ margin: 0, minHeight: '38px', fontSize: '12px' }}>Send c force</IonButton>
+            <IonButton size="small" fill="clear" color="medium" onClick={() => setShowForceConfirm(false)} style={{ margin: 0, minHeight: '38px', fontSize: '12px' }}>Cancel</IonButton>
           </div>
         </div>
       )}

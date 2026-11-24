@@ -152,7 +152,7 @@ export default function UserInspectionSites() {
                         {s.address || s.location || 'No address'}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <IonButton
                         size="small"
                         fill="clear"
@@ -160,7 +160,7 @@ export default function UserInspectionSites() {
                         disabled={!s.isOffline}
                         onClick={(e) => handleEditSite(e, s)}
                         title="Update site details"
-                        style={{ '--padding-start': '6px', '--padding-end': '6px', margin: 0 }}
+                        style={{ '--padding-start': '8px', '--padding-end': '8px', minWidth: '40px', minHeight: '40px', margin: 0 }}
                       >
                         <IonIcon icon={createOutline} slot="icon-only" />
                       </IonButton>
@@ -171,7 +171,7 @@ export default function UserInspectionSites() {
                         disabled={!s.isOffline}
                         onClick={(e) => handleDeleteSite(e, s)}
                         title="Delete site"
-                        style={{ '--padding-start': '6px', '--padding-end': '6px', margin: 0 }}
+                        style={{ '--padding-start': '8px', '--padding-end': '8px', minWidth: '40px', minHeight: '40px', margin: 0 }}
                       >
                         <IonIcon icon={trashOutline} slot="icon-only" />
                       </IonButton>

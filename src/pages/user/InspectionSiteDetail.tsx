@@ -131,7 +131,7 @@ export default function InspectionSiteDetail() {
                       color="primary"
                       disabled={!site?.isOffline}
                       onClick={() => site?.isOffline && setShowEditSite(true)}
-                      style={{ '--border-radius': '8px', fontSize: '12px', height: '32px' }}
+                      style={{ '--border-radius': '8px', fontSize: '12px', minHeight: '40px' }}
                     >
                       <IonIcon icon={createOutline} slot="start" /> Update
                     </IonButton>

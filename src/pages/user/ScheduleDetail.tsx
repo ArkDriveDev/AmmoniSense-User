@@ -190,7 +190,7 @@ export default function ScheduleDetail() {
                             window.dispatchEvent(new CustomEvent('sync_queue_changed'));
                             showToast({ message: 'Schedule marked as completed', color: 'success' });
                           }}
-                          style={{ '--border-radius': '8px', fontSize: '12px', height: '30px' }}
+                          style={{ '--border-radius': '8px', fontSize: '12px', minHeight: '40px' }}
                         >
                           <IonIcon icon={checkmarkDoneOutline} slot="start" /> Mark as Completed
                         </IonButton>
@@ -201,7 +201,7 @@ export default function ScheduleDetail() {
                           fill="outline"
                           color="primary"
                           onClick={() => setShowEditSchedule(true)}
-                          style={{ '--border-radius': '8px', fontSize: '12px', height: '30px' }}
+                          style={{ '--border-radius': '8px', fontSize: '12px', minHeight: '40px' }}
                         >
                           <IonIcon icon={createOutline} slot="start" /> Update Details
                         </IonButton>

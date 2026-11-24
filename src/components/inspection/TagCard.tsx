@@ -67,7 +67,7 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
                       if (tag.isOffline) onEdit(tag);
                     }}
                     title="Update tag details"
-                    style={{ margin: 0, height: '24px' }}
+                    style={{ margin: 0, minWidth: '40px', minHeight: '40px' }}
                   >
                     <IonIcon icon={createOutline} slot="icon-only" style={{ fontSize: '16px' }} />
                   </IonButton>
@@ -83,7 +83,7 @@ export const TagCard: React.FC<Props> = ({ tag, onClick, onEdit, onDelete }) => 
                       if (tag.isOffline) onDelete(tag);
                     }}
                     title="Delete tag"
-                    style={{ margin: 0, height: '24px' }}
+                    style={{ margin: 0, minWidth: '40px', minHeight: '40px' }}
                   >
                     <IonIcon icon={trashOutline} slot="icon-only" style={{ fontSize: '15px' }} />
                   </IonButton>

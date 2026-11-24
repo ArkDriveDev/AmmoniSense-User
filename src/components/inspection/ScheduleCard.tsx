@@ -100,16 +100,16 @@ export const ScheduleCard: React.FC<Props> = ({ schedule, tagCount, onClick }) =
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {schedule.status !== 'COMPLETED' && (
-            <IonButton size="small" color="success" disabled={completing} onClick={handleMarkCompleted} style={{ '--border-radius': '8px', fontSize: '11px', height: '28px', margin: 0 }}>
+            <IonButton size="small" color="success" disabled={completing} onClick={handleMarkCompleted} style={{ '--border-radius': '8px', fontSize: '12px', minHeight: '40px', margin: 0 }}>
               <IonIcon icon={checkmarkDoneOutline} slot="start" /> Mark as Completed
             </IonButton>
           )}
           {!schedule.confirmed && (
             <>
-              <IonButton size="small" fill="clear" color="primary" onClick={handleEdit} style={{ margin: 0, height: '28px' }} title="Update schedule">
+              <IonButton size="small" fill="clear" color="primary" onClick={handleEdit} style={{ margin: 0, minWidth: '40px', minHeight: '40px' }} title="Update schedule">
                 <IonIcon icon={createOutline} slot="icon-only" />
               </IonButton>
-              <IonButton size="small" fill="clear" color="danger" onClick={handleDelete} style={{ margin: 0, height: '28px' }} title="Delete schedule">
+              <IonButton size="small" fill="clear" color="danger" onClick={handleDelete} style={{ margin: 0, minWidth: '40px', minHeight: '40px' }} title="Delete schedule">
                 <IonIcon icon={trashOutline} slot="icon-only" />
               </IonButton>
             </>
