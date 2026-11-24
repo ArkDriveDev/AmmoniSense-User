@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonItem, IonLabel, IonInput, IonTextarea, IonButton, IonIcon, IonSpinner, IonSelect, IonSelectOption } from '@ionic/react';
+import { IonItem, IonLabel, IonInput, IonTextarea, IonButton, IonIcon, IonSpinner } from '@ionic/react';
 import { arrowBackOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { ViolationCategory, toUpperClean } from '../../types/inspection';
 import { VIOLATION_CATEGORIES } from '../../constants/violationCategories';
@@ -25,7 +25,7 @@ interface Props {
 export const TagFormReview: React.FC<Props> = ({
   tagName, notes, violationCategory, ammonia, temperature, lat, lng, saving,
   isRecoveryMode, errorMessage,
-  onChangeTagName, onChangeNotes, onChangeViolationCategory, onBack, onSave
+  onChangeTagName, onChangeNotes, onBack, onSave
 }) => (
   <div>
     <h4 style={{ margin: '0 0 12px 0' }}>Step 4: Tag Name & Review</h4>
@@ -34,20 +34,14 @@ export const TagFormReview: React.FC<Props> = ({
       <IonInput value={tagName} placeholder="E.G. PEN 1 CORNER A" onIonInput={(e) => onChangeTagName(toUpperClean(e.detail.value!))} />
     </IonItem>
     <IonItem lines="inset" style={{ marginTop: '8px' }}>
-      <IonLabel position="stacked">VIOLATION CATEGORY (MENRO)</IonLabel>
-      <IonSelect
-        value={violationCategory || ''}
-        placeholder="Select Category (Optional)"
-        interface="alert"
-        onIonChange={(e) => onChangeViolationCategory(e.detail.value ? (e.detail.value as ViolationCategory) : null)}
-      >
-        <IonSelectOption value="">None / Compliant (No Violation)</IonSelectOption>
-        {VIOLATION_CATEGORIES.map((cat) => (
-          <IonSelectOption key={cat.value} value={cat.value}>
-            {cat.label} ({cat.lawReference})
-          </IonSelectOption>
-        ))}
-      </IonSelect>
+      <IonLabel position="stacked">Findings</IonLabel>
+      <div style={{ padding: '8px 0 4px 0', fontWeight: 700, fontSize: '14px', color: (Number(ammonia) || 0) >= 25 || violationCategory ? '#DC2626' : '#059669' }}>
+        {(Number(ammonia) || 0) >= 25 || violationCategory === 'FOUL_ODOR'
+          ? 'FOUL ODOR VIOLATION'
+          : violationCategory
+          ? VIOLATION_CATEGORIES.find((c) => c.value === violationCategory)?.label || violationCategory
+          : 'No Violation'}
+      </div>
     </IonItem>
     <IonItem lines="inset" style={{ marginTop: '8px' }}>
       <IonLabel position="stacked">

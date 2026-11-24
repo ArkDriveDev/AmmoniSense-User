@@ -39,7 +39,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
     if (isOpen && tag) {
       setTagName(tag.tag_name || '');
       setNotes(tag.notes || '');
-      setViolationCategory(tag.violation_category || null);
+      setViolationCategory(tag.findings || null);
       setNewPhotoDataUrl(null);
     }
   }, [isOpen, tag]);
@@ -74,7 +74,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
     try {
       const updates: Parameters<typeof updateTag>[1] = {
         tag_name: toUpperClean(tagName),
-        violation_category: violationCategory || null,
+        findings: violationCategory || null,
         notes: toUpperClean(notes),
       };
 
@@ -187,10 +187,13 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
           </IonItem>
 
           <IonItem lines="inset" style={{ marginTop: '12px', '--background': '#ffffff', borderRadius: '8px' }}>
-            <IonLabel position="stacked">VIOLATION CATEGORY (MENRO)</IonLabel>
+            <IonLabel position="stacked">Findings</IonLabel>
+            <div style={{ padding: '6px 0 2px 0', fontWeight: 700, fontSize: '13px', color: (avg ?? 0) >= 25 || violationCategory ? '#DC2626' : '#059669' }}>
+              {(avg ?? 0) >= 25 || violationCategory === 'FOUL_ODOR' ? 'FOUL ODOR VIOLATION' : violationCategory ? VIOLATION_CATEGORIES.find((c) => c.value === violationCategory)?.label || violationCategory : 'No Violation'}
+            </div>
             <IonSelect
               value={violationCategory || ''}
-              placeholder="Select Category (Optional)"
+              placeholder="Select Findings (Optional)"
               interface="alert"
               onIonChange={(e) => setViolationCategory(e.detail.value ? (e.detail.value as ViolationCategory) : null)}
             >

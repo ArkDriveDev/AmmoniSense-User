@@ -11,7 +11,7 @@ export const VIOLATION_CATEGORIES: ViolationCategoryOption[] = [
   { value: 'IMPROPER_WASTE_DISPOSAL', label: 'Improper Waste Disposal', lawReference: 'RA 9003', badgeColor: 'warning' },
   { value: 'ILLEGAL_DUMPING', label: 'Illegal Dumping', lawReference: 'RA 9003', badgeColor: 'danger' },
   { value: 'OPEN_BURNING', label: 'Open Burning', lawReference: 'RA 8749', badgeColor: 'danger' },
-  { value: 'FOUL_ODOR', label: 'Foul Odor', lawReference: 'Ord. 2025-2206', badgeColor: 'warning' },
+  { value: 'FOUL_ODOR', label: 'FOUL ODOR VIOLATION', lawReference: 'Ord. 2025-2206', badgeColor: 'warning' },
   { value: 'STAGNANT_WATER', label: 'Stagnant Water', lawReference: 'Ord. 2025-2206', badgeColor: 'secondary' },
   { value: 'WATER_POLLUTION', label: 'Water Pollution', lawReference: 'RA 9275', badgeColor: 'danger' },
   { value: 'MANURE_PILING', label: 'Manure Piling', lawReference: 'Ord. 2025-2206', badgeColor: 'warning' },
