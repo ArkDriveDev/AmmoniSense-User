@@ -274,7 +274,47 @@ export const downloadAndMergeActiveSites = async (): Promise<any[]> => {
     offlineStorage.saveCachedSites(toUpsert);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('sites_updated'));
   }
+  await propagateDeletedServerSites(activeList);
   return activeList;
+};
+
+export const propagateDeletedServerSites = async (activeServerSites: any[]): Promise<string[]> => {
+  const serverIds = new Set((activeServerSites || []).map((s: any) => String(s.id)));
+  const [idbSites, offlineSites] = await Promise.all([
+    offlineStorage.getAllSitesFromIDB().catch(() => []),
+    offlineStorage.getOfflineSites().catch(() => []),
+  ]);
+  const cachedSites = offlineStorage.getCachedSites();
+
+  const candidateIds = new Set<string>();
+  [...idbSites, ...offlineSites, ...cachedSites].forEach((s: any) => {
+    const strId = String(s?.id ?? '');
+    const isRealId = strId && !strId.startsWith('temp_') && !strId.startsWith('queue_') && !strId.startsWith('ls_') && !isNaN(Number(strId));
+    if (isRealId && !serverIds.has(strId)) {
+      candidateIds.add(strId);
+    }
+  });
+
+  const deletedIds = Array.from(candidateIds);
+  for (const siteId of deletedIds) {
+    const removedSchedIds = offlineStorage.removeOfflineSchedulesBySite(siteId);
+    const idbScheds = await offlineStorage.getAllSchedulesFromIDB(siteId).catch(() => []);
+    const allSchedIds = Array.from(
+      new Set([...removedSchedIds, ...idbScheds.flatMap((s: any) => [s.id, s.offline_temp_id].filter(Boolean).map(String))])
+    );
+    offlineStorage.removeOfflineTagsBySiteOrSchedules(siteId, allSchedIds);
+    await offlineStorage.purgeQueueItemsForSite(siteId, allSchedIds);
+    await offlineStorage.deleteSiteFromIDB(siteId);
+    offlineStorage.removeSiteFromLocalStorage(siteId);
+    offlineStorage.removeCachedSite(siteId);
+  }
+
+  if (deletedIds.length > 0 && typeof window !== 'undefined') {
+    ['sites_updated', 'schedules_updated', 'tags_updated', 'sync_queue_changed'].forEach((ev) =>
+      window.dispatchEvent(new CustomEvent(ev))
+    );
+  }
+  return deletedIds;
 };
 
 export const fetchSites = async (_userId?: string): Promise<any[]> => {

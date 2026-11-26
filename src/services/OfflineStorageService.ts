@@ -967,7 +967,7 @@ class OfflineStorageService {
       });
       const tagSet = new Set<string>();
       const sessionSet = new Set<string>();
-      idbTags.forEach((t: any) => {
+      [...idbTags, ...this.getOfflineTags()].forEach((t: any) => {
         if (String(t.inspection_site_id) === siteStr || schedSet.has(String(t.inspection_schedule_id))) {
           [t.id, t.offline_temp_id].filter(Boolean).forEach((v) => tagSet.add(String(v)));
           if (t.session_id) sessionSet.add(String(t.session_id));
@@ -984,11 +984,11 @@ class OfflineStorageService {
 
       const toDelete = queue.filter((item) => {
         const p = item.payload || {};
-        const isSite = [p.temp_id, p.offline_temp_id, p.id, p.inspection_site_id, p.site_id, item.tempId].some((v) => String(v) === siteStr);
-        const isSched = [item.tempId, p.temp_id, p.offline_temp_id, p.id, p.inspection_schedule_id].some((v) => schedSet.has(String(v)));
-        const isTag = [item.tempId, p.offline_temp_id, p.temp_id, p.id].some((v) => tagSet.has(String(v)));
+        const isSite = [p.temp_id, p.offline_temp_id, p.id, p.inspection_site_id, p.site_id, item.tempId, item.targetId].some((v) => String(v) === siteStr);
+        const isSched = [item.tempId, item.targetId, p.temp_id, p.offline_temp_id, p.id, p.inspection_schedule_id].some((v) => schedSet.has(String(v)));
+        const isTag = [item.tempId, item.targetId, p.offline_temp_id, p.temp_id, p.id].some((v) => tagSet.has(String(v)));
         const isReading = (item.type === 'sensor_data' || item.type === 'SENSOR_READING') &&
-          (tagSet.has(String(p.inspection_tag_temp_id)) || tagSet.has(String(item.tempId)) || (p.session_id && sessionSet.has(String(p.session_id))));
+          (tagSet.has(String(p.inspection_tag_temp_id)) || tagSet.has(String(p.inspection_tag_id)) || tagSet.has(String(item.tempId)) || (p.session_id && sessionSet.has(String(p.session_id))));
         return isSite || isSched || isTag || isReading;
       });
 
