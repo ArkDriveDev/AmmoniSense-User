@@ -89,8 +89,9 @@ export const registerSiteWithPhoto = async (
       address: payload.address || payload.site_name,
     };
 
-    await offlineStorage.upsertSitesToIDB([createdSite]);
-    offlineStorage.saveCachedSites([createdSite]);
+    const syncedSite = { ...createdSite, isOffline: false, isSynced: true, location: createdSite.address || createdSite.site_name };
+    await offlineStorage.upsertSitesToIDB([syncedSite]);
+    offlineStorage.saveCachedSites([syncedSite]);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('sites_updated'));
     }

@@ -3,7 +3,7 @@
 
 import offlineStorage, { QueueItem } from './OfflineStorageService';
 import { supabase } from './supabase';
-import { registerSiteWithPhoto } from './siteService';
+import { registerSiteWithPhoto, downloadAndMergeActiveSites } from './siteService';
 import { uploadTagPhoto, getSignedPhotoUrl } from './photoStorageService';
 import { calculateAmmoniaStatus } from '../types/inspection';
 import { dataUrlToBlob } from '../utils/thumbnailUtils';
@@ -148,7 +148,17 @@ class SyncService {
     const syncedTypes = new Set<'site' | 'schedule' | 'tag'>();
 
     try {
+      this.notifyListeners('sync_start');
       await offlineStorage.cleanupOrphanedSensorData();
+
+      // 1. Download active sites from Supabase, merge into cache, and propagate server deletions first
+      try {
+        await downloadAndMergeActiveSites();
+        syncedTypes.add('site');
+      } catch (sitePullErr) {
+        console.warn('[SyncService] Could not download active sites before queue sync:', sitePullErr);
+      }
+
       const queue = await offlineStorage.getQueue();
       const typeOrder: Record<string, number> = {
         'inspection_site': 1,
@@ -167,12 +177,8 @@ class SyncService {
         .sort((a, b) => (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99));
 
       if (pendingItems.length === 0) {
-        this.isSyncing = false;
-        this.notifyListeners('sync_complete');
         return { success: 0, failed: 0 };
       }
-
-      this.notifyListeners('sync_start');
 
       const failedTempIds = new Set<string>();
 
@@ -432,11 +438,18 @@ class SyncService {
       if (lat !== undefined) siteUpdates.current_latitude = lat;
       if (lng !== undefined) siteUpdates.current_longitude = lng;
 
-      const { error: updErr } = await supabase
+      const { data: updatedSite, error: updErr } = await supabase
         .from('inspection_sites')
         .update(siteUpdates)
-        .eq('id', targetId);
+        .eq('id', targetId)
+        .select('*')
+        .maybeSingle();
       if (updErr) throw new Error(`inspection_sites update error: ${updErr.message}`);
+      if (updatedSite) {
+        const cleanSite = { ...updatedSite, isOffline: false, isSynced: true, location: updatedSite.address || updatedSite.site_name };
+        await offlineStorage.upsertSitesToIDB([cleanSite]);
+        offlineStorage.saveCachedSites([cleanSite]);
+      }
       return;
     }
 
