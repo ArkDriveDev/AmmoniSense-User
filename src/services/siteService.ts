@@ -249,13 +249,35 @@ export const deleteReading = async (readingId: string | number): Promise<void> =
   }
 };
 
-/**
- * Fetch all monitoring sites with IndexedDB as single source of truth:
- * - Reads locally stored sites immediately from IndexedDB (all_sites)
- * - Kicks off background fetch from Supabase to upsert into IndexedDB
- * - Unsynced sites with offline_temp_id are never overwritten or deleted
- */
-export const fetchSites = async (userId?: string): Promise<any[]> => {
+export const downloadAndMergeActiveSites = async (): Promise<any[]> => {
+  const { data: serverSites, error } = await supabase.from('inspection_sites').select('*').eq('is_active', true);
+  if (error) throw new Error(`Failed to fetch active sites: ${error.message}`);
+
+  const activeList = Array.isArray(serverSites) ? serverSites : [];
+  const [idbSites, queue] = await Promise.all([offlineStorage.getAllSitesFromIDB(), offlineStorage.getQueue().catch(() => [])]);
+
+  const pendingUpdateSiteIds = new Set<string>();
+  queue.forEach((q) => {
+    if ((q.type === 'SITE_REGISTRATION' || q.type === 'inspection_site') && q.action === 'update') {
+      const tid = q.targetId ?? q.payload?.id;
+      if (tid !== undefined && tid !== null) pendingUpdateSiteIds.add(String(tid));
+    }
+  });
+
+  const localIds = new Set(idbSites.map((s: any) => String(s.id)));
+  const toUpsert = activeList
+    .filter((s: any) => !(localIds.has(String(s.id)) && pendingUpdateSiteIds.has(String(s.id))))
+    .map((s: any) => ({ ...s, isOffline: false, isSynced: true, location: s.address || s.site_name }));
+
+  if (toUpsert.length > 0) {
+    await offlineStorage.upsertSitesToIDB(toUpsert);
+    offlineStorage.saveCachedSites(toUpsert);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('sites_updated'));
+  }
+  return activeList;
+};
+
+export const fetchSites = async (_userId?: string): Promise<any[]> => {
   const [idbSites, queue] = await Promise.all([
     offlineStorage.getAllSitesFromIDB(),
     offlineStorage.getQueue().catch(() => []),
@@ -269,7 +291,6 @@ export const fetchSites = async (userId?: string): Promise<any[]> => {
 
   const formatList = (raw: any[]) =>
     raw
-      .filter((s: any) => !userId || !s.created_by || s.created_by === userId)
       .filter((s: any) => !(isNaN(Number(s.id)) && syncedOfflineTempIds.has(String(s.id))))
       .map((s: any) => {
         const hasNumericId = !String(s.id).startsWith('temp_') && !String(s.id).startsWith('queue_') && !isNaN(Number(s.id));
@@ -277,30 +298,14 @@ export const fetchSites = async (userId?: string): Promise<any[]> => {
         const isOffline = !hasNumericId || inQueue;
         return {
           ...s,
+          isDownloaded: hasNumericId,
+          isLocalOnly: !hasNumericId,
           isOffline,
           is_pending_sync: isOffline,
           location: s.location || s.address,
           address: s.address || s.location,
         };
       });
-
-  if (isOnline()) {
-    (async () => {
-      try {
-        let q = supabase.from('inspection_sites').select('*');
-        if (userId) q = q.eq('created_by', userId);
-        const { data, error } = await withTimeout<any>(q, 3500);
-        if (!error && Array.isArray(data)) {
-          const changed = recordsChanged(idbSites, data);
-          await offlineStorage.upsertSitesToIDB(data);
-          offlineStorage.saveCachedSites(data);
-          if (changed && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('sites_updated'));
-        }
-      } catch (err) {
-        console.warn('[siteService] Background Supabase fetch failed:', err);
-      }
-    })();
-  }
 
   return formatList(idbSites);
 };
@@ -318,8 +323,12 @@ export const fetchSiteById = async (siteId: string | number): Promise<any | null
     if (!s) return null;
     const hasNumericId = !String(s.id).startsWith('temp_') && !String(s.id).startsWith('queue_') && !isNaN(Number(s.id));
     const inQueue = queuedIds.has(String(s.id)) || (s.offline_temp_id ? queuedIds.has(String(s.offline_temp_id)) : false);
-    return { ...s, isOffline: !hasNumericId || inQueue };
+    return { ...s, isDownloaded: hasNumericId, isLocalOnly: !hasNumericId, isOffline: !hasNumericId || inQueue };
   };
+
+  const idbSites = await offlineStorage.getAllSitesFromIDB().catch(() => []);
+  const matchIdb = idbSites.find((s: any) => String(s.id) === strId || String(s.offline_temp_id) === strId || s.site_code === strId);
+  if (matchIdb) return withSyncFlag(matchIdb);
 
   if (strId.startsWith('temp_') || strId.startsWith('queue_')) {
     const offlineRecords = await offlineStorage.getOfflineSites();

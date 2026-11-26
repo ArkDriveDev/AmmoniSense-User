@@ -389,12 +389,14 @@ class OfflineStorageService {
     if (!Array.isArray(sites) || sites.length === 0) return;
     const db = await this.initDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(SITES_STORE, 'readwrite');
+      const tx = db.transaction([SITES_STORE, OFFLINE_SITES_STORE], 'readwrite');
       const store = tx.objectStore(SITES_STORE);
+      const offlineStore = tx.objectStore(OFFLINE_SITES_STORE);
       sites.forEach((s) => {
         const id = s.id !== undefined && s.id !== null ? s.id : s.offline_temp_id || s.temp_id;
         if (id !== undefined && id !== null) {
           store.put({ ...s, id });
+          offlineStore.put({ ...s, id });
         }
       });
       tx.oncomplete = () => resolve();
@@ -407,10 +409,11 @@ class OfflineStorageService {
     const strId = String(id);
     const numId = Number(id);
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(SITES_STORE, 'readwrite');
-      const store = tx.objectStore(SITES_STORE);
-      store.delete(strId);
-      if (!isNaN(numId)) store.delete(numId);
+      const tx = db.transaction([SITES_STORE, OFFLINE_SITES_STORE], 'readwrite');
+      [tx.objectStore(SITES_STORE), tx.objectStore(OFFLINE_SITES_STORE)].forEach((store) => {
+        store.delete(strId);
+        if (!isNaN(numId)) store.delete(numId);
+      });
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
