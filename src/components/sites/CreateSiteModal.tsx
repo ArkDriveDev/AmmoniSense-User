@@ -35,10 +35,8 @@ import {
 } from 'ionicons/icons';
 import { Geolocation } from '@capacitor/geolocation';
 import { captureSitePhoto, InspectionPhotoRecord, dataURLtoBlob } from '../../utils/photoUtils';
-import { registerSiteWithPhoto } from '../../services/siteService';
 import { supabase } from '../../services/supabase';
 import offlineStorage, { SITE_DRAFT_KEY } from '../../services/OfflineStorageService';
-import syncService from '../../services/SyncService';
 import { GpsSource, OfflineSite } from '../../types/site';
 import PolygonPreview from '../map/PolygonPreview';
 import { uploadSitePhoto } from '../../services/photoStorageService';
@@ -241,26 +239,12 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
           area_size_hectares: parseFloat(form.area_size_hectares) || 1.0,
           current_latitude: form.current_latitude,
           current_longitude: form.current_longitude,
+          site_photo_url: photoPreview || editSite.site_photo_url || null,
+          site_photo_thumbnail: photoPreview || editSite.site_photo_thumbnail || null,
           ...(Object.keys(updatedPhotoFields).length > 0 ? updatedPhotoFields : {}),
         };
 
-        let synced = false;
-        if (!isOfflineOnly && navigator.onLine) {
-          try {
-            const { error: updateErr } = await supabase
-              .from('inspection_sites')
-              .update(siteUpdateData)
-              .eq('id', editSite.id);
-            if (!updateErr) {
-              synced = true;
-              setToastMsg(`Site "${form.site_name}" updated.`);
-            } else {
-              console.warn('[CreateSiteModal] Supabase update failed, queueing offline:', updateErr);
-            }
-          } catch (err) {
-            console.warn('[CreateSiteModal] Network failed during update, queueing offline:', err);
-          }
-        }
+        const synced = false;
 
         const mergedSite = {
           ...editSite,
@@ -336,28 +320,8 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
     }
 
     try {
-      if (!syncService.isOnline()) {
-        throw new Error('OFFLINE_MODE');
-      }
-
-      const result = await registerSiteWithPhoto(sitePayload);
-
-      const successMsg = `Monitoring Site "${result.site.site_name}" created successfully!`;
-      setToastMsg(successMsg);
-      emitAppToast({ message: successMsg, color: 'success' });
-      setShowToast(true);
-      offlineStorage.clearDraft(SITE_DRAFT_KEY);
-
-      if (onSiteCreated) onSiteCreated(result.site);
-
-      setPhotoRecord(null);
-      setPhotoPreview(null);
-      onClose();
-    } catch (err: any) {
-      console.warn('Network error or offline mode during site creation, queueing item:', err);
-      
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id || 'inspector_user';
+      const { data: userData } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+      const userId = userData?.user?.id || 'inspector_user';
 
       const offlineSiteRecord: OfflineSite = {
         id: tempId,

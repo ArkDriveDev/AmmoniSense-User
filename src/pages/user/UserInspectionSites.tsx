@@ -29,7 +29,6 @@ export default function UserInspectionSites() {
 
   const handleEditSite = (e: React.MouseEvent, site: any) => {
     e.stopPropagation();
-    if (!site.isOffline) return;
     setEditingSite(site.offlineRecord || site);
     setShowCreate(true);
   };
@@ -134,7 +133,7 @@ export default function UserInspectionSites() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A', whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3 }}>{s.site_name}</h2>
-                        {s.isOffline && <PendingSyncBadge label="Offline — not synced" />}
+                        {s.isLocalOnly ? <PendingSyncBadge label="Local — not synced" /> : <IonBadge color="success" style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px' }}>Downloaded</IonBadge>}
                         <SiteTypeBadge siteType={s.site_type} />
                         {s.poultry_type && (
                           <span style={{ fontSize: '12px', fontWeight: 700, background: '#F1F5F9', color: '#1E293B', padding: '3px 8px', borderRadius: '6px' }}>
@@ -157,7 +156,6 @@ export default function UserInspectionSites() {
                         size="small"
                         fill="clear"
                         color="primary"
-                        disabled={!s.isOffline}
                         onClick={(e) => handleEditSite(e, s)}
                         title="Update site details"
                         style={{ '--padding-start': '8px', '--padding-end': '8px', minWidth: '40px', minHeight: '40px', margin: 0 }}

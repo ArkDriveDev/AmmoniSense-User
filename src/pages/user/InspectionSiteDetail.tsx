@@ -79,7 +79,7 @@ export default function InspectionSiteDetail() {
           <IonButtons slot="start"><IonBackButton defaultHref="/inspection-sites" style={{ '--color': '#ffffff' }} /></IonButtons>
           <IonTitle style={{ fontWeight: 700, whiteSpace: 'normal', fontSize: '16px', lineHeight: 1.2 }}>{site?.site_name || 'Site Detail'}</IonTitle>
           <IonButtons slot="end">
-            <IonButton disabled={!site?.isOffline} onClick={() => site?.isOffline && setShowEditSite(true)} style={{ '--color': '#ffffff' }} title="Update site details">
+            <IonButton onClick={() => setShowEditSite(true)} style={{ '--color': '#ffffff' }} title="Update site details">
               <IonIcon icon={createOutline} slot="icon-only" />
             </IonButton>
             <IonButton
@@ -129,8 +129,7 @@ export default function InspectionSiteDetail() {
                       size="small"
                       fill="outline"
                       color="primary"
-                      disabled={!site?.isOffline}
-                      onClick={() => site?.isOffline && setShowEditSite(true)}
+                      onClick={() => setShowEditSite(true)}
                       style={{ '--border-radius': '8px', fontSize: '12px', minHeight: '40px' }}
                     >
                       <IonIcon icon={createOutline} slot="start" /> Update
