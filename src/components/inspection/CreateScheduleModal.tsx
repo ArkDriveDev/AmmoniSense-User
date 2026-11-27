@@ -235,7 +235,7 @@ export const CreateScheduleModal: React.FC<Props> = ({ isOpen, onClose, siteId, 
           <IonLabel position="stacked">NOTES</IonLabel>
           <IonTextarea rows={3} value={notes} placeholder="INSPECTION NOTES" onIonInput={(e) => setNotes(toUpperClean(e.detail.value!))} />
         </IonItem>
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: '20px', paddingBottom: '80px' }}>
           <IonButton expand="block" onClick={handleSave} disabled={saving} style={{ '--background': 'linear-gradient(135deg, #0F3C5C 0%, #1D5D9B 100%)', fontWeight: 700 }}>
             {saving ? <IonSpinner name="crescent" /> : <><IonIcon icon={checkmarkCircleOutline} slot="start" /> {editSchedule ? 'Update Schedule Details' : 'Save Schedule'}</>}
           </IonButton>

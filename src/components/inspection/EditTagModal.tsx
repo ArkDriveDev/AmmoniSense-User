@@ -207,7 +207,7 @@ export const EditTagModal: React.FC<Props> = ({ isOpen, onClose, tag, onUpdated,
           </IonItem>
 
           {/* Actions */}
-          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ marginTop: '24px', paddingBottom: '80px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <IonButton
               expand="block"
               onClick={handleSave}

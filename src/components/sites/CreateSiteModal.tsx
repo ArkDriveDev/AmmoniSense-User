@@ -405,7 +405,7 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({ isOpen, onClos
       </IonHeader>
 
       <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
-        <IonGrid style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <IonGrid style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '80px' }}>
           <IonCard className="premium-card" style={{ margin: '0 0 20px 0', padding: '16px' }}>
             <IonCardContent className="ion-text-center">
               <span style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A', display: 'block', marginBottom: '10px' }}>

@@ -687,7 +687,7 @@ export default function UserMap() {
         <div
           style={{
             position: 'absolute',
-            bottom: '32px',
+            bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
             right: '16px',
             zIndex: 1000,
             display: 'flex',
@@ -728,7 +728,7 @@ export default function UserMap() {
               borderTopRightRadius: '24px',
               boxShadow: '0 -8px 30px rgba(15, 60, 92, 0.25)',
               padding: '20px',
-              paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+              paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
               maxHeight: '75vh',
               overflowY: 'auto',
             }}
@@ -1057,7 +1057,7 @@ export default function UserMap() {
 
         {/* LEGEND MODAL */}
         <IonModal isOpen={showLegend} onDidDismiss={() => setShowLegend(false)}>
-          <div style={{ padding: '20px', paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', height: '100%', overflowY: 'auto' }}>
+          <div style={{ padding: '20px', paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', height: '100%', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ margin: 0, fontWeight: 'bold', color: '#0f172a' }}>Map Legend</h2>
               <IonButton fill="clear" onClick={() => setShowLegend(false)} style={{ minWidth: '44px', minHeight: '44px' }}>
@@ -1149,7 +1149,7 @@ export default function UserMap() {
 
         {/* PHOTO MODAL */}
         <IonModal isOpen={showPhotoModal} onDidDismiss={() => setShowPhotoModal(false)}>
-          <div style={{ padding: '20px', paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', height: '100%', overflowY: 'auto' }}>
+          <div style={{ padding: '20px', paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', height: '100%', overflowY: 'auto' }}>
             <h2 style={{ marginTop: 0, fontWeight: 'bold' }}>Inspection Photo</h2>
             {(selectedReading?.photo_url || selectedPhotoTag?.photo_url) && (
               <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', marginBottom: '16px' }}>

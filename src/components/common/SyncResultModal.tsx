@@ -38,7 +38,7 @@ export const SyncResultModal: React.FC<SyncResultModalProps> = ({ isOpen, onClos
           <IonIcon icon={alertCircleOutline} style={{ fontSize: '24px' }} />
           <span style={{ fontWeight: 600 }}>{failedItems.length} item(s) failed during synchronization:</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '80px' }}>
           {failedItems.map((item) => (
             <div key={item.id} style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
