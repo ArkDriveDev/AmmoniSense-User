@@ -385,7 +385,7 @@ ion-button.btn-ammoni,
 ion-tab-bar {
   max-width: 100%;
   overflow-x: hidden;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
 }
 
 ion-tab-button,
@@ -433,6 +433,23 @@ ion-content {
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
+}
+
+ion-content,
+ion-content.ion-padding {
+  --padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+ion-content::part(scroll) {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+#user-main > ion-content {
+  --padding-bottom: 0px !important;
+}
+
+#user-main > ion-content::part(scroll) {
+  padding-bottom: 0px !important;
 }
 
 ion-header ion-toolbar:first-of-type {

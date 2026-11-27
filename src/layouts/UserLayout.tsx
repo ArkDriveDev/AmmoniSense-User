@@ -175,7 +175,7 @@ export default function UserLayout({ children }: any) {
           </div>
 
           {/* Navigation Items with MenuAutoClose */}
-          <IonList style={{ padding: '8px 0', background: 'transparent' }}>
+          <IonList style={{ padding: '8px 0 80px 0', background: 'transparent' }}>
             <IonMenuToggle menu="user-menu" autoHide={false}>
               <IonItem
                 button
