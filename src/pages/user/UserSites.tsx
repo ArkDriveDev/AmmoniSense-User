@@ -170,7 +170,7 @@ export default function UserSites() {
             </IonCard>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '80px' }}>
             {sites.map((s) => (
               <IonCard 
                 key={s.id} 

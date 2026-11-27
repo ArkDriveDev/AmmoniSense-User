@@ -140,7 +140,7 @@ export default function Login() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 'calc(16px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px)) 12px',
+          padding: 'calc(16px + env(safe-area-inset-top, 0px)) 12px calc(80px + env(safe-area-inset-bottom, 0px)) 12px',
           boxSizing: 'border-box',
         }}>
           <IonGrid style={{ maxWidth: '420px', width: '100%', padding: 0, margin: '0 auto' }}>

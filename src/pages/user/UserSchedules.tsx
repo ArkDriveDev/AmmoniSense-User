@@ -75,15 +75,17 @@ export default function UserSchedules() {
             <IonSpinner name="crescent" color="primary" />
           </div>
         ) : schedules.length === 0 ? (
-          <div style={{ textAlign: 'center', marginTop: '60px', color: '#64748B' }}>
+          <div style={{ textAlign: 'center', marginTop: '60px', paddingBottom: '80px', color: '#64748B' }}>
             <IonIcon icon={calendarOutline} style={{ fontSize: '64px', color: '#CBD5E1', display: 'block', margin: '0 auto 12px' }} />
             <h3 style={{ margin: '0 0 8px' }}>No Schedules Yet</h3>
             <p style={{ fontSize: '14px', color: '#94A3B8' }}>Go to an Inspection Site and create a new schedule.</p>
           </div>
         ) : (
-          schedules.map((s) => (
-            <ScheduleCard key={s.id} schedule={s} tagCount={s.tags_count} onClick={() => navigate(`/schedules/${s.id}`)} />
-          ))
+          <div style={{ paddingBottom: '80px' }}>
+            {schedules.map((s) => (
+              <ScheduleCard key={s.id} schedule={s} tagCount={s.tags_count} onClick={() => navigate(`/schedules/${s.id}`)} />
+            ))}
+          </div>
         )}
       </IonContent>
     </IonPage>

@@ -112,7 +112,7 @@ export default function SensorCheckerPage() {
       </IonHeader>
 
       <IonContent className="ion-padding" style={{ '--background': '#F1F5F9' }}>
-        <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: 0 }}>
+        <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: '0 0 80px 0' }}>
           {/* Bluetooth Header & Connect Button */}
           <div style={{ background: '#FFFFFF', borderRadius: '14px', padding: '16px', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

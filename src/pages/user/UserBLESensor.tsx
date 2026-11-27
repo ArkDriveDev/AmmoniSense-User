@@ -107,7 +107,7 @@ export default function UserBLESensor() {
           <IonRefresherContent />
         </IonRefresher>
 
-        <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: 0 }}>
+        <IonGrid style={{ maxWidth: '800px', margin: '0 auto', padding: '0 0 80px 0' }}>
           {/* Header Card */}
           <div
             style={{

@@ -164,15 +164,17 @@ export default function InspectionSiteDetail() {
             </div>
 
             {schedules.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748B' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px 80px 20px', color: '#64748B' }}>
                 <IonIcon icon={calendarOutline} style={{ fontSize: '48px', color: '#CBD5E1', display: 'block', margin: '0 auto 12px' }} />
                 <p style={{ margin: 0, fontWeight: 600 }}>No schedules yet</p>
                 <p style={{ margin: '4px 0 0 0', fontSize: '13px' }}>Tap "+ Schedule" to create the first visit</p>
               </div>
             ) : (
-              schedules.map((s) => (
-                <ScheduleCard key={s.id} schedule={s} tagCount={s.tags_count} onClick={() => navigate(`/schedules/${s.id}`)} />
-              ))
+              <div style={{ paddingBottom: '80px' }}>
+                {schedules.map((s) => (
+                  <ScheduleCard key={s.id} schedule={s} tagCount={s.tags_count} onClick={() => navigate(`/schedules/${s.id}`)} />
+                ))}
+              </div>
             )}
           </>
         )}

@@ -29,7 +29,7 @@ export const TagList: React.FC<Props> = ({ tags, onSelectTag, onEditTag, onDelet
   }, [tags]);
 
   return (
-    <div>
+    <div style={{ paddingBottom: '80px' }}>
       {tags.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', padding: '10px 14px', background: '#F8FAFC', borderRadius: '10px', fontSize: '13px' }}>
           <span><strong>Total:</strong> {tags.length}</span>

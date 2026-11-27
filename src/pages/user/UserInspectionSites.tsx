@@ -125,7 +125,7 @@ export default function UserInspectionSites() {
             </IonButton>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingBottom: '80px' }}>
             {sites.map((s) => (
               <IonCard key={s.id} button onClick={() => navigate(`/inspection-sites/${s.id}`)} style={{ margin: 0, borderRadius: '14px' }}>
                 <IonCardContent style={{ padding: '16px' }}>

@@ -63,7 +63,7 @@ export default function UserDashboard() {
           <IonRefresherContent />
         </IonRefresher>
 
-        <IonGrid style={{ padding: 0 }}>
+        <IonGrid style={{ padding: '0 0 80px 0' }}>
           {/* Stats Cards Section */}
           <IonRow>
             <IonCol size="12" sizeSm="6" sizeMd="4">

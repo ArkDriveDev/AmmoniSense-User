@@ -93,7 +93,7 @@ export default function UserDevices() {
             </IonCard>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '80px' }}>
             {devices.map((d) => {
               const isRecentlySeen = d.last_seen_at && (new Date().getTime() - new Date(d.last_seen_at).getTime() < 120000);
               return (
